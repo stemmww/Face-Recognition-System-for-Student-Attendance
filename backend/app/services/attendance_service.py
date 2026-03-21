@@ -1,17 +1,17 @@
 """Attendance session management and attendance recording logic.
 
-Time-based status rules:
-  - Present:  recognized within 5 minutes of schedule start_time
-  - Late:     recognized between 5–15 minutes after start_time
-  - Absent:   not recognized, or recognized >15 minutes after start_time
+Time-based status rules (relative to when the professor started the session):
+  - Present:  recognized within 5 minutes of session start
+  - Late:     recognized between 5–15 minutes after session start
+  - Absent:   not recognized, or recognized >15 minutes after session start
 """
 
 import logging
-from datetime import date, datetime, time, timedelta, timezone
+import secrets
+from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import BadRequestError, NotFoundError
 from app.models.attendance import AttendanceRecord, AttendanceStatus, MarkedBy
@@ -28,10 +28,14 @@ PRESENT_THRESHOLD_MINUTES = 5
 LATE_THRESHOLD_MINUTES = 15
 
 
-def determine_status(recognized_at: datetime, schedule_start: time, session_date: date) -> AttendanceStatus:
-    """Determine attendance status based on recognition time vs schedule start."""
-    start_dt = datetime.combine(session_date, schedule_start, tzinfo=recognized_at.tzinfo or timezone.utc)
-    delta = (recognized_at - start_dt).total_seconds() / 60.0
+def determine_status(recognized_at: datetime, session_started_at: datetime) -> AttendanceStatus:
+    """Determine attendance status based on recognition time vs when the session was started."""
+    if session_started_at.tzinfo is None:
+        session_started_at = session_started_at.replace(tzinfo=timezone.utc)
+    if recognized_at.tzinfo is None:
+        recognized_at = recognized_at.replace(tzinfo=timezone.utc)
+
+    delta = (recognized_at - session_started_at).total_seconds() / 60.0
 
     if delta <= PRESENT_THRESHOLD_MINUTES:
         return AttendanceStatus.PRESENT
@@ -44,7 +48,12 @@ def determine_status(recognized_at: datetime, schedule_start: time, session_date
 class AttendanceSessionService:
     @staticmethod
     async def start_session(
-        db: AsyncSession, schedule_id: int, session_date: date, started_by: int
+        db: AsyncSession,
+        schedule_id: int,
+        session_date: date,
+        started_by: int,
+        latitude: float | None = None,
+        longitude: float | None = None,
     ) -> AttendanceSession:
         schedule = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
         if schedule.scalar_one_or_none() is None:
@@ -65,6 +74,9 @@ class AttendanceSessionService:
             date=session_date,
             started_by=started_by,
             status=SessionStatus.ACTIVE,
+            latitude=latitude,
+            longitude=longitude,
+            qr_secret=secrets.token_hex(32),
         )
         db.add(session)
         await db.commit()
@@ -185,13 +197,8 @@ class AttendanceRecordService:
         if record is not None:
             return record, False
 
-        schedule = await db.execute(
-            select(Schedule).where(Schedule.id == session.schedule_id)
-        )
-        sched = schedule.scalar_one()
-
         now = datetime.now(timezone.utc)
-        status = determine_status(now, sched.start_time, session.date)
+        status = determine_status(now, session.started_at)
 
         record = AttendanceRecord(
             student_id=student_id,

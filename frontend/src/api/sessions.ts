@@ -1,9 +1,11 @@
-import type { AttendanceSession } from "@/types";
+import type { AttendanceSession, QRToken } from "@/types";
 import apiClient from "./client";
 
 export async function startSession(payload: {
   schedule_id: number;
   date: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }): Promise<AttendanceSession> {
   const { data } = await apiClient.post<AttendanceSession>("/sessions", payload);
   return data;
@@ -47,5 +49,10 @@ export async function processFrame(sessionId: number, frame: Blob): Promise<Fram
   const { data } = await apiClient.post<FrameResponse>(`/sessions/${sessionId}/frame`, form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+  return data;
+}
+
+export async function getQRToken(sessionId: number): Promise<QRToken> {
+  const { data } = await apiClient.get<QRToken>(`/sessions/${sessionId}/qr-token`);
   return data;
 }

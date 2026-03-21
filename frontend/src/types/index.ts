@@ -78,3 +78,14 @@ export interface TokenResponse {
   refresh_token: string;
   token_type: string;
 }
+
+export interface QRToken {
+  token: string;
+  expires_at: string;
+}
+
+export interface VerifyAttendanceResponse {
+  success: boolean;
+  status: AttendanceStatus | null;
+  message: string;
+}

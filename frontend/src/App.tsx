@@ -28,6 +28,7 @@ import StudentMyCourses from "@/pages/student/MyCourses";
 import AttendanceHistory from "@/pages/student/AttendanceHistory";
 import Appeals from "@/pages/student/Appeals";
 import NotificationsPage from "@/pages/student/Notifications";
+import Attend from "@/pages/student/Attend";
 
 // Shared pages
 import Profile from "@/pages/Profile";
@@ -148,6 +149,14 @@ function AuthenticatedApp() {
         />
 
         {/* Student routes */}
+        <Route
+          path="/attend"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <Attend />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/courses/:courseId/attendance"
           element={

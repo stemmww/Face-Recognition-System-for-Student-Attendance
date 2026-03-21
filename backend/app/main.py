@@ -93,10 +93,11 @@ uploads_path.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 # --- Phase 4 routers ---
-from app.api import attendance, attendance_session  # noqa: E402
+from app.api import attendance, attendance_session, attend  # noqa: E402
 
 app.include_router(attendance_session.router, prefix="/api/sessions", tags=["Sessions"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
+app.include_router(attend.router, prefix="/api/attend", tags=["Student Attend"])
 
 # --- Phase 5 routers ---
 from app.api import notifications  # noqa: E402

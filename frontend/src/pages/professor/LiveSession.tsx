@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Badge,
@@ -10,6 +10,7 @@ import {
   Empty,
   List,
   Modal,
+  Progress,
   Row,
   Select,
   Space,
@@ -22,17 +23,21 @@ import {
   ClockCircleFilled,
   CloseCircleFilled,
   PlayCircleOutlined,
+  QrcodeOutlined,
   StopOutlined,
 } from "@ant-design/icons";
+import { QRCodeSVG } from "qrcode.react";
 import dayjs from "dayjs";
-import type { AttendanceSession, Course, Schedule } from "@/types";
+import type { AttendanceSession, Course, QRToken, Schedule } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSchedules } from "@/api/schedules";
-import { listSessions, startSession, stopSession } from "@/api/sessions";
+import { getQRToken, listSessions, startSession, stopSession } from "@/api/sessions";
 import { getSessionAttendance } from "@/api/attendance";
 import type { AttendanceRecord } from "@/types";
 
 const { Title, Text } = Typography;
+
+const QR_REFRESH_INTERVAL = 25_000;
 
 const statusConfig = {
   present: { color: "green", icon: <CheckCircleFilled style={{ color: "#52c41a" }} />, label: "Present" },
@@ -53,9 +58,13 @@ export default function LiveSession() {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [startModalOpen, setStartModalOpen] = useState(false);
 
-  // Active session state
   const [activeSession, setActiveSession] = useState<AttendanceSession | null>(null);
   const [sessionRecords, setSessionRecords] = useState<AttendanceRecord[]>([]);
+
+  // QR state
+  const [qrToken, setQrToken] = useState<QRToken | null>(null);
+  const [qrSeconds, setQrSeconds] = useState(0);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -98,12 +107,69 @@ export default function LiveSession() {
     return () => clearInterval(interval);
   }, [activeSession]);
 
+  // --- QR token polling ---
+  const fetchQR = useCallback(async () => {
+    if (!activeSession) return;
+    try {
+      const tok = await getQRToken(activeSession.id);
+      setQrToken(tok);
+      const remaining = Math.max(
+        0,
+        Math.floor((new Date(tok.expires_at).getTime() - Date.now()) / 1000),
+      );
+      setQrSeconds(remaining);
+    } catch {
+      /* session may have been stopped */
+    }
+  }, [activeSession]);
+
+  useEffect(() => {
+    if (!activeSession) {
+      setQrToken(null);
+      return;
+    }
+    fetchQR();
+    const interval = setInterval(fetchQR, QR_REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, [activeSession, fetchQR]);
+
+  // countdown timer
+  useEffect(() => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    if (!qrToken) return;
+    countdownRef.current = setInterval(() => {
+      setQrSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [qrToken]);
+
   const handleStart = async () => {
     if (!selectedSchedule || !selectedDate) return;
     try {
+      let latitude: number | undefined;
+      let longitude: number | undefined;
+      if (navigator.geolocation) {
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+            }),
+          );
+          latitude = pos.coords.latitude;
+          longitude = pos.coords.longitude;
+        } catch {
+          message.warning("Could not get GPS location. Session will start without GPS validation.");
+        }
+      }
+
       const session = await startSession({
         schedule_id: selectedSchedule,
         date: selectedDate.format("YYYY-MM-DD"),
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
       });
       setActiveSession(session);
       setStartModalOpen(false);
@@ -120,6 +186,7 @@ export default function LiveSession() {
       message.success("Session stopped. Absent students have been auto-marked.");
       setActiveSession(null);
       setSessionRecords([]);
+      setQrToken(null);
       fetchSessions();
     } catch (err: any) {
       message.error(err?.response?.data?.detail || "Failed to stop session");
@@ -178,7 +245,7 @@ export default function LiveSession() {
               }
             >
               {sessionRecords.length === 0 ? (
-                <Empty description="Waiting for students to be recognized... Send camera frames to the session endpoint." />
+                <Empty description="Waiting for students to scan the QR code and verify their face..." />
               ) : (
                 <List
                   dataSource={sessionRecords}
@@ -209,7 +276,43 @@ export default function LiveSession() {
           </Col>
 
           <Col xs={24} lg={8}>
-            <Card title="Session Info">
+            {/* QR Code Card */}
+            <Card
+              title={
+                <Space>
+                  <QrcodeOutlined />
+                  <span>Attendance QR Code</span>
+                </Space>
+              }
+            >
+              {qrToken ? (
+                <div style={{ textAlign: "center" }}>
+                  <QRCodeSVG
+                    value={qrToken.token}
+                    size={220}
+                    level="M"
+                    style={{ margin: "0 auto" }}
+                  />
+                  <div style={{ marginTop: 16 }}>
+                    <Text type="secondary">Refreshes in</Text>
+                    <Progress
+                      type="circle"
+                      percent={Math.round((qrSeconds / 30) * 100)}
+                      format={() => `${qrSeconds}s`}
+                      size={50}
+                      style={{ marginLeft: 12 }}
+                    />
+                  </div>
+                  <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
+                    Project this QR code on screen for students to scan
+                  </Text>
+                </div>
+              ) : (
+                <Empty description="Generating QR code..." />
+              )}
+            </Card>
+
+            <Card title="Session Info" style={{ marginTop: 16 }}>
               <Descriptions column={1} size="small">
                 <Descriptions.Item label="Session ID">{activeSession.id}</Descriptions.Item>
                 <Descriptions.Item label="Date">{activeSession.date}</Descriptions.Item>
@@ -225,8 +328,8 @@ export default function LiveSession() {
             <Card title="How It Works" style={{ marginTop: 16 }} size="small">
               <ol style={{ paddingLeft: 16, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
                 <li>Start a session for a scheduled class</li>
-                <li>Run the camera client or send frames via API</li>
-                <li>Students are recognized automatically</li>
+                <li>Project the QR code on screen</li>
+                <li>Students scan the QR and verify with face + GPS</li>
                 <li>Status is assigned based on arrival time</li>
                 <li>Stop the session to auto-mark absent students</li>
               </ol>
@@ -274,6 +377,13 @@ export default function LiveSession() {
             value={selectedDate}
             onChange={(d) => d && setSelectedDate(d)}
             style={{ width: "100%" }}
+          />
+
+          <Alert
+            type="info"
+            message="Your GPS location will be captured to validate student proximity."
+            showIcon
+            style={{ marginTop: 8 }}
           />
         </Space>
       </Modal>

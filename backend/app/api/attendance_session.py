@@ -1,11 +1,15 @@
 import logging
+import secrets
+from datetime import datetime, timedelta, timezone
 
 import cv2
 import numpy as np
 from fastapi import APIRouter, Depends, Query, UploadFile
+from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.pipeline import get_pipeline
+from app.config import settings
 from app.core.exceptions import BadRequestError
 from app.core.rbac import require_role
 from app.database import get_db
@@ -15,6 +19,7 @@ from app.models.enrollment import Enrollment
 from app.models.user import Role, User
 from app.schemas.attendance import (
     FrameProcessingResponse,
+    QRTokenOut,
     RecognitionResult,
     SessionCreate,
     SessionDetailOut,
@@ -35,7 +40,8 @@ async def start_session(
     current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
     return await AttendanceSessionService.start_session(
-        db, body.schedule_id, body.date, current_user.id
+        db, body.schedule_id, body.date, current_user.id,
+        latitude=body.latitude, longitude=body.longitude,
     )
 
 
@@ -66,6 +72,29 @@ async def get_session(
     _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
     return await AttendanceSessionService.get_session(db, session_id)
+
+
+@router.get("/{session_id}/qr-token", response_model=QRTokenOut)
+async def get_qr_token(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+):
+    """Generate a short-lived QR token for the active session."""
+    session = await AttendanceSessionService.get_session(db, session_id)
+    if session.status != SessionStatus.ACTIVE:
+        raise BadRequestError("Session is not active")
+
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(seconds=settings.QR_TOKEN_EXPIRE_SECONDS)
+    payload = {
+        "session_id": session.id,
+        "nonce": secrets.token_hex(8),
+        "iat": int(now.timestamp()),
+        "exp": int(expires_at.timestamp()),
+    }
+    token = jwt.encode(payload, session.qr_secret, algorithm="HS256")
+    return QRTokenOut(token=token, expires_at=expires_at)
 
 
 @router.post("/{session_id}/frame", response_model=FrameProcessingResponse)

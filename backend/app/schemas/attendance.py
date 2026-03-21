@@ -9,6 +9,8 @@ from app.models.attendance_session import SessionStatus
 class SessionCreate(BaseModel):
     schedule_id: int
     date: date
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class SessionOut(BaseModel):
@@ -94,3 +96,14 @@ class SessionDetailOut(BaseModel):
     records_count: int = 0
 
     model_config = {"from_attributes": True}
+
+
+class QRTokenOut(BaseModel):
+    token: str
+    expires_at: datetime
+
+
+class VerifyAttendanceResponse(BaseModel):
+    success: bool
+    status: AttendanceStatus | None = None
+    message: str

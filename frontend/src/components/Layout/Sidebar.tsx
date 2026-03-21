@@ -106,6 +106,11 @@ function getMenuItems(role: Role) {
   return [
     ...shared,
     {
+      key: "/attend",
+      icon: <ScanOutlined />,
+      label: "Attend",
+    },
+    {
       key: "/courses",
       icon: <BookOutlined />,
       label: "My Courses",

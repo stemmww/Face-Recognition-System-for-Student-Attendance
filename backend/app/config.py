@@ -16,6 +16,10 @@ class Settings(BaseSettings):
 
     UPLOAD_DIR: str = "./uploads"
 
+    QR_TOKEN_EXPIRE_SECONDS: int = 30
+    GPS_RADIUS_METERS: int = 200
+    LIVENESS_THRESHOLD: float = 0.0001
+
     ADMIN_EMAIL: str = "admin@attendance.edu"
     ADMIN_PASSWORD: str = "admin123"
 

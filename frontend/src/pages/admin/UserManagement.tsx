@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Button,
   Form,
   Input,
@@ -10,16 +11,19 @@ import {
   Table,
   Tag,
   Typography,
+  Upload,
   message,
 } from "antd";
 import {
   DeleteOutlined,
   EditOutlined,
+  InboxOutlined,
   PlusOutlined,
   SearchOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import type { User, Role } from "@/types";
-import { createUser, deactivateUser, listUsers, updateUser } from "@/api/users";
+import { createUser, deactivateUser, importStudentsCSV, listUsers, updateUser, type BulkImportResult } from "@/api/users";
 import { ROLE_LABELS } from "@/utils/constants";
 import { formatDateTime } from "@/utils/formatters";
 
@@ -47,6 +51,9 @@ export default function UserManagement() {
   const [searchText, setSearchText] = useState("");
   const [roleFilter, setRoleFilter] = useState<Role | "all">("all");
   const [form] = Form.useForm<UserFormValues>();
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<BulkImportResult | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -109,6 +116,25 @@ export default function UserManagement() {
       fetchUsers();
     } catch {
       message.error(editingUser ? "Failed to update user" : "Failed to create user");
+    }
+  };
+
+  const handleCSVUpload = async (file: File) => {
+    setImportLoading(true);
+    setImportResult(null);
+    try {
+      const result = await importStudentsCSV(file);
+      setImportResult(result);
+      if (result.created > 0) {
+        message.success(`${result.created} student(s) created, ${result.enrolled} enrollment(s) added`);
+        fetchUsers();
+      } else {
+        message.info("No new students were created");
+      }
+    } catch {
+      message.error("Failed to import CSV");
+    } finally {
+      setImportLoading(false);
     }
   };
 
@@ -202,9 +228,14 @@ export default function UserManagement() {
         <Title level={4} style={{ margin: 0 }}>
           User Management
         </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-          Create User
-        </Button>
+        <Space>
+          <Button icon={<UploadOutlined />} onClick={() => { setImportModalOpen(true); setImportResult(null); }}>
+            Import CSV
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+            Create User
+          </Button>
+        </Space>
       </div>
 
       <Space style={{ marginBottom: 16 }} wrap>
@@ -295,6 +326,82 @@ export default function UserManagement() {
             </Form.Item>
           )}
         </Form>
+      </Modal>
+
+      <Modal
+        title="Import Students from CSV"
+        open={importModalOpen}
+        onCancel={() => setImportModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setImportModalOpen(false)}>
+            Close
+          </Button>,
+        ]}
+        width={560}
+      >
+        <Alert
+          message="CSV Format"
+          description={
+            <div>
+              <p style={{ margin: "4px 0" }}>Required columns: <strong>email, first_name, last_name, password</strong></p>
+              <p style={{ margin: "4px 0" }}>Optional: <strong>course_codes</strong> (comma or semicolon separated)</p>
+              <code style={{ fontSize: 12, display: "block", marginTop: 8, padding: 8, borderRadius: 4 }}>
+                email,first_name,last_name,password,course_codes<br />
+                john@uni.edu,John,Doe,pass123,SE2322<br />
+                jane@uni.edu,Jane,Smith,pass456,SE2322;CS101
+              </code>
+            </div>
+          }
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+        <Upload.Dragger
+          accept=".csv"
+          showUploadList={false}
+          beforeUpload={(file) => {
+            handleCSVUpload(file);
+            return false;
+          }}
+          disabled={importLoading}
+        >
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined />
+          </p>
+          <p className="ant-upload-text">
+            {importLoading ? "Importing..." : "Click or drag CSV file here"}
+          </p>
+        </Upload.Dragger>
+
+        {importResult && (
+          <div style={{ marginTop: 16 }}>
+            <Alert
+              message="Import Complete"
+              description={
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  <li><strong>{importResult.created}</strong> students created</li>
+                  <li><strong>{importResult.skipped}</strong> existing accounts skipped</li>
+                  <li><strong>{importResult.enrolled}</strong> new enrollments added</li>
+                  {importResult.errors.length > 0 && (
+                    <li style={{ color: "#ff4d4f" }}>
+                      <strong>{importResult.errors.length}</strong> error(s):
+                      <ul style={{ paddingLeft: 16 }}>
+                        {importResult.errors.slice(0, 10).map((e, i) => (
+                          <li key={i}>{e}</li>
+                        ))}
+                        {importResult.errors.length > 10 && (
+                          <li>...and {importResult.errors.length - 10} more</li>
+                        )}
+                      </ul>
+                    </li>
+                  )}
+                </ul>
+              }
+              type={importResult.errors.length > 0 ? "warning" : "success"}
+              showIcon
+            />
+          </div>
+        )}
       </Modal>
     </>
   );

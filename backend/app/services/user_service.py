@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DuplicateError, NotFoundError
 from app.core.security import hash_password
+from app.models.course import Course
+from app.models.enrollment import Enrollment
 from app.models.user import Role, User
 from app.schemas.user import UserCreate, UserUpdate
 
@@ -64,3 +66,71 @@ class UserService:
         user = await UserService.get_user(db, user_id)
         user.is_active = False
         await db.commit()
+
+    @staticmethod
+    async def bulk_import_students(
+        db: AsyncSession, rows: list[dict]
+    ) -> dict:
+        created = 0
+        skipped = 0
+        enrolled = 0
+        errors: list[str] = []
+
+        for i, row in enumerate(rows, start=2):
+            email = row.get("email", "").strip()
+            first_name = row.get("first_name", "").strip()
+            last_name = row.get("last_name", "").strip()
+            password = row.get("password", "").strip()
+            course_codes_raw = row.get("course_codes", "").strip()
+
+            if not email or not first_name or not last_name or not password:
+                errors.append(f"Row {i}: missing required fields")
+                continue
+
+            # Find or create user
+            existing = await db.execute(select(User).where(User.email == email))
+            user = existing.scalar_one_or_none()
+
+            if user is not None:
+                skipped += 1
+            else:
+                user = User(
+                    email=email,
+                    hashed_password=hash_password(password),
+                    first_name=first_name,
+                    last_name=last_name,
+                    role=Role.STUDENT,
+                )
+                db.add(user)
+                await db.flush()
+                created += 1
+
+            # Enroll in courses
+            if course_codes_raw:
+                codes = [c.strip() for c in course_codes_raw.replace(";", ",").split(",") if c.strip()]
+                for code in codes:
+                    course_result = await db.execute(
+                        select(Course).where(Course.code == code)
+                    )
+                    course = course_result.scalar_one_or_none()
+                    if course is None:
+                        errors.append(f"Row {i}: course '{code}' not found")
+                        continue
+
+                    enrollment_exists = await db.execute(
+                        select(Enrollment).where(
+                            Enrollment.student_id == user.id,
+                            Enrollment.course_id == course.id,
+                        )
+                    )
+                    if enrollment_exists.scalar_one_or_none() is None:
+                        db.add(Enrollment(student_id=user.id, course_id=course.id))
+                        enrolled += 1
+
+        await db.commit()
+        return {
+            "created": created,
+            "skipped": skipped,
+            "enrolled": enrolled,
+            "errors": errors,
+        }

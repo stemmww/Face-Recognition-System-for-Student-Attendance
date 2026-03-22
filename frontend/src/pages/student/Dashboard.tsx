@@ -16,9 +16,20 @@ import {
   ClockCircleOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyAttendanceSummary, type CourseAttendanceSummary } from "@/api/attendance";
 import { getUnreadCount } from "@/api/notifications";
+import { getMyTrends, type StudentTrendPoint } from "@/api/statistics";
 
 const { Title, Text } = Typography;
 
@@ -26,13 +37,19 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const [summary, setSummary] = useState<CourseAttendanceSummary[]>([]);
   const [unread, setUnread] = useState(0);
+  const [trends, setTrends] = useState<StudentTrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
-      const [sum, count] = await Promise.all([getMyAttendanceSummary(), getUnreadCount()]);
+      const [sum, count, t] = await Promise.all([
+        getMyAttendanceSummary(),
+        getUnreadCount(),
+        getMyTrends(),
+      ]);
       setSummary(sum);
       setUnread(count);
+      setTrends(t);
     } catch {
       message.error("Failed to load dashboard data");
     } finally {
@@ -87,6 +104,48 @@ export default function StudentDashboard() {
           </Card>
         </Col>
       </Row>
+
+      {/* Attendance trend chart */}
+      {trends.length > 0 && (
+        <Card style={{ marginBottom: 24 }} loading={loading}>
+          <Title level={5} style={{ marginTop: 0 }}>Attendance Trend</Title>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart
+              data={(() => {
+                const grouped: Record<string, { present: number; late: number; absent: number }> = {};
+                for (const t of trends) {
+                  if (!grouped[t.date]) grouped[t.date] = { present: 0, late: 0, absent: 0 };
+                  if (t.status === "present") grouped[t.date].present++;
+                  else if (t.status === "late") grouped[t.date].late++;
+                  else grouped[t.date].absent++;
+                }
+                let cumP = 0, cumL = 0, cumA = 0;
+                return Object.entries(grouped).sort().map(([date, v]) => {
+                  cumP += v.present;
+                  cumL += v.late;
+                  cumA += v.absent;
+                  const total = cumP + cumL + cumA;
+                  return {
+                    date,
+                    rate: total > 0 ? Math.round(((cumP + cumL) / total) * 100) : 100,
+                    present: v.present,
+                    late: v.late,
+                    absent: v.absent,
+                  };
+                });
+              })()}
+              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="date" fontSize={12} />
+              <YAxis domain={[0, 100]} fontSize={12} tickFormatter={(v) => `${v}%`} />
+              <Tooltip formatter={(value: number, name: string) => name === "rate" ? `${value}%` : value} />
+              <Legend />
+              <Area type="monotone" dataKey="rate" name="Cumulative Rate" stroke="#6366f1" fill="#6366f1" fillOpacity={0.15} strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
 
       {/* Per-course breakdown */}
       <Title level={5}>Course Attendance</Title>

@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends
+import csv
+import io
+
+from fastapi import APIRouter, Depends, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rbac import require_role
 from app.database import get_db
 from app.models.user import Role, User
-from app.schemas.user import UserCreate, UserOut, UserUpdate
+from app.schemas.user import BulkImportResult, UserCreate, UserOut, UserUpdate
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -59,3 +62,21 @@ async def deactivate_user(
     _: User = Depends(require_role(Role.ADMIN)),
 ):
     await UserService.deactivate_user(db, user_id)
+
+
+@router.post("/import-csv", response_model=BulkImportResult)
+async def import_students_csv(
+    file: UploadFile,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_role(Role.ADMIN)),
+):
+    """Bulk import students from a CSV file.
+
+    CSV columns: email, first_name, last_name, password, course_codes
+    course_codes is optional and can contain multiple codes separated by commas or semicolons.
+    """
+    content = await file.read()
+    text = content.decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text))
+    rows = list(reader)
+    return await UserService.bulk_import_students(db, rows)

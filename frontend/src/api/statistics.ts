@@ -24,3 +24,29 @@ export async function getCourseStatistics(courseId: number): Promise<CourseStati
   const { data } = await apiClient.get<CourseStatistics>(`/statistics/course/${courseId}`);
   return data;
 }
+
+export interface SessionTrendPoint {
+  date: string;
+  session_id: number;
+  present: number;
+  late: number;
+  absent: number;
+  total: number;
+}
+
+export async function getCourseTrends(courseId: number): Promise<SessionTrendPoint[]> {
+  const { data } = await apiClient.get<SessionTrendPoint[]>(`/statistics/course/${courseId}/trends`);
+  return data;
+}
+
+export interface StudentTrendPoint {
+  date: string;
+  course_code: string;
+  course_name: string;
+  status: string;
+}
+
+export async function getMyTrends(): Promise<StudentTrendPoint[]> {
+  const { data } = await apiClient.get<StudentTrendPoint[]>("/statistics/student/me/trends");
+  return data;
+}

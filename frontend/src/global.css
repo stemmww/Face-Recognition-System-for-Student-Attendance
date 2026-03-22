@@ -1,0 +1,49 @@
+/* ===== Global responsive styles ===== */
+
+/* Ant Design tables: horizontal scroll on narrow screens */
+@media (max-width: 767px) {
+  .ant-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ant-table {
+    min-width: 540px;
+  }
+
+  /* Slightly tighter card padding on mobile */
+  .ant-card-body {
+    padding: 16px !important;
+  }
+
+  /* Modal: nearly full-width on mobile */
+  .ant-modal {
+    max-width: calc(100vw - 32px) !important;
+    margin: 16px auto !important;
+  }
+
+  .ant-modal-content {
+    padding: 16px !important;
+  }
+
+  /* Descriptions: stack labels on mobile */
+  .ant-descriptions-item-label {
+    font-size: 12px;
+  }
+
+  /* Popover: prevent overflow */
+  .ant-popover {
+    max-width: calc(100vw - 24px);
+  }
+}
+
+/* Smooth scrolling globally */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Prevent horizontal overflow on body */
+body {
+  overflow-x: hidden;
+}

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Avatar,
   Badge,
+  Button,
   Dropdown,
   Layout,
   List,
@@ -11,7 +12,7 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { BellOutlined, LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import { BellOutlined, LogoutOutlined, MenuOutlined, UserOutlined } from "@ant-design/icons";
 import type { Notification, User } from "@/types";
 import { ROLE_LABELS } from "@/utils/constants";
 import { getUnreadCount, listNotifications, markRead, markAllRead } from "@/api/notifications";
@@ -22,15 +23,17 @@ const { Text } = Typography;
 interface Props {
   user: User;
   onLogout: () => void;
+  isMobile: boolean;
+  onMenuClick: () => void;
 }
 
 const roleColors: Record<string, string> = {
-  admin: "red",
-  professor: "blue",
-  student: "green",
+  admin: "purple",
+  professor: "geekblue",
+  student: "cyan",
 };
 
-export default function Header({ user, onLogout }: Props) {
+export default function Header({ user, onLogout, isMobile, onMenuClick }: Props) {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -101,7 +104,7 @@ export default function Header({ user, onLogout }: Props) {
   };
 
   const bellContent = (
-    <div style={{ width: 320, maxHeight: 400, overflowY: "auto" }}>
+    <div style={{ width: isMobile ? 260 : 320, maxHeight: 400, overflowY: "auto" }}>
       {notifications.length > 0 && unreadCount > 0 && (
         <div style={{ textAlign: "right", marginBottom: 8 }}>
           <a onClick={handleMarkAllRead}>Mark all as read</a>
@@ -114,10 +117,10 @@ export default function Header({ user, onLogout }: Props) {
         renderItem={(n) => (
           <List.Item
             style={{
-              background: n.is_read ? undefined : "#f0f5ff",
+              background: n.is_read ? undefined : "#eef2ff",
               cursor: n.is_read ? "default" : "pointer",
               padding: "8px 12px",
-              borderRadius: 4,
+              borderRadius: 6,
               marginBottom: 2,
             }}
             onClick={() => !n.is_read && handleMarkRead(n.id)}
@@ -142,37 +145,68 @@ export default function Header({ user, onLogout }: Props) {
   return (
     <AntHeader
       style={{
-        padding: "0 24px",
+        padding: isMobile ? "0 12px" : "0 24px",
         background: "#fff",
         display: "flex",
         alignItems: "center",
-        justifyContent: "flex-end",
-        borderBottom: "1px solid #f0f0f0",
-        gap: 16,
+        justifyContent: "space-between",
+        borderBottom: "1px solid #e2e8f0",
+        gap: isMobile ? 8 : 16,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
       }}
     >
-      <Popover
-        content={bellContent}
-        title="Notifications"
-        trigger="click"
-        open={bellOpen}
-        onOpenChange={handleBellOpen}
-        placement="bottomRight"
-      >
-        <Badge count={unreadCount} size="small" offset={[-2, 2]}>
-          <BellOutlined style={{ fontSize: 18, cursor: "pointer" }} />
-        </Badge>
-      </Popover>
+      {/* Left: hamburger on mobile */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {isMobile && (
+          <Button
+            type="text"
+            icon={<MenuOutlined style={{ fontSize: 18 }} />}
+            onClick={onMenuClick}
+            style={{ color: "#475569" }}
+          />
+        )}
+      </div>
 
-      <Tag color={roleColors[user.role]}>{ROLE_LABELS[user.role]}</Tag>
-      <Dropdown menu={dropdownItems} placement="bottomRight">
-        <Space style={{ cursor: "pointer" }}>
-          <Avatar icon={<UserOutlined />} src={user.photo_url} />
-          <Text strong>
-            {user.first_name} {user.last_name}
-          </Text>
-        </Space>
-      </Dropdown>
+      {/* Right: notifications, role, user */}
+      <Space size={isMobile ? 8 : 16}>
+        <Popover
+          content={bellContent}
+          title="Notifications"
+          trigger="click"
+          open={bellOpen}
+          onOpenChange={handleBellOpen}
+          placement="bottomRight"
+        >
+          <Badge count={unreadCount} size="small" offset={[-2, 2]}>
+            <BellOutlined style={{ fontSize: 18, cursor: "pointer", color: "#475569" }} />
+          </Badge>
+        </Popover>
+
+        {!isMobile && (
+          <Tag
+            color={roleColors[user.role]}
+            style={{ borderRadius: 6, fontWeight: 500, textTransform: "capitalize" }}
+          >
+            {ROLE_LABELS[user.role]}
+          </Tag>
+        )}
+
+        <Dropdown menu={dropdownItems} placement="bottomRight">
+          <Space style={{ cursor: "pointer" }}>
+            <Avatar
+              icon={<UserOutlined />}
+              src={user.photo_url}
+              size={isMobile ? "small" : "default"}
+              style={{ backgroundColor: user.photo_url ? undefined : "#6366f1" }}
+            />
+            {!isMobile && (
+              <Text strong style={{ color: "#1e293b" }}>
+                {user.first_name} {user.last_name}
+              </Text>
+            )}
+          </Space>
+        </Dropdown>
+      </Space>
     </AntHeader>
   );
 }

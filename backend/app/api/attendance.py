@@ -1,4 +1,8 @@
+import csv
+import io
+
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -140,3 +144,70 @@ async def manual_batch_attendance(
             "student_email": user.email if user else None,
         })
     return result
+
+
+@router.get("/session/{session_id}/export")
+async def export_session_attendance(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+):
+    """Export session attendance as CSV."""
+    records = await AttendanceRecordService.get_session_records(db, session_id)
+    session = await AttendanceSessionService.get_session(db, session_id)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["Student Name", "Email", "Status", "Recognized At", "Marked By"])
+    for r in records:
+        writer.writerow([
+            r.get("student_name", ""),
+            r.get("student_email", ""),
+            r.get("status", ""),
+            str(r.get("recognized_at", "")) if r.get("recognized_at") else "",
+            r.get("marked_by", ""),
+        ])
+
+    buf.seek(0)
+    filename = f"attendance_session_{session_id}_{session.date}.csv"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/course/{course_id}/export")
+async def export_course_attendance(
+    course_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+):
+    """Export all attendance records for a course as CSV."""
+    records = await AttendanceRecordService.get_course_records(db, course_id)
+
+    from app.models.course import Course
+    course_result = await db.execute(select(Course).where(Course.id == course_id))
+    course = course_result.scalar_one_or_none()
+    course_code = course.code if course else str(course_id)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["Student Name", "Email", "Session ID", "Status", "Recognized At", "Marked By"])
+    for r in records:
+        writer.writerow([
+            r.get("student_name", ""),
+            r.get("student_email", ""),
+            r.get("session_id", ""),
+            r.get("status", ""),
+            str(r.get("recognized_at", "")) if r.get("recognized_at") else "",
+            r.get("marked_by", ""),
+        ])
+
+    buf.seek(0)
+    filename = f"attendance_{course_code}.csv"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

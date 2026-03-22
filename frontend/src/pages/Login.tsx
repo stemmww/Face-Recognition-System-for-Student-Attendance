@@ -8,6 +8,7 @@ import {
 } from "@ant-design/icons";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useThemeStore } from "@/stores/themeStore";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -16,6 +17,7 @@ export default function Login() {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const isDark = useThemeStore((s) => s.isDark);
 
   if (isAuthenticated) {
     navigate("/dashboard", { replace: true });
@@ -153,16 +155,16 @@ export default function Login() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f8fafc",
+          background: isDark ? "#1f2937" : "#f8fafc",
           padding: isMobile ? "32px 20px" : "48px 24px",
         }}
       >
         <div style={{ width: "100%", maxWidth: 400 }}>
           <div style={{ marginBottom: isMobile ? 28 : 40 }}>
-            <Title level={3} style={{ marginBottom: 8, color: "#1e293b" }}>
+            <Title level={3} style={{ marginBottom: 8, color: isDark ? "#e2e8f0" : "#1e293b" }}>
               Welcome back
             </Title>
-            <Text style={{ color: "#64748b", fontSize: 15 }}>
+            <Text style={{ color: isDark ? "#94a3b8" : "#64748b", fontSize: 15 }}>
               Sign in to your account to continue
             </Text>
           </div>
@@ -170,7 +172,7 @@ export default function Login() {
           <Form onFinish={onFinish} layout="vertical" size="large" requiredMark={false}>
             <Form.Item
               name="email"
-              label={<span style={{ fontWeight: 500, color: "#334155" }}>Email</span>}
+              label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>Email</span>}
               rules={[
                 { required: true, message: "Please enter your email" },
                 { type: "email", message: "Please enter a valid email" },
@@ -179,19 +181,19 @@ export default function Login() {
               <Input
                 prefix={<MailOutlined style={{ color: "#94a3b8" }} />}
                 placeholder="you@university.edu"
-                style={{ height: 48, borderRadius: 10, borderColor: "#e2e8f0" }}
+                style={{ height: 48, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
               />
             </Form.Item>
 
             <Form.Item
               name="password"
-              label={<span style={{ fontWeight: 500, color: "#334155" }}>Password</span>}
+              label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>Password</span>}
               rules={[{ required: true, message: "Please enter your password" }]}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#94a3b8" }} />}
                 placeholder="Enter your password"
-                style={{ height: 48, borderRadius: 10, borderColor: "#e2e8f0" }}
+                style={{ height: 48, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
               />
             </Form.Item>
 
@@ -219,7 +221,7 @@ export default function Login() {
               textAlign: "center",
               marginTop: 32,
               padding: "16px 0",
-              borderTop: "1px solid #e2e8f0",
+              borderTop: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
             }}
           >
             <Text style={{ color: "#94a3b8", fontSize: 13 }}>

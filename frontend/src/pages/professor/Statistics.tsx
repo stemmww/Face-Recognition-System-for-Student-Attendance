@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  Button,
   Card,
   Col,
   Empty,
@@ -17,10 +18,12 @@ import {
   TeamOutlined,
   CalendarOutlined,
   BarChartOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import type { Course } from "@/types";
 import { listCourses } from "@/api/courses";
 import { getCourseStatistics, type CourseStatistics, type StudentAttendanceStat } from "@/api/statistics";
+import { exportCourseCSV } from "@/api/attendance";
 
 const { Title, Text } = Typography;
 
@@ -107,7 +110,7 @@ export default function Statistics() {
     <>
       <Title level={4}>Attendance Statistics</Title>
 
-      <Space style={{ marginBottom: 24 }}>
+      <Space style={{ marginBottom: 24 }} wrap>
         <Select
           placeholder="Select a course"
           value={selectedCourse}
@@ -118,6 +121,14 @@ export default function Statistics() {
             label: `${c.code} — ${c.name}`,
           }))}
         />
+        {selectedCourse && (
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error("Export failed"))}
+          >
+            Export CSV
+          </Button>
+        )}
       </Space>
 
       {!selectedCourse && (

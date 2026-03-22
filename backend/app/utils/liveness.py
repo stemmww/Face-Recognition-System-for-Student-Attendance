@@ -11,6 +11,8 @@ import random
 
 import numpy as np
 
+from app.config import settings
+
 logger = logging.getLogger(__name__)
 
 _PAIRS = [(i, j) for i in range(5) for j in range(i + 1, 5)]  # 10 pairs
@@ -93,7 +95,7 @@ def _get_iod(lm: np.ndarray) -> float:
 
 
 def validate_blink(
-    landmark_sets: list[np.ndarray], threshold: float = 0.15
+    landmark_sets: list[np.ndarray], threshold: float | None = None,
 ) -> bool:
     """Detect blink via eye-to-nose vertical distance ratio changes.
 
@@ -101,6 +103,8 @@ def validate_blink(
     the normalised vertical distance from eye midpoint to nose tip.
     A blink causes a dip-and-recovery in this ratio.
     """
+    if threshold is None:
+        threshold = settings.LIVENESS_BLINK_THRESHOLD
     if len(landmark_sets) < 4:
         return False
 
@@ -130,9 +134,11 @@ def validate_blink(
 def validate_head_turn(
     landmark_sets: list[np.ndarray],
     direction: str = "left",
-    threshold: float = 0.15,
+    threshold: float | None = None,
 ) -> bool:
     """Detect head turn by tracking nose horizontal position relative to eyes."""
+    if threshold is None:
+        threshold = settings.LIVENESS_HEAD_TURN_THRESHOLD
     if len(landmark_sets) < 3:
         return False
 
@@ -160,9 +166,11 @@ def validate_head_turn(
 
 
 def validate_nod(
-    landmark_sets: list[np.ndarray], threshold: float = 0.1
+    landmark_sets: list[np.ndarray], threshold: float | None = None,
 ) -> bool:
     """Detect nod by tracking nose vertical position relative to eyes."""
+    if threshold is None:
+        threshold = settings.LIVENESS_NOD_THRESHOLD
     if len(landmark_sets) < 3:
         return False
 

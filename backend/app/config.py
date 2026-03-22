@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     QR_TOKEN_EXPIRE_SECONDS: int = 45
     GPS_RADIUS_METERS: int = 200
     LIVENESS_THRESHOLD: float = 0.001
-    LIVENESS_BLINK_THRESHOLD: float = 0.15
-    LIVENESS_HEAD_TURN_THRESHOLD: float = 0.15
-    LIVENESS_NOD_THRESHOLD: float = 0.1
+    LIVENESS_BLINK_THRESHOLD: float = 0.08
+    LIVENESS_HEAD_TURN_THRESHOLD: float = 0.10
+    LIVENESS_NOD_THRESHOLD: float = 0.07
 
     ADMIN_EMAIL: str = "admin@attendance.edu"
     ADMIN_PASSWORD: str = "admin123"

@@ -11,12 +11,14 @@ import { CheckOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { Notification } from "@/types";
 import { listNotifications, markRead, markAllRead } from "@/api/notifications";
+import { useThemeStore } from "@/stores/themeStore";
 
 const { Title, Text } = Typography;
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const isDark = useThemeStore((s) => s.isDark);
 
   const fetchData = useCallback(async () => {
     try {
@@ -65,7 +67,9 @@ export default function NotificationsPage() {
         renderItem={(n) => (
           <List.Item
             style={{
-              background: n.is_read ? "#fff" : "#f0f5ff",
+              background: n.is_read
+                ? (isDark ? "transparent" : "#fff")
+                : (isDark ? "rgba(99,102,241,0.15)" : "#f0f5ff"),
               padding: "12px 16px",
               borderRadius: 6,
               marginBottom: 4,

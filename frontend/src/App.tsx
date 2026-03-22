@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ConfigProvider, Spin, theme } from "antd";
 import { useAuth } from "@/hooks/useAuth";
+import { useThemeStore } from "@/stores/themeStore";
 import AppLayout from "@/components/Layout/AppLayout";
 import ProtectedRoute from "@/components/Layout/ProtectedRoute";
 import Login from "@/pages/Login";
@@ -197,18 +198,30 @@ function CoursesRouter() {
 
 export default function App() {
   const { isAuthenticated } = useAuth();
+  const isDark = useThemeStore((s) => s.isDark);
 
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.defaultAlgorithm,
+        algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
           colorPrimary: "#6366f1",
           colorInfo: "#6366f1",
           colorSuccess: "#10b981",
           colorWarning: "#f59e0b",
           colorError: "#ef4444",
-          colorBgLayout: "#f1f5f9",
+          colorBgLayout: isDark ? "#111827" : "#f1f5f9",
+          ...(isDark && {
+            colorBgContainer: "#1e293b",
+            colorBgElevated: "#1e293b",
+            colorBorder: "#334155",
+            colorBorderSecondary: "#283548",
+            colorBgSpotlight: "#374151",
+            colorText: "#e2e8f0",
+            colorTextSecondary: "#94a3b8",
+            colorTextTertiary: "#64748b",
+            colorTextQuaternary: "#475569",
+          }),
           borderRadius: 8,
           fontFamily:
             "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -226,7 +239,15 @@ export default function App() {
           },
           Card: {
             borderRadiusLG: 12,
+            ...(isDark && {
+              colorBgContainer: "#1e293b",
+            }),
           },
+          Table: isDark ? {
+            colorBgContainer: "#1e293b",
+            headerBg: "#283548",
+            rowHoverBg: "#283548",
+          } : {},
         },
       }}
     >

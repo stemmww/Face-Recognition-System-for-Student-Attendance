@@ -23,6 +23,7 @@ import {
   CheckCircleFilled,
   ClockCircleFilled,
   CloseCircleFilled,
+  FullscreenOutlined,
   OrderedListOutlined,
   PlayCircleOutlined,
   QrcodeOutlined,
@@ -69,6 +70,7 @@ export default function LiveSession() {
   const [sessionRecords, setSessionRecords] = useState<AttendanceRecord[]>([]);
 
   // QR state
+  const [qrFullscreen, setQrFullscreen] = useState(false);
   const [qrToken, setQrToken] = useState<QRToken | null>(null);
   const [qrSeconds, setQrSeconds] = useState(0);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -349,6 +351,17 @@ export default function LiveSession() {
                           <span>Attendance QR Code</span>
                         </Space>
                       }
+                      extra={
+                        qrToken && (
+                          <Button
+                            type="text"
+                            icon={<FullscreenOutlined />}
+                            onClick={() => setQrFullscreen(true)}
+                          >
+                            Fullscreen
+                          </Button>
+                        )
+                      }
                     >
                       {qrToken ? (
                         <div style={{ textAlign: "center" }}>
@@ -473,6 +486,51 @@ export default function LiveSession() {
           ]}
         />
       )}
+
+      {/* QR Fullscreen Modal */}
+      <Modal
+        open={qrFullscreen}
+        onCancel={() => setQrFullscreen(false)}
+        footer={null}
+        width="100vw"
+        centered
+        closable
+        styles={{
+          body: {
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "70vh",
+            padding: 32,
+          },
+          content: { borderRadius: 0 },
+        }}
+        style={{ top: 0, maxWidth: "100vw", padding: 0 }}
+      >
+        {qrToken && (
+          <>
+            <QRCodeSVG
+              value={qrToken.token}
+              size={Math.min(window.innerWidth * 0.6, window.innerHeight * 0.6, 500)}
+              level="M"
+            />
+            <div style={{ marginTop: 32, textAlign: "center" }}>
+              <Progress
+                type="circle"
+                percent={Math.round((qrSeconds / (qrToken?.interval_seconds ?? 45)) * 100)}
+                format={() => `${qrSeconds}s`}
+                size={64}
+              />
+              <div style={{ marginTop: 12 }}>
+                <Text type="secondary" style={{ fontSize: 16 }}>
+                  Scan this QR code to mark your attendance
+                </Text>
+              </div>
+            </div>
+          </>
+        )}
+      </Modal>
 
       {/* Start Session Modal */}
       <Modal

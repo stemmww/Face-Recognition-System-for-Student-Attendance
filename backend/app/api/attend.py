@@ -43,7 +43,7 @@ _NONCE_CACHE_TTL = 3600 * 4  # 4 hours
 
 # --- Rate limiting per (student_id, session_id) ---
 _rate_limit: dict[tuple[int, int], float] = {}
-_RATE_LIMIT_SECONDS = 60
+_RATE_LIMIT_SECONDS = 15
 
 
 def _cleanup_expired_nonces() -> None:
@@ -117,16 +117,13 @@ async def verify_attendance(
     except JWTError:
         raise BadRequestError("Invalid or expired QR token")
 
-    # --- 2.5. One-time nonce check ---
+    # --- 2.5. One-time nonce check (consume only after successful verification) ---
     _cleanup_expired_nonces()
     nonce = payload.get("nonce")
-    if nonce:
-        if nonce in _used_nonces[session.id]:
-            raise BadRequestError(
-                "This QR code has already been used. Please scan the current QR code."
-            )
-        _used_nonces[session.id].add(nonce)
-        _nonce_timestamps[session.id] = time.time()
+    if nonce and nonce in _used_nonces[session.id]:
+        raise BadRequestError(
+            "This QR code has already been used. Please scan the current QR code."
+        )
 
     # --- 3. Verify student is enrolled in this course ---
     from app.models.schedule import Schedule
@@ -159,14 +156,13 @@ async def verify_attendance(
             message="Your attendance was already recorded for this session.",
         )
 
-    # --- 3.6. Rate limiting ---
+    # --- 3.6. Rate limiting (checked here, set after successful verification) ---
     rate_key = (current_user.id, session.id)
     now_ts = time.time()
     last_attempt = _rate_limit.get(rate_key, 0)
     if now_ts - last_attempt < _RATE_LIMIT_SECONDS:
         remaining = int(_RATE_LIMIT_SECONDS - (now_ts - last_attempt))
         raise BadRequestError(f"Please wait {remaining} seconds before trying again.")
-    _rate_limit[rate_key] = now_ts
 
     # --- 4. Validate GPS ---
     has_session_gps = session.latitude is not None and session.longitude is not None
@@ -255,6 +251,12 @@ async def verify_attendance(
     record, is_new = await AttendanceRecordService.record_recognition(
         db, session.id, current_user.id, similarity
     )
+
+    # --- 9. Consume nonce + set rate limit only after success ---
+    if nonce:
+        _used_nonces[session.id].add(nonce)
+        _nonce_timestamps[session.id] = time.time()
+    _rate_limit[rate_key] = time.time()
 
     if not is_new:
         return VerifyAttendanceResponse(

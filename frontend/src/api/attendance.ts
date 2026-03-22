@@ -87,3 +87,31 @@ export async function batchManualAttendance(
   );
   return data;
 }
+
+export async function exportSessionCSV(sessionId: number): Promise<void> {
+  const response = await apiClient.get(`/attendance/session/${sessionId}/export`, {
+    responseType: "blob",
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const a = document.createElement("a");
+  a.href = url;
+  const disposition = response.headers["content-disposition"] || "";
+  const match = disposition.match(/filename=(.+)/);
+  a.download = match ? match[1] : `attendance_session_${sessionId}.csv`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function exportCourseCSV(courseId: number): Promise<void> {
+  const response = await apiClient.get(`/attendance/course/${courseId}/export`, {
+    responseType: "blob",
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const a = document.createElement("a");
+  a.href = url;
+  const disposition = response.headers["content-disposition"] || "";
+  const match = disposition.match(/filename=(.+)/);
+  a.download = match ? match[1] : `attendance_course_${courseId}.csv`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}

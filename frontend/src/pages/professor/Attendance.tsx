@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  Button,
   Select,
   Space,
   Table,
@@ -7,11 +8,12 @@ import {
   Typography,
   message,
 } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { AttendanceRecord, AttendanceSession, Course } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSessions } from "@/api/sessions";
-import { getSessionAttendance, updateAttendanceStatus } from "@/api/attendance";
+import { exportCourseCSV, exportSessionCSV, getSessionAttendance, updateAttendanceStatus } from "@/api/attendance";
 
 const { Title, Text } = Typography;
 
@@ -157,12 +159,32 @@ export default function ProfessorAttendance() {
       </Space>
 
       {selectedSession && records.length > 0 && (
-        <Space style={{ marginBottom: 16 }}>
-          <Tag color="green">{presentCount} Present</Tag>
-          <Tag color="orange">{lateCount} Late</Tag>
-          <Tag color="red">{absentCount} Absent</Tag>
-          <Text type="secondary">{records.length} total</Text>
-        </Space>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <Space>
+            <Tag color="green">{presentCount} Present</Tag>
+            <Tag color="orange">{lateCount} Late</Tag>
+            <Tag color="red">{absentCount} Absent</Tag>
+            <Text type="secondary">{records.length} total</Text>
+          </Space>
+          <Space>
+            {selectedSession && (
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => exportSessionCSV(selectedSession).catch(() => message.error("Export failed"))}
+              >
+                Export Session
+              </Button>
+            )}
+            {selectedCourse && (
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error("Export failed"))}
+              >
+                Export Course
+              </Button>
+            )}
+          </Space>
+        </div>
       )}
 
       <Table

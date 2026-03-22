@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  Button,
   Card,
   Col,
   Row,
@@ -11,10 +12,12 @@ import {
   Typography,
   message,
 } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { AttendanceSession, Course } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSessions } from "@/api/sessions";
+import { exportCourseCSV } from "@/api/attendance";
 
 const { Title } = Typography;
 
@@ -119,7 +122,7 @@ export default function AttendanceOverview() {
         </Col>
       </Row>
 
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16 }} wrap>
         <Select
           placeholder="Filter by course"
           value={selectedCourse}
@@ -131,6 +134,14 @@ export default function AttendanceOverview() {
             label: `${c.code} — ${c.name}`,
           }))}
         />
+        {selectedCourse && (
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error("Export failed"))}
+          >
+            Export CSV
+          </Button>
+        )}
       </Space>
 
       <Table

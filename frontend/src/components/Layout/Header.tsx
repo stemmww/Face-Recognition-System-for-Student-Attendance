@@ -12,10 +12,11 @@ import {
   Tag,
   Typography,
 } from "antd";
-import { BellOutlined, LogoutOutlined, MenuOutlined, UserOutlined } from "@ant-design/icons";
+import { BellOutlined, LogoutOutlined, MenuOutlined, MoonOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
 import type { Notification, User } from "@/types";
 import { ROLE_LABELS } from "@/utils/constants";
 import { getUnreadCount, listNotifications, markRead, markAllRead } from "@/api/notifications";
+import { useThemeStore } from "@/stores/themeStore";
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -35,6 +36,7 @@ const roleColors: Record<string, string> = {
 
 export default function Header({ user, onLogout, isMobile, onMenuClick }: Props) {
   const navigate = useNavigate();
+  const { isDark, toggle: toggleTheme } = useThemeStore();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [bellOpen, setBellOpen] = useState(false);
@@ -117,7 +119,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
         renderItem={(n) => (
           <List.Item
             style={{
-              background: n.is_read ? undefined : "#eef2ff",
+              background: n.is_read ? undefined : (isDark ? "rgba(99,102,241,0.15)" : "#eef2ff"),
               cursor: n.is_read ? "default" : "pointer",
               padding: "8px 12px",
               borderRadius: 6,
@@ -146,13 +148,13 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
     <AntHeader
       style={{
         padding: isMobile ? "0 12px" : "0 24px",
-        background: "#fff",
+        background: isDark ? "#1f2937" : "#fff",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderBottom: "1px solid #e2e8f0",
+        borderBottom: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
         gap: isMobile ? 8 : 16,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.04)",
       }}
     >
       {/* Left: hamburger on mobile */}
@@ -162,13 +164,20 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
             type="text"
             icon={<MenuOutlined style={{ fontSize: 18 }} />}
             onClick={onMenuClick}
-            style={{ color: "#475569" }}
+            style={{ color: isDark ? "#c7d2fe" : "#475569" }}
           />
         )}
       </div>
 
-      {/* Right: notifications, role, user */}
+      {/* Right: theme toggle, notifications, role, user */}
       <Space size={isMobile ? 8 : 16}>
+        <Button
+          type="text"
+          icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+          onClick={toggleTheme}
+          style={{ color: isDark ? "#facc15" : "#475569", fontSize: 18 }}
+        />
+
         <Popover
           content={bellContent}
           title="Notifications"
@@ -178,7 +187,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
           placement="bottomRight"
         >
           <Badge count={unreadCount} size="small" offset={[-2, 2]}>
-            <BellOutlined style={{ fontSize: 18, cursor: "pointer", color: "#475569" }} />
+            <BellOutlined style={{ fontSize: 18, cursor: "pointer", color: isDark ? "#c7d2fe" : "#475569" }} />
           </Badge>
         </Popover>
 
@@ -200,7 +209,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
               style={{ backgroundColor: user.photo_url ? undefined : "#6366f1" }}
             />
             {!isMobile && (
-              <Text strong style={{ color: "#1e293b" }}>
+              <Text strong style={{ color: isDark ? "#e2e8f0" : "#1e293b" }}>
                 {user.first_name} {user.last_name}
               </Text>
             )}

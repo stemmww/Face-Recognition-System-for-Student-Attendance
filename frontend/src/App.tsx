@@ -202,7 +202,32 @@ export default function App() {
     <ConfigProvider
       theme={{
         algorithm: theme.defaultAlgorithm,
-        token: { colorPrimary: "#1677ff", borderRadius: 6 },
+        token: {
+          colorPrimary: "#6366f1",
+          colorInfo: "#6366f1",
+          colorSuccess: "#10b981",
+          colorWarning: "#f59e0b",
+          colorError: "#ef4444",
+          colorBgLayout: "#f1f5f9",
+          borderRadius: 8,
+          fontFamily:
+            "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        },
+        components: {
+          Button: {
+            colorPrimary: "#6366f1",
+            algorithm: true,
+          },
+          Menu: {
+            darkItemBg: "transparent",
+            darkItemSelectedBg: "rgba(99,102,241,0.25)",
+            darkItemHoverBg: "rgba(99,102,241,0.15)",
+            darkItemSelectedColor: "#c7d2fe",
+          },
+          Card: {
+            borderRadiusLG: 12,
+          },
+        },
       }}
     >
       <BrowserRouter>

@@ -32,3 +32,18 @@ class UserOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class BulkImportRow(BaseModel):
+    email: str
+    first_name: str
+    last_name: str
+    password: str
+    course_codes: list[str] = []
+
+
+class BulkImportResult(BaseModel):
+    created: int
+    skipped: int
+    enrolled: int
+    errors: list[str]

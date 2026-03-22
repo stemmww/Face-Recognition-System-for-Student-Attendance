@@ -5,6 +5,7 @@ import {
   Card,
   Col,
   Row,
+  Select,
   Statistic,
   Table,
   Tag,
@@ -17,11 +18,22 @@ import {
   FileTextOutlined,
   PlayCircleOutlined,
 } from "@ant-design/icons";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { useAuth } from "@/hooks/useAuth";
 import type { Course, AttendanceSession } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSessions } from "@/api/sessions";
 import { listAppeals } from "@/api/appeals";
+import { getCourseTrends, type SessionTrendPoint } from "@/api/statistics";
 
 const { Title, Text } = Typography;
 
@@ -32,6 +44,9 @@ export default function ProfessorDashboard() {
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [pendingAppeals, setPendingAppeals] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [trendCourse, setTrendCourse] = useState<number | undefined>(undefined);
+  const [trendData, setTrendData] = useState<SessionTrendPoint[]>([]);
+  const [trendLoading, setTrendLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -53,6 +68,25 @@ export default function ProfessorDashboard() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (trendCourse) {
+      setTrendLoading(true);
+      getCourseTrends(trendCourse)
+        .then(setTrendData)
+        .catch(() => message.error("Failed to load trends"))
+        .finally(() => setTrendLoading(false));
+    } else {
+      setTrendData([]);
+    }
+  }, [trendCourse]);
+
+  // Auto-select first course for trends
+  useEffect(() => {
+    if (courses.length > 0 && !trendCourse) {
+      setTrendCourse(courses[0].id);
+    }
+  }, [courses, trendCourse]);
 
   const activeSessions = sessions.filter((s) => s.status === "active");
   const recentSessions = sessions.slice(0, 5);
@@ -108,6 +142,38 @@ export default function ProfessorDashboard() {
           </Card>
         </Col>
       </Row>
+
+      {/* Attendance trend chart */}
+      <Card
+        title="Attendance Trends"
+        extra={
+          <Select
+            value={trendCourse}
+            onChange={setTrendCourse}
+            style={{ width: 240 }}
+            options={courses.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
+          />
+        }
+        loading={trendLoading}
+        style={{ marginBottom: 24 }}
+      >
+        {trendData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="date" fontSize={12} />
+              <YAxis fontSize={12} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="present" name="Present" fill="#52c41a" stackId="a" />
+              <Bar dataKey="late" name="Late" fill="#fa8c16" stackId="a" />
+              <Bar dataKey="absent" name="Absent" fill="#ff4d4f" stackId="a" />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <Text type="secondary">No attendance data for this course yet</Text>
+        )}
+      </Card>
 
       <Row gutter={16}>
         <Col xs={24} md={12}>

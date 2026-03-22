@@ -34,3 +34,19 @@ export async function updateUser(
 export async function deactivateUser(userId: number): Promise<void> {
   await apiClient.delete(`/users/${userId}`);
 }
+
+export interface BulkImportResult {
+  created: number;
+  skipped: number;
+  enrolled: number;
+  errors: string[];
+}
+
+export async function importStudentsCSV(file: File): Promise<BulkImportResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await apiClient.post<BulkImportResult>("/users/import-csv", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}

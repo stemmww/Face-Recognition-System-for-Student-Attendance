@@ -1,6 +1,9 @@
 """Student self-service attendance verification via QR + face + GPS."""
 
 import logging
+import time
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 
 import cv2
 import numpy as np
@@ -14,17 +17,77 @@ from app.api.deps import get_current_user
 from app.config import settings
 from app.core.exceptions import BadRequestError, ForbiddenError
 from app.database import get_db
+from app.models.attendance import AttendanceRecord
 from app.models.attendance_session import AttendanceSession, SessionStatus
 from app.models.enrollment import Enrollment
 from app.models.user import Role, User
-from app.schemas.attendance import VerifyAttendanceResponse
+from app.schemas.attendance import LivenessChallengeOut, VerifyAttendanceResponse
 from app.services.attendance_service import AttendanceRecordService, AttendanceSessionService
 from app.services.face_service import FaceService
 from app.utils.geo import haversine_distance
-from app.utils.liveness import is_live
+from app.utils.liveness import (
+    ChallengeType,
+    generate_challenge,
+    get_challenge_instruction,
+    is_live,
+    validate_challenge,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# --- In-memory nonce tracking (one-time-use QR tokens) ---
+_used_nonces: dict[int, set[str]] = defaultdict(set)
+_nonce_timestamps: dict[int, float] = {}
+_NONCE_CACHE_TTL = 3600 * 4  # 4 hours
+
+# --- Rate limiting per (student_id, session_id) ---
+_rate_limit: dict[tuple[int, int], float] = {}
+_RATE_LIMIT_SECONDS = 60
+
+
+def _cleanup_expired_nonces() -> None:
+    now = time.time()
+    expired = [sid for sid, ts in _nonce_timestamps.items() if now - ts > _NONCE_CACHE_TTL]
+    for sid in expired:
+        _used_nonces.pop(sid, None)
+        _nonce_timestamps.pop(sid, None)
+
+
+@router.post("/challenge", response_model=LivenessChallengeOut)
+async def get_liveness_challenge(
+    token: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate a random liveness challenge tied to the session + student."""
+    if current_user.role != Role.STUDENT:
+        raise ForbiddenError("Only students can request challenges")
+
+    session_id = _decode_qr_token(token)
+    session = await AttendanceSessionService.get_session(db, session_id)
+    if session.status != SessionStatus.ACTIVE:
+        raise BadRequestError("Session is not active")
+
+    challenge = generate_challenge()
+    instruction = get_challenge_instruction(challenge)
+
+    challenge_token = jwt.encode(
+        {
+            "challenge": challenge.value,
+            "student_id": current_user.id,
+            "session_id": session_id,
+            "exp": int((datetime.now(timezone.utc) + timedelta(seconds=120)).timestamp()),
+        },
+        settings.JWT_SECRET_KEY,
+        algorithm="HS256",
+    )
+
+    return LivenessChallengeOut(
+        challenge_type=challenge.value,
+        instruction=instruction,
+        token=challenge_token,
+    )
 
 
 @router.post("/verify", response_model=VerifyAttendanceResponse)
@@ -33,6 +96,7 @@ async def verify_attendance(
     frames: list[UploadFile] = File(...),
     latitude: float | None = Form(None),
     longitude: float | None = Form(None),
+    challenge_token: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -49,9 +113,20 @@ async def verify_attendance(
         raise BadRequestError("Session is not active")
 
     try:
-        jwt.decode(token, session.qr_secret, algorithms=["HS256"])
+        payload = jwt.decode(token, session.qr_secret, algorithms=["HS256"])
     except JWTError:
         raise BadRequestError("Invalid or expired QR token")
+
+    # --- 2.5. One-time nonce check ---
+    _cleanup_expired_nonces()
+    nonce = payload.get("nonce")
+    if nonce:
+        if nonce in _used_nonces[session.id]:
+            raise BadRequestError(
+                "This QR code has already been used. Please scan the current QR code."
+            )
+        _used_nonces[session.id].add(nonce)
+        _nonce_timestamps[session.id] = time.time()
 
     # --- 3. Verify student is enrolled in this course ---
     from app.models.schedule import Schedule
@@ -69,9 +144,40 @@ async def verify_attendance(
     if enrolled.scalar_one_or_none() is None:
         raise ForbiddenError("You are not enrolled in this course")
 
-    # --- 4. Validate GPS (only when both sides provided coords) ---
+    # --- 3.5. Early duplicate check (skip expensive ops if already recorded) ---
+    existing_result = await db.execute(
+        select(AttendanceRecord).where(
+            AttendanceRecord.session_id == session.id,
+            AttendanceRecord.student_id == current_user.id,
+        )
+    )
+    existing_record = existing_result.scalar_one_or_none()
+    if existing_record is not None:
+        return VerifyAttendanceResponse(
+            success=True,
+            status=existing_record.status,
+            message="Your attendance was already recorded for this session.",
+        )
+
+    # --- 3.6. Rate limiting ---
+    rate_key = (current_user.id, session.id)
+    now_ts = time.time()
+    last_attempt = _rate_limit.get(rate_key, 0)
+    if now_ts - last_attempt < _RATE_LIMIT_SECONDS:
+        remaining = int(_RATE_LIMIT_SECONDS - (now_ts - last_attempt))
+        raise BadRequestError(f"Please wait {remaining} seconds before trying again.")
+    _rate_limit[rate_key] = now_ts
+
+    # --- 4. Validate GPS ---
     has_session_gps = session.latitude is not None and session.longitude is not None
     has_student_gps = latitude is not None and longitude is not None
+
+    if has_session_gps and not has_student_gps:
+        raise BadRequestError(
+            "GPS location is required for this session. "
+            "Please enable location services and try again."
+        )
+
     if has_session_gps and has_student_gps:
         distance = haversine_distance(
             session.latitude, session.longitude, latitude, longitude
@@ -111,6 +217,24 @@ async def verify_attendance(
                 "Liveness check failed — a live face is required. "
                 "Photos and screens are not accepted."
             )
+
+        # --- 6.5. Active challenge validation ---
+        if challenge_token:
+            try:
+                ch_payload = jwt.decode(
+                    challenge_token, settings.JWT_SECRET_KEY, algorithms=["HS256"]
+                )
+                if ch_payload.get("student_id") != current_user.id:
+                    raise BadRequestError("Challenge token does not match current user")
+                if ch_payload.get("session_id") != session_id:
+                    raise BadRequestError("Challenge token does not match session")
+
+                challenge_type = ChallengeType(ch_payload["challenge"])
+                passed, reason = validate_challenge(challenge_type, frame_landmarks)
+                if not passed:
+                    raise BadRequestError(f"Liveness challenge failed: {reason}")
+            except JWTError:
+                raise BadRequestError("Invalid or expired challenge token")
 
     # --- 7. Face recognition on the last frame ---
     image = images[-1]

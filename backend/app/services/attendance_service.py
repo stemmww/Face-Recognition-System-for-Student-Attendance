@@ -54,6 +54,7 @@ class AttendanceSessionService:
         started_by: int,
         latitude: float | None = None,
         longitude: float | None = None,
+        qr_interval_seconds: int | None = None,
     ) -> AttendanceSession:
         schedule = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
         if schedule.scalar_one_or_none() is None:
@@ -77,6 +78,7 @@ class AttendanceSessionService:
             latitude=latitude,
             longitude=longitude,
             qr_secret=secrets.token_hex(32),
+            qr_interval_seconds=qr_interval_seconds,
         )
         db.add(session)
         await db.commit()
@@ -359,6 +361,44 @@ class AttendanceRecordService:
                 "attendance_rate": round(rate, 1),
             })
         return summaries
+
+    @staticmethod
+    async def batch_manual_record(
+        db: AsyncSession,
+        session_id: int,
+        entries: list[dict],
+    ) -> list[AttendanceRecord]:
+        """Create or update attendance records manually (professor roll call)."""
+        records = []
+        for entry in entries:
+            student_id = entry["student_id"]
+            status = entry["status"]
+
+            existing = await db.execute(
+                select(AttendanceRecord).where(
+                    AttendanceRecord.session_id == session_id,
+                    AttendanceRecord.student_id == student_id,
+                )
+            )
+            record = existing.scalar_one_or_none()
+
+            if record is not None:
+                record.status = status
+                record.marked_by = MarkedBy.PROFESSOR
+            else:
+                record = AttendanceRecord(
+                    student_id=student_id,
+                    session_id=session_id,
+                    status=status,
+                    marked_by=MarkedBy.PROFESSOR,
+                )
+                db.add(record)
+            records.append(record)
+
+        await db.commit()
+        for r in records:
+            await db.refresh(r)
+        return records
 
     @staticmethod
     async def update_status(

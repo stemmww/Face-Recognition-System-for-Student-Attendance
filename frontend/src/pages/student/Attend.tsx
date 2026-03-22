@@ -18,12 +18,14 @@ import {
   ScanOutlined,
 } from "@ant-design/icons";
 import { Html5Qrcode } from "html5-qrcode";
-import { verifyAttendance } from "@/api/attend";
+import { fetchChallenge, verifyAttendance, type LivenessChallenge } from "@/api/attend";
 import type { VerifyAttendanceResponse } from "@/types";
 
 const { Title, Text } = Typography;
 
 const SCANNER_ELEMENT_ID = "qr-reader";
+const FRAME_COUNT = 5;
+const FRAME_DELAY_MS = 400;
 
 type Step = "scan" | "face" | "verifying" | "done";
 
@@ -34,6 +36,14 @@ export default function Attend() {
   const [cameraFailed, setCameraFailed] = useState(false);
   const [result, setResult] = useState<VerifyAttendanceResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Challenge state
+  const [challenge, setChallenge] = useState<LivenessChallenge | null>(null);
+  const [loadingChallenge, setLoadingChallenge] = useState(false);
+
+  // Capture UX state
+  const [captureProgress, setCaptureProgress] = useState(0);
+  const [flashActive, setFlashActive] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -85,10 +95,27 @@ export default function Attend() {
     setStep("face");
   };
 
-  // --- Step 2: Face capture ---
+  // --- Step 2: Face capture + challenge ---
   useEffect(() => {
     if (step !== "face") return;
     let cancelled = false;
+
+    // Fetch liveness challenge
+    if (qrToken) {
+      setLoadingChallenge(true);
+      fetchChallenge(qrToken)
+        .then((ch) => {
+          if (!cancelled) setChallenge(ch);
+        })
+        .catch(() => {
+          // Challenge endpoint unavailable — proceed without
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingChallenge(false);
+        });
+    }
+
+    // Start front camera
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -106,12 +133,13 @@ export default function Attend() {
         setError("Could not access front camera. Please allow camera permissions.");
       }
     })();
+
     return () => {
       cancelled = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
-  }, [step]);
+  }, [step, qrToken]);
 
   const captureAndVerify = async () => {
     if (!videoRef.current || !qrToken) return;
@@ -129,15 +157,20 @@ export default function Attend() {
 
     const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-    // Capture 3 frames ~500ms apart while video is still mounted
+    // Capture frames with visual feedback
     const blobs: Blob[] = [];
-    for (let i = 0; i < 3; i++) {
+    setCaptureProgress(0);
+    for (let i = 0; i < FRAME_COUNT; i++) {
       blobs.push(await captureFrame());
-      if (i < 2) await delay(500);
+      setCaptureProgress(i + 1);
+      setFlashActive(true);
+      setTimeout(() => setFlashActive(false), 150);
+      if (i < FRAME_COUNT - 1) await delay(FRAME_DELAY_MS);
     }
 
-    // Only NOW switch to the verifying UI and stop the camera
+    // Switch to verifying UI and stop camera
     setStep("verifying");
+    setCaptureProgress(0);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
 
@@ -153,7 +186,7 @@ export default function Attend() {
       latitude = pos.coords.latitude;
       longitude = pos.coords.longitude;
     } catch {
-      // GPS unavailable — silently skip, backend handles missing coords
+      // GPS unavailable — let server decide if mandatory
     }
 
     try {
@@ -162,6 +195,7 @@ export default function Attend() {
         frames: blobs,
         latitude,
         longitude,
+        challenge_token: challenge?.token ?? null,
       });
       setResult(res);
       setStep("done");
@@ -177,6 +211,8 @@ export default function Attend() {
     setQrToken(null);
     setResult(null);
     setError(null);
+    setChallenge(null);
+    setCaptureProgress(0);
   };
 
   const currentStep = step === "scan" ? 0 : step === "face" ? 1 : 2;
@@ -240,11 +276,26 @@ export default function Attend() {
         </Card>
       )}
 
-      {/* Step 2: Face capture */}
+      {/* Step 2: Face capture + challenge */}
       {step === "face" && (
         <Card>
           <div style={{ textAlign: "center" }}>
             <Title level={5}>Position your face in the frame</Title>
+
+            {/* Challenge instruction */}
+            {loadingChallenge && (
+              <Spin size="small" style={{ marginBottom: 12 }} />
+            )}
+            {challenge && !loadingChallenge && (
+              <Alert
+                type="info"
+                message={challenge.instruction}
+                style={{ marginBottom: 16, fontSize: 16, fontWeight: "bold" }}
+                showIcon
+                banner
+              />
+            )}
+
             <div
               style={{
                 position: "relative",
@@ -253,6 +304,10 @@ export default function Attend() {
                 borderRadius: 12,
                 overflow: "hidden",
                 background: "#000",
+                border: flashActive
+                  ? "4px solid rgba(255,255,255,0.8)"
+                  : "4px solid transparent",
+                transition: "border 0.1s ease",
               }}
             >
               <video
@@ -280,6 +335,23 @@ export default function Attend() {
                   pointerEvents: "none",
                 }}
               />
+              {/* Capture progress indicator */}
+              {captureProgress > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    background: "rgba(0,0,0,0.6)",
+                    color: "#fff",
+                    padding: "4px 12px",
+                    borderRadius: 8,
+                    fontSize: 14,
+                  }}
+                >
+                  Capturing {captureProgress}/{FRAME_COUNT}...
+                </div>
+              )}
             </div>
             <Space direction="vertical" style={{ marginTop: 16 }}>
               <Button
@@ -287,11 +359,16 @@ export default function Attend() {
                 size="large"
                 icon={<CameraOutlined />}
                 onClick={captureAndVerify}
+                disabled={captureProgress > 0}
               >
-                Capture & Verify
+                {captureProgress > 0
+                  ? `Capturing ${captureProgress}/${FRAME_COUNT}...`
+                  : "Capture & Verify"}
               </Button>
               <Text type="secondary">
-                Make sure your face is clearly visible and well-lit
+                {challenge
+                  ? `Perform the action above, then tap Capture & Verify`
+                  : "Make sure your face is clearly visible and well-lit"}
               </Text>
             </Space>
             {error && (
@@ -310,7 +387,7 @@ export default function Attend() {
               Verifying your identity...
             </Title>
             <Text type="secondary">
-              Checking QR code, GPS location, and face recognition
+              Checking QR code, GPS location, liveness, and face recognition
             </Text>
           </div>
         </Card>

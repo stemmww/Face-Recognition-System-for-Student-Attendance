@@ -1,12 +1,21 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.rbac import require_role
 from app.database import get_db
+from app.models.enrollment import Enrollment
+from app.models.schedule import Schedule
 from app.models.user import Role, User
-from app.schemas.attendance import AttendanceRecordOut, AttendanceStatusUpdate, CourseAttendanceSummary, StudentCourseRecordOut
-from app.services.attendance_service import AttendanceRecordService
+from app.schemas.attendance import (
+    AttendanceRecordOut,
+    AttendanceStatusUpdate,
+    CourseAttendanceSummary,
+    ManualAttendanceBatchCreate,
+    StudentCourseRecordOut,
+)
+from app.services.attendance_service import AttendanceRecordService, AttendanceSessionService
 
 router = APIRouter()
 
@@ -73,3 +82,61 @@ async def update_attendance_status(
         "student_name": None,
         "student_email": None,
     }
+
+
+@router.get("/session/{session_id}/enrolled-students")
+async def get_enrolled_students_for_session(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+):
+    """Get all enrolled students for the course associated with this session."""
+    session = await AttendanceSessionService.get_session(db, session_id)
+    sched = await db.execute(select(Schedule).where(Schedule.id == session.schedule_id))
+    schedule = sched.scalar_one()
+
+    enrolled = await db.execute(
+        select(User)
+        .join(Enrollment, Enrollment.student_id == User.id)
+        .where(Enrollment.course_id == schedule.course_id)
+        .order_by(User.last_name, User.first_name)
+    )
+    students = enrolled.scalars().all()
+    return [
+        {
+            "id": s.id,
+            "first_name": s.first_name,
+            "last_name": s.last_name,
+            "email": s.email,
+        }
+        for s in students
+    ]
+
+
+@router.post("/session/{session_id}/manual-batch", response_model=list[AttendanceRecordOut])
+async def manual_batch_attendance(
+    session_id: int,
+    body: ManualAttendanceBatchCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+):
+    """Manually record attendance for multiple students (roll call fallback)."""
+    records = await AttendanceRecordService.batch_manual_record(
+        db, session_id, [e.model_dump() for e in body.entries]
+    )
+    result = []
+    for record in records:
+        user_result = await db.execute(select(User).where(User.id == record.student_id))
+        user = user_result.scalar_one_or_none()
+        result.append({
+            "id": record.id,
+            "student_id": record.student_id,
+            "session_id": record.session_id,
+            "status": record.status,
+            "recognized_at": record.recognized_at,
+            "marked_by": record.marked_by,
+            "updated_at": record.updated_at,
+            "student_name": f"{user.first_name} {user.last_name}" if user else None,
+            "student_email": user.email if user else None,
+        })
+    return result

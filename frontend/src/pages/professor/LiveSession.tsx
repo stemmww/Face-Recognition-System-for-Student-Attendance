@@ -14,6 +14,7 @@ import {
   Row,
   Select,
   Space,
+  Tabs,
   Tag,
   Typography,
   message,
@@ -22,8 +23,10 @@ import {
   CheckCircleFilled,
   ClockCircleFilled,
   CloseCircleFilled,
+  OrderedListOutlined,
   PlayCircleOutlined,
   QrcodeOutlined,
+  SaveOutlined,
   StopOutlined,
 } from "@ant-design/icons";
 import { QRCodeSVG } from "qrcode.react";
@@ -32,12 +35,15 @@ import type { AttendanceSession, Course, QRToken, Schedule } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSchedules } from "@/api/schedules";
 import { getQRToken, listSessions, startSession, stopSession } from "@/api/sessions";
-import { getSessionAttendance } from "@/api/attendance";
+import {
+  batchManualAttendance,
+  getEnrolledStudentsForSession,
+  getSessionAttendance,
+  type EnrolledStudent,
+} from "@/api/attendance";
 import type { AttendanceRecord } from "@/types";
 
 const { Title, Text } = Typography;
-
-const QR_REFRESH_INTERVAL = 25_000;
 
 const statusConfig = {
   present: { color: "green", icon: <CheckCircleFilled style={{ color: "#52c41a" }} />, label: "Present" },
@@ -57,6 +63,7 @@ export default function LiveSession() {
   const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [startModalOpen, setStartModalOpen] = useState(false);
+  const [qrIntervalSeconds, setQrIntervalSeconds] = useState(45);
 
   const [activeSession, setActiveSession] = useState<AttendanceSession | null>(null);
   const [sessionRecords, setSessionRecords] = useState<AttendanceRecord[]>([]);
@@ -65,6 +72,11 @@ export default function LiveSession() {
   const [qrToken, setQrToken] = useState<QRToken | null>(null);
   const [qrSeconds, setQrSeconds] = useState(0);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Manual roll call state
+  const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
+  const [manualStatuses, setManualStatuses] = useState<Record<number, string>>({});
+  const [savingManual, setSavingManual] = useState(false);
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -129,7 +141,8 @@ export default function LiveSession() {
       return;
     }
     fetchQR();
-    const interval = setInterval(fetchQR, QR_REFRESH_INTERVAL);
+    const refreshMs = ((qrToken?.interval_seconds ?? 45) - 5) * 1000;
+    const interval = setInterval(fetchQR, refreshMs);
     return () => clearInterval(interval);
   }, [activeSession, fetchQR]);
 
@@ -144,6 +157,49 @@ export default function LiveSession() {
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
   }, [qrToken]);
+
+  // Fetch enrolled students when session becomes active
+  useEffect(() => {
+    if (!activeSession) {
+      setEnrolledStudents([]);
+      setManualStatuses({});
+      return;
+    }
+    getEnrolledStudentsForSession(activeSession.id)
+      .then(setEnrolledStudents)
+      .catch(() => {});
+  }, [activeSession]);
+
+  // Initialize manual statuses from existing records
+  useEffect(() => {
+    if (enrolledStudents.length === 0) return;
+    const statuses: Record<number, string> = {};
+    for (const student of enrolledStudents) {
+      const existing = sessionRecords.find((r) => r.student_id === student.id);
+      statuses[student.id] = existing?.status ?? "absent";
+    }
+    setManualStatuses(statuses);
+  }, [enrolledStudents, sessionRecords]);
+
+  const handleSaveManual = async () => {
+    if (!activeSession) return;
+    setSavingManual(true);
+    try {
+      const entries = Object.entries(manualStatuses).map(([studentId, status]) => ({
+        student_id: Number(studentId),
+        status,
+      }));
+      await batchManualAttendance(activeSession.id, entries);
+      message.success("Roll call saved successfully");
+      // Refresh session records
+      const records = await getSessionAttendance(activeSession.id);
+      setSessionRecords(records);
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || "Failed to save roll call");
+    } finally {
+      setSavingManual(false);
+    }
+  };
 
   const handleStart = async () => {
     if (!selectedSchedule || !selectedDate) return;
@@ -170,6 +226,7 @@ export default function LiveSession() {
         date: selectedDate.format("YYYY-MM-DD"),
         latitude: latitude ?? null,
         longitude: longitude ?? null,
+        qr_interval_seconds: qrIntervalSeconds,
       });
       setActiveSession(session);
       setStartModalOpen(false);
@@ -229,113 +286,192 @@ export default function LiveSession() {
           )}
         </Card>
       ) : (
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={16}>
-            <Card
-              title="Recognized Students"
-              extra={
-                <Space>
-                  <Badge count={presentCount} style={{ backgroundColor: "#52c41a" }} />
-                  <Text type="secondary">Present</Text>
-                  <Badge count={lateCount} style={{ backgroundColor: "#fa8c16" }} />
-                  <Text type="secondary">Late</Text>
-                  <Badge count={absentCount} style={{ backgroundColor: "#ff4d4f" }} />
-                  <Text type="secondary">Absent</Text>
-                </Space>
-              }
-            >
-              {sessionRecords.length === 0 ? (
-                <Empty description="Waiting for students to scan the QR code and verify their face..." />
-              ) : (
-                <List
-                  dataSource={sessionRecords}
-                  renderItem={(record) => {
-                    const cfg = statusConfig[record.status];
-                    return (
-                      <List.Item>
-                        <List.Item.Meta
-                          avatar={cfg.icon}
-                          title={record.student_name || `Student #${record.student_id}`}
-                          description={record.student_email}
-                        />
+        <Tabs
+          defaultActiveKey="qr"
+          items={[
+            {
+              key: "qr",
+              label: (
+                <span><QrcodeOutlined /> QR Attendance</span>
+              ),
+              children: (
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} lg={16}>
+                    <Card
+                      title="Recognized Students"
+                      extra={
                         <Space>
-                          <Tag color={cfg.color}>{cfg.label}</Tag>
-                          {record.recognized_at && (
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              {dayjs(record.recognized_at).format("HH:mm:ss")}
-                            </Text>
-                          )}
-                          <Tag>{record.marked_by}</Tag>
+                          <Badge count={presentCount} style={{ backgroundColor: "#52c41a" }} />
+                          <Text type="secondary">Present</Text>
+                          <Badge count={lateCount} style={{ backgroundColor: "#fa8c16" }} />
+                          <Text type="secondary">Late</Text>
+                          <Badge count={absentCount} style={{ backgroundColor: "#ff4d4f" }} />
+                          <Text type="secondary">Absent</Text>
                         </Space>
-                      </List.Item>
-                    );
-                  }}
-                />
-              )}
-            </Card>
-          </Col>
+                      }
+                    >
+                      {sessionRecords.length === 0 ? (
+                        <Empty description="Waiting for students to scan the QR code and verify their face..." />
+                      ) : (
+                        <List
+                          dataSource={sessionRecords}
+                          renderItem={(record) => {
+                            const cfg = statusConfig[record.status];
+                            return (
+                              <List.Item>
+                                <List.Item.Meta
+                                  avatar={cfg.icon}
+                                  title={record.student_name || `Student #${record.student_id}`}
+                                  description={record.student_email}
+                                />
+                                <Space>
+                                  <Tag color={cfg.color}>{cfg.label}</Tag>
+                                  {record.recognized_at && (
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                      {dayjs(record.recognized_at).format("HH:mm:ss")}
+                                    </Text>
+                                  )}
+                                  <Tag>{record.marked_by}</Tag>
+                                </Space>
+                              </List.Item>
+                            );
+                          }}
+                        />
+                      )}
+                    </Card>
+                  </Col>
 
-          <Col xs={24} lg={8}>
-            {/* QR Code Card */}
-            <Card
-              title={
-                <Space>
-                  <QrcodeOutlined />
-                  <span>Attendance QR Code</span>
-                </Space>
-              }
-            >
-              {qrToken ? (
-                <div style={{ textAlign: "center" }}>
-                  <QRCodeSVG
-                    value={qrToken.token}
-                    size={220}
-                    level="M"
-                    style={{ margin: "0 auto" }}
-                  />
-                  <div style={{ marginTop: 16 }}>
-                    <Text type="secondary">Refreshes in</Text>
-                    <Progress
-                      type="circle"
-                      percent={Math.round((qrSeconds / 30) * 100)}
-                      format={() => `${qrSeconds}s`}
-                      size={50}
-                      style={{ marginLeft: 12 }}
-                    />
-                  </div>
-                  <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
-                    Project this QR code on screen for students to scan
-                  </Text>
-                </div>
-              ) : (
-                <Empty description="Generating QR code..." />
-              )}
-            </Card>
+                  <Col xs={24} lg={8}>
+                    <Card
+                      title={
+                        <Space>
+                          <QrcodeOutlined />
+                          <span>Attendance QR Code</span>
+                        </Space>
+                      }
+                    >
+                      {qrToken ? (
+                        <div style={{ textAlign: "center" }}>
+                          <QRCodeSVG
+                            value={qrToken.token}
+                            size={220}
+                            level="M"
+                            style={{ margin: "0 auto" }}
+                          />
+                          <div style={{ marginTop: 16 }}>
+                            <Text type="secondary">Refreshes in</Text>
+                            <Progress
+                              type="circle"
+                              percent={Math.round((qrSeconds / (qrToken?.interval_seconds ?? 45)) * 100)}
+                              format={() => `${qrSeconds}s`}
+                              size={50}
+                              style={{ marginLeft: 12 }}
+                            />
+                          </div>
+                          <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
+                            Project this QR code on screen for students to scan
+                          </Text>
+                        </div>
+                      ) : (
+                        <Empty description="Generating QR code..." />
+                      )}
+                    </Card>
 
-            <Card title="Session Info" style={{ marginTop: 16 }}>
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Session ID">{activeSession.id}</Descriptions.Item>
-                <Descriptions.Item label="Date">{activeSession.date}</Descriptions.Item>
-                <Descriptions.Item label="Started">
-                  {dayjs(activeSession.started_at).format("HH:mm:ss")}
-                </Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag color="green">Active</Tag>
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
+                    <Card title="Session Info" style={{ marginTop: 16 }}>
+                      <Descriptions column={1} size="small">
+                        <Descriptions.Item label="Session ID">{activeSession.id}</Descriptions.Item>
+                        <Descriptions.Item label="Date">{activeSession.date}</Descriptions.Item>
+                        <Descriptions.Item label="Started">
+                          {dayjs(activeSession.started_at).format("HH:mm:ss")}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Status">
+                          <Tag color="green">Active</Tag>
+                        </Descriptions.Item>
+                      </Descriptions>
+                    </Card>
 
-            <Card title="How It Works" style={{ marginTop: 16 }} size="small">
-              <ol style={{ paddingLeft: 16, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
-                <li>Start a session for a scheduled class</li>
-                <li>Project the QR code on screen</li>
-                <li>Students scan the QR and verify with face + GPS</li>
-                <li>Status is assigned based on arrival time</li>
-                <li>Stop the session to auto-mark absent students</li>
-              </ol>
-            </Card>
-          </Col>
-        </Row>
+                    <Card title="How It Works" style={{ marginTop: 16 }} size="small">
+                      <ol style={{ paddingLeft: 16, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
+                        <li>Start a session for a scheduled class</li>
+                        <li>Project the QR code on screen</li>
+                        <li>Students scan the QR and verify with face + GPS</li>
+                        <li>Status is assigned based on arrival time</li>
+                        <li>Stop the session to auto-mark absent students</li>
+                      </ol>
+                    </Card>
+                  </Col>
+                </Row>
+              ),
+            },
+            {
+              key: "rollcall",
+              label: (
+                <span><OrderedListOutlined /> Manual Roll Call</span>
+              ),
+              children: (
+                <Card
+                  title="Manual Roll Call"
+                  extra={
+                    <Button
+                      type="primary"
+                      icon={<SaveOutlined />}
+                      loading={savingManual}
+                      disabled={enrolledStudents.length === 0}
+                      onClick={handleSaveManual}
+                    >
+                      Save All
+                    </Button>
+                  }
+                >
+                  {enrolledStudents.length === 0 ? (
+                    <Empty description="No enrolled students found for this session's course." />
+                  ) : (
+                    <>
+                      <Alert
+                        type="info"
+                        message="Use this fallback when QR/face recognition isn't working. Select a status for each student and click Save All."
+                        showIcon
+                        style={{ marginBottom: 16 }}
+                      />
+                      <List
+                        dataSource={enrolledStudents}
+                        renderItem={(student) => {
+                          const status = manualStatuses[student.id] ?? "absent";
+                          const cfg = statusConfig[status as keyof typeof statusConfig];
+                          return (
+                            <List.Item
+                              actions={[
+                                <Select
+                                  key="status"
+                                  value={status}
+                                  onChange={(value) =>
+                                    setManualStatuses((prev) => ({ ...prev, [student.id]: value }))
+                                  }
+                                  style={{ width: 130 }}
+                                  options={[
+                                    { value: "present", label: "Present" },
+                                    { value: "late", label: "Late" },
+                                    { value: "absent", label: "Absent" },
+                                  ]}
+                                />,
+                              ]}
+                            >
+                              <List.Item.Meta
+                                avatar={cfg.icon}
+                                title={`${student.first_name} ${student.last_name}`}
+                                description={student.email}
+                              />
+                            </List.Item>
+                          );
+                        }}
+                      />
+                    </>
+                  )}
+                </Card>
+              ),
+            },
+          ]}
+        />
       )}
 
       {/* Start Session Modal */}
@@ -377,6 +513,20 @@ export default function LiveSession() {
             value={selectedDate}
             onChange={(d) => d && setSelectedDate(d)}
             style={{ width: "100%" }}
+          />
+
+          <Text strong>QR Code Rotation Interval</Text>
+          <Select
+            value={qrIntervalSeconds}
+            onChange={setQrIntervalSeconds}
+            style={{ width: "100%" }}
+            options={[
+              { value: 15, label: "15 seconds (high security)" },
+              { value: 30, label: "30 seconds" },
+              { value: 45, label: "45 seconds (default)" },
+              { value: 60, label: "60 seconds" },
+              { value: 90, label: "90 seconds (large room)" },
+            ]}
           />
 
           <Alert

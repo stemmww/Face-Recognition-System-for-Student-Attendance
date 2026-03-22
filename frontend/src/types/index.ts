@@ -53,6 +53,7 @@ export interface AttendanceSession {
   ended_at: string | null;
   started_by: number;
   status: "active" | "completed";
+  qr_interval_seconds: number | null;
 }
 
 export interface Notification {
@@ -82,6 +83,7 @@ export interface TokenResponse {
 export interface QRToken {
   token: string;
   expires_at: string;
+  interval_seconds: number;
 }
 
 export interface VerifyAttendanceResponse {

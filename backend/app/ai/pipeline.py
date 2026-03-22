@@ -81,17 +81,6 @@ class FacePipeline:
         )
         return largest.embedding, len(faces)
 
-    def extract_all_embeddings(
-        self, image: np.ndarray
-    ) -> list[tuple[np.ndarray, tuple[int, int, int, int], float]]:
-        """Extract embeddings for ALL faces in a frame.
-
-        Returns list of (embedding, bbox, detection_confidence).
-        Used during live attendance sessions.
-        """
-        faces = self.process_image(image)
-        return [(f.embedding, f.bbox, f.confidence) for f in faces]
-
     @staticmethod
     def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
         return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8))

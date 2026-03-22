@@ -55,3 +55,35 @@ export async function updateAttendanceStatus(
   const { data } = await apiClient.patch<AttendanceRecord>(`/attendance/${recordId}`, { status });
   return data;
 }
+
+export interface EnrolledStudent {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+export async function getEnrolledStudentsForSession(
+  sessionId: number,
+): Promise<EnrolledStudent[]> {
+  const { data } = await apiClient.get<EnrolledStudent[]>(
+    `/attendance/session/${sessionId}/enrolled-students`,
+  );
+  return data;
+}
+
+export interface ManualAttendanceEntry {
+  student_id: number;
+  status: string;
+}
+
+export async function batchManualAttendance(
+  sessionId: number,
+  entries: ManualAttendanceEntry[],
+): Promise<AttendanceRecord[]> {
+  const { data } = await apiClient.post<AttendanceRecord[]>(
+    `/attendance/session/${sessionId}/manual-batch`,
+    { entries },
+  );
+  return data;
+}

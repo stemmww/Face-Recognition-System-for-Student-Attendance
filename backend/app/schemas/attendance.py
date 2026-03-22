@@ -11,6 +11,7 @@ class SessionCreate(BaseModel):
     date: date
     latitude: float | None = None
     longitude: float | None = None
+    qr_interval_seconds: int | None = None
 
 
 class SessionOut(BaseModel):
@@ -21,6 +22,7 @@ class SessionOut(BaseModel):
     ended_at: datetime | None
     started_by: int
     status: SessionStatus
+    qr_interval_seconds: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -58,19 +60,6 @@ class AttendanceStatusUpdate(BaseModel):
     status: AttendanceStatus
 
 
-class RecognitionResult(BaseModel):
-    student_id: int
-    name: str
-    status: AttendanceStatus
-    confidence: float
-    is_new: bool = True
-
-
-class FrameProcessingResponse(BaseModel):
-    recognized: list[RecognitionResult]
-    unknown_faces: int
-
-
 class CourseAttendanceSummary(BaseModel):
     course_id: int
     course_code: str
@@ -101,6 +90,22 @@ class SessionDetailOut(BaseModel):
 class QRTokenOut(BaseModel):
     token: str
     expires_at: datetime
+    interval_seconds: int
+
+
+class LivenessChallengeOut(BaseModel):
+    challenge_type: str
+    instruction: str
+    token: str
+
+
+class ManualAttendanceEntry(BaseModel):
+    student_id: int
+    status: AttendanceStatus
+
+
+class ManualAttendanceBatchCreate(BaseModel):
+    entries: list[ManualAttendanceEntry]
 
 
 class VerifyAttendanceResponse(BaseModel):

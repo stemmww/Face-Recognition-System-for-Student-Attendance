@@ -6,6 +6,7 @@ export async function startSession(payload: {
   date: string;
   latitude?: number | null;
   longitude?: number | null;
+  qr_interval_seconds?: number | null;
 }): Promise<AttendanceSession> {
   const { data } = await apiClient.post<AttendanceSession>("/sessions", payload);
   return data;
@@ -27,28 +28,6 @@ export async function listSessions(params?: {
 
 export async function getSession(sessionId: number): Promise<AttendanceSession> {
   const { data } = await apiClient.get<AttendanceSession>(`/sessions/${sessionId}`);
-  return data;
-}
-
-export interface RecognitionResult {
-  student_id: number;
-  name: string;
-  status: string;
-  confidence: number;
-  is_new: boolean;
-}
-
-export interface FrameResponse {
-  recognized: RecognitionResult[];
-  unknown_faces: number;
-}
-
-export async function processFrame(sessionId: number, frame: Blob): Promise<FrameResponse> {
-  const form = new FormData();
-  form.append("frame", frame, "frame.jpg");
-  const { data } = await apiClient.post<FrameResponse>(`/sessions/${sessionId}/frame`, form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
   return data;
 }
 

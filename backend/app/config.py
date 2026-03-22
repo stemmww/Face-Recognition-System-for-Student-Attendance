@@ -12,13 +12,16 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
     AI_MODEL_PATH: str = "./models"
-    RECOGNITION_THRESHOLD: float = 0.4
+    RECOGNITION_THRESHOLD: float = 0.5
 
     UPLOAD_DIR: str = "./uploads"
 
-    QR_TOKEN_EXPIRE_SECONDS: int = 30
+    QR_TOKEN_EXPIRE_SECONDS: int = 45
     GPS_RADIUS_METERS: int = 200
-    LIVENESS_THRESHOLD: float = 0.0001
+    LIVENESS_THRESHOLD: float = 0.001
+    LIVENESS_BLINK_THRESHOLD: float = 0.15
+    LIVENESS_HEAD_TURN_THRESHOLD: float = 0.15
+    LIVENESS_NOD_THRESHOLD: float = 0.1
 
     ADMIN_EMAIL: str = "admin@attendance.edu"
     ADMIN_PASSWORD: str = "admin123"

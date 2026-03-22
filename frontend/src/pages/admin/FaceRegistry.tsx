@@ -207,10 +207,43 @@ export default function FaceRegistry() {
                     <UserOutlined />
                     <Text strong>{student.first_name} {student.last_name}</Text>
                     <Text type="secondary">{student.email}</Text>
-                    <Badge count={embeddings.length} showZero style={{ backgroundColor: embeddings.length > 0 ? "#52c41a" : "#d9d9d9" }}>
+                    <Badge
+                      count={embeddings.length}
+                      showZero
+                      style={{
+                        backgroundColor:
+                          embeddings.length === 0 ? "#ff4d4f" :
+                          embeddings.length < 3 ? "#fa8c16" :
+                          "#52c41a"
+                      }}
+                    >
                       <Tag>photos</Tag>
                     </Badge>
                   </Space>
+                  {embeddings.length < 3 && (
+                    <Alert
+                      type="warning"
+                      message={`${embeddings.length} photo(s) enrolled. We recommend at least 3 photos from different angles for reliable recognition.`}
+                      showIcon
+                      style={{ marginTop: 8 }}
+                    />
+                  )}
+                  {embeddings.length >= 3 && embeddings.length <= 5 && (
+                    <Alert
+                      type="success"
+                      message={`Good coverage: ${embeddings.length} photo(s) enrolled.`}
+                      showIcon
+                      style={{ marginTop: 8 }}
+                    />
+                  )}
+                  {embeddings.length > 5 && (
+                    <Alert
+                      type="info"
+                      message={`${embeddings.length} photos enrolled. 3–5 is typically sufficient.`}
+                      showIcon
+                      style={{ marginTop: 8 }}
+                    />
+                  )}
                 </Card>
               )}
 

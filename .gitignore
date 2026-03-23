@@ -34,7 +34,8 @@ frontend/dist/
 frontend/build/
 
 # AI model weights (too large for git)
-models/
+/models/
+/backend/models/
 *.onnx
 *.pt
 *.pth

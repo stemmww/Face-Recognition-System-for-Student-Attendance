@@ -39,6 +39,12 @@ services:
       UPLOAD_DIR: /app/uploads
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@attendance.edu}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@attendance.edu}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
     volumes:
       - uploads_data:/app/uploads
 

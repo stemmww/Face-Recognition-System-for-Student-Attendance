@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@attendance.edu"
     ADMIN_PASSWORD: str = "admin123"
 
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "noreply@attendance.edu"
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 15
+    FRONTEND_URL: str = "http://localhost:5173"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

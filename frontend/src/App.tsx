@@ -33,6 +33,7 @@ import Attend from "@/pages/student/Attend";
 
 // Shared pages
 import Profile from "@/pages/Profile";
+import ResetPassword from "@/pages/ResetPassword";
 
 function DashboardRouter() {
   const { user } = useAuth();
@@ -254,6 +255,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/*"
             element={isAuthenticated ? <AuthenticatedApp /> : <Navigate to="/login" replace />}

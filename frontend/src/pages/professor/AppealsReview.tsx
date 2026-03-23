@@ -102,7 +102,8 @@ export default function AppealsReview() {
     },
     {
       title: t("common.actions"),
-      width: 160,
+      width: 200,
+      fixed: "right" as const,
       render: (_: unknown, record: Appeal) => {
         if (record.status !== "pending") return <Tag>{t("common.reviewed")}</Tag>;
         return (
@@ -155,6 +156,7 @@ export default function AppealsReview() {
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 15 }}
+        scroll={{ x: "max-content" }}
         locale={{ emptyText: <Empty description={t("appeals.noAppealsFound")} /> }}
       />
     </>

@@ -222,6 +222,7 @@ const en = {
     backToMyCourses: "Back to My Courses",
     timeRecognized: "Time Recognized",
     recordId: "Record ID",
+    sessionCount: "{{count}} sessions total",
   },
 
   // Sessions / Live Session

@@ -219,6 +219,7 @@ const ru = {
     backToMyCourses: "Назад к моим курсам",
     timeRecognized: "Время распознавания",
     recordId: "ID записи",
+    sessionCount: "Всего {{count}} сессий",
   },
 
   // Sessions / Live Session

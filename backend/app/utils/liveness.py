@@ -282,3 +282,99 @@ def detect_screen_spoof(
         lap_var, hf_ratio, color_score, score, threshold, "REAL" if is_real else "SPOOF",
     )
     return is_real, score
+
+
+def _extract_texture_descriptor(gray_128: np.ndarray) -> np.ndarray:
+    """Extract a compact high-frequency texture descriptor from a 128x128 grayscale face.
+
+    Uses a band-pass filter (Laplacian of Gaussian) to isolate micro-texture,
+    then divides the face into a grid and computes local energy in each cell.
+    The resulting vector captures the spatial distribution of fine texture.
+    """
+    # Band-pass: blur slightly then Laplacian to get mid-high freq texture
+    blurred = cv2.GaussianBlur(gray_128, (3, 3), 0.8)
+    texture = cv2.Laplacian(blurred, cv2.CV_64F)
+
+    # Divide into 8x8 grid and compute energy per cell
+    cell_size = 16  # 128 / 8 = 16
+    descriptor = []
+    for row in range(0, 128, cell_size):
+        for col in range(0, 128, cell_size):
+            cell = texture[row:row + cell_size, col:col + cell_size]
+            descriptor.append(float(np.mean(cell ** 2)))
+    return np.array(descriptor, dtype=np.float64)
+
+
+def detect_video_replay(
+    face_crops: list[np.ndarray],
+    threshold: float | None = None,
+) -> tuple[bool, float]:
+    """Detect video replay attacks via micro-texture temporal analysis.
+
+    Real skin: as the face moves between frames, micro-texture (pores, fine
+    wrinkles) shifts naturally, causing the texture descriptor to vary
+    significantly across frames.
+
+    Screen replay: the underlying pixel grid is static — even when the
+    displayed face moves, the captured micro-texture pattern from the screen
+    stays suspiciously consistent because the webcam re-samples the same
+    pixel grid each frame.
+
+    Computes pairwise cosine similarity of texture descriptors across frames.
+    Real faces show lower similarity (more variation); screens show higher
+    similarity (static pixel grid).
+
+    Returns (is_real, avg_similarity). is_real is True when avg_similarity
+    is below the threshold (enough texture variation detected).
+    """
+    if threshold is None:
+        threshold = settings.VIDEO_REPLAY_THRESHOLD
+
+    if len(face_crops) < 3:
+        # Not enough frames for reliable analysis — assume real
+        return True, 0.0
+
+    # Extract texture descriptors from each frame
+    descriptors = []
+    for crop in face_crops:
+        if len(crop.shape) == 3:
+            gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = crop
+        gray = cv2.resize(gray, (128, 128))
+        descriptors.append(_extract_texture_descriptor(gray))
+
+    # Compute pairwise cosine similarity between consecutive frames
+    similarities = []
+    for i in range(len(descriptors) - 1):
+        a, b = descriptors[i], descriptors[i + 1]
+        norm_a, norm_b = np.linalg.norm(a), np.linalg.norm(b)
+        if norm_a < 1e-8 or norm_b < 1e-8:
+            continue
+        sim = float(np.dot(a, b) / (norm_a * norm_b))
+        similarities.append(sim)
+
+    if not similarities:
+        return True, 0.0
+
+    avg_sim = float(np.mean(similarities))
+
+    # Also check non-consecutive pairs for extra signal
+    if len(descriptors) >= 4:
+        skip_sims = []
+        for i in range(len(descriptors) - 2):
+            a, b = descriptors[i], descriptors[i + 2]
+            norm_a, norm_b = np.linalg.norm(a), np.linalg.norm(b)
+            if norm_a < 1e-8 or norm_b < 1e-8:
+                continue
+            skip_sims.append(float(np.dot(a, b) / (norm_a * norm_b)))
+        if skip_sims:
+            # Screens stay consistent even with larger frame gaps
+            avg_sim = max(avg_sim, float(np.mean(skip_sims)))
+
+    is_real = avg_sim < threshold
+    logger.info(
+        "Video replay check — avg_texture_similarity: %.4f, threshold: %.4f → %s",
+        avg_sim, threshold, "REAL" if is_real else "REPLAY",
+    )
+    return is_real, avg_sim

@@ -28,6 +28,7 @@ from app.utils.geo import haversine_distance
 from app.utils.liveness import (
     ChallengeType,
     detect_screen_spoof,
+    detect_video_replay,
     generate_challenge,
     get_challenge_instruction,
     is_live,
@@ -238,18 +239,20 @@ async def verify_attendance(
             raise BadRequestError("Invalid or expired challenge token")
 
         # --- 6.7. Screen / print spoof detection on face crops ---
-        spoof_scores = []
+        face_crops = []
         for img, det in zip(images, frame_detections):
             x1, y1, x2, y2 = det.bbox
             h, w = img.shape[:2]
-            # Pad bbox slightly for better analysis
             pad = int(max(x2 - x1, y2 - y1) * 0.1)
             x1 = max(0, x1 - pad)
             y1 = max(0, y1 - pad)
             x2 = min(w, x2 + pad)
             y2 = min(h, y2 + pad)
-            face_crop = img[y1:y2, x1:x2]
-            is_real, s = detect_screen_spoof(face_crop)
+            face_crops.append(img[y1:y2, x1:x2])
+
+        spoof_scores = []
+        for crop in face_crops:
+            is_real, s = detect_screen_spoof(crop)
             spoof_scores.append(s)
             if not is_real:
                 break
@@ -259,6 +262,14 @@ async def verify_attendance(
             raise BadRequestError(
                 "Screen or printed photo detected. Please use a real face, "
                 "not a photo or video on a screen."
+            )
+
+        # --- 6.8. Video replay detection (micro-texture temporal analysis) ---
+        is_real_video, replay_sim = detect_video_replay(face_crops)
+        if not is_real_video:
+            raise BadRequestError(
+                "Video replay detected. Please use your real face, "
+                "not a recording on a screen."
             )
 
     # --- 7. Face recognition using averaged embeddings from all frames ---

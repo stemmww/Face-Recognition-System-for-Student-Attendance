@@ -219,6 +219,7 @@ const kk = {
     backToMyCourses: "Менің курстарыма оралу",
     timeRecognized: "Танылған уақыт",
     recordId: "Жазба ID",
+    sessionCount: "Барлығы {{count}} сессия",
   },
 
   // Sessions / Live Session

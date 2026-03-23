@@ -519,7 +519,7 @@ export default function LiveSession() {
           },
           content: { borderRadius: 0 },
         }}
-        style={{ top: 0, maxWidth: "100vw", padding: 0 }}
+        style={{ maxWidth: "100vw", padding: 0 }}
       >
         {qrToken && (
           <>

@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     LIVENESS_HEAD_TURN_THRESHOLD: float = 0.10
     LIVENESS_NOD_THRESHOLD: float = 0.07
     SCREEN_SPOOF_THRESHOLD: float = 0.6
+    VIDEO_REPLAY_THRESHOLD: float = 0.92
 
     ADMIN_EMAIL: str = "admin@attendance.edu"
     ADMIN_PASSWORD: str = "admin123"

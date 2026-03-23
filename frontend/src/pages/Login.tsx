@@ -14,6 +14,7 @@ import { forgotPassword } from "@/api/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useThemeStore } from "@/stores/themeStore";
+import { authPageStyles, themeColors } from "@/styles/theme";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -33,6 +34,7 @@ export default function Login() {
   const isMobile = useIsMobile();
   const { isDark, toggle: toggleTheme } = useThemeStore();
   const { t, i18n } = useTranslation();
+  const colors = themeColors(isDark);
 
   const changeLanguage = (lang: string) => {
     i18n.changeLanguage(lang);
@@ -45,7 +47,7 @@ export default function Login() {
       label: l.label,
       onClick: () => changeLanguage(l.key),
       style: i18n.language === l.key
-        ? { fontWeight: 600, color: "#6366f1" }
+        ? { fontWeight: 600, color: colors.primary }
         : undefined,
     })),
   };
@@ -259,17 +261,17 @@ export default function Login() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: isDark ? "#1f2937" : "#f8fafc",
+          background: colors.pageBg,
           transition: "background 0.4s ease",
           padding: isMobile ? "32px 20px" : "48px 24px",
         }}
       >
-        <div style={{ width: "100%", maxWidth: 400 }}>
+        <div style={authPageStyles.formCard}>
           <div style={{ marginBottom: isMobile ? 20 : 24 }}>
-            <Title level={3} style={{ marginBottom: 4, color: isDark ? "#e2e8f0" : "#1e293b" }}>
+            <Title level={3} style={{ marginBottom: 4, color: colors.heading }}>
               {t("login.welcomeBack")}
             </Title>
-            <Text style={{ color: isDark ? "#94a3b8" : "#64748b", fontSize: 14 }}>
+            <Text style={{ color: colors.subtitle, fontSize: 14 }}>
               {t("login.signInSubtitle")}
             </Text>
           </div>
@@ -277,7 +279,7 @@ export default function Login() {
           <Form onFinish={onFinish} layout="vertical" size="large" requiredMark={false}>
             <Form.Item
               name="email"
-              label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>{t("login.emailLabel")}</span>}
+              label={<span style={authPageStyles.formLabel(isDark)}>{t("login.emailLabel")}</span>}
               rules={[
                 { required: true, message: t("login.emailRequired") },
                 { type: "email", message: t("login.emailInvalid") },
@@ -285,27 +287,27 @@ export default function Login() {
               style={{ marginBottom: 16 }}
             >
               <Input
-                prefix={<MailOutlined style={{ color: "#94a3b8" }} />}
+                prefix={<MailOutlined style={{ color: colors.inputIcon }} />}
                 placeholder={t("login.emailPlaceholder")}
-                style={{ height: 44, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
+                style={{ ...authPageStyles.input, borderColor: colors.inputBorder }}
               />
             </Form.Item>
 
             <Form.Item
               name="password"
-              label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>{t("login.passwordLabel")}</span>}
+              label={<span style={authPageStyles.formLabel(isDark)}>{t("login.passwordLabel")}</span>}
               rules={[{ required: true, message: t("login.passwordRequired") }]}
               style={{ marginBottom: 8 }}
             >
               <Input.Password
-                prefix={<LockOutlined style={{ color: "#94a3b8" }} />}
+                prefix={<LockOutlined style={{ color: colors.inputIcon }} />}
                 placeholder={t("login.passwordPlaceholder")}
-                style={{ height: 44, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
+                style={{ ...authPageStyles.input, borderColor: colors.inputBorder }}
               />
             </Form.Item>
 
             <div style={{ textAlign: "right", marginBottom: 16 }}>
-              <Button type="link" style={{ padding: 0, fontSize: 13, color: "#6366f1" }} onClick={() => setForgotOpen(true)}>
+              <Button type="link" style={{ padding: 0, fontSize: 13, color: colors.primary }} onClick={() => setForgotOpen(true)}>
                 {t("login.forgotPassword")}
               </Button>
             </div>
@@ -316,13 +318,7 @@ export default function Login() {
                 htmlType="submit"
                 loading={loading}
                 block
-                style={{
-                  height: 44,
-                  borderRadius: 10,
-                  fontWeight: 600,
-                  fontSize: 15,
-                  boxShadow: "0 4px 14px rgba(99,102,241,0.35)",
-                }}
+                style={authPageStyles.primaryButton}
               >
                 {t("login.signIn")}
               </Button>
@@ -334,10 +330,10 @@ export default function Login() {
               textAlign: "center",
               marginTop: 24,
               padding: "12px 0",
-              borderTop: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
+              borderTop: `1px solid ${colors.divider}`,
             }}
           >
-            <Text style={{ color: "#94a3b8", fontSize: 13 }}>
+            <Text style={{ color: colors.inputIcon, fontSize: 13 }}>
               {t("login.contactAdmin")}
             </Text>
           </div>
@@ -351,7 +347,7 @@ export default function Login() {
         footer={null}
         destroyOnClose
       >
-        <Text style={{ display: "block", marginBottom: 16, color: isDark ? "#94a3b8" : "#64748b" }}>
+        <Text style={{ display: "block", marginBottom: 16, color: colors.subtitle }}>
           {t("login.forgotDescription")}
         </Text>
         <Form form={forgotForm} onFinish={onForgotSubmit} layout="vertical" requiredMark={false}>
@@ -364,13 +360,13 @@ export default function Login() {
             ]}
           >
             <Input
-              prefix={<MailOutlined style={{ color: "#94a3b8" }} />}
+              prefix={<MailOutlined style={{ color: colors.inputIcon }} />}
               placeholder={t("login.emailPlaceholder")}
-              style={{ height: 44, borderRadius: 10 }}
+              style={authPageStyles.input}
             />
           </Form.Item>
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" loading={forgotLoading} block style={{ height: 44, borderRadius: 10 }}>
+            <Button type="primary" htmlType="submit" loading={forgotLoading} block style={authPageStyles.input}>
               {t("login.sendResetLink")}
             </Button>
           </Form.Item>

@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Button, Form, Input, Typography, message } from "antd";
+import { Button, Dropdown, Form, Input, Tooltip, Typography, message } from "antd";
 import {
+  GlobalOutlined,
   LockOutlined,
   MailOutlined,
+  MoonOutlined,
   ScanOutlined,
+  SunOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -13,13 +16,47 @@ import { useThemeStore } from "@/stores/themeStore";
 
 const { Title, Text, Paragraph } = Typography;
 
+const LANGS = [
+  { key: "en", label: "English" },
+  { key: "kk", label: "Қазақша" },
+  { key: "ru", label: "Русский" },
+] as const;
+
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const isDark = useThemeStore((s) => s.isDark);
-  const { t } = useTranslation();
+  const { isDark, toggle: toggleTheme } = useThemeStore();
+  const { t, i18n } = useTranslation();
+
+  const changeLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem("language", lang);
+  };
+
+  const langItems = {
+    items: LANGS.map((l) => ({
+      key: l.key,
+      label: l.label,
+      onClick: () => changeLanguage(l.key),
+      style: i18n.language === l.key
+        ? { fontWeight: 600, color: "#6366f1" }
+        : undefined,
+    })),
+  };
+
+  const toolbarBtnStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    fontSize: 16,
+    color: isDark ? "#c7d2fe" : "#64748b",
+    transition: "all 0.2s",
+  };
 
   if (isAuthenticated) {
     navigate("/dashboard", { replace: true });
@@ -40,7 +77,47 @@ export default function Login() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", minHeight: "100vh" }}>
+    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", minHeight: "100vh", position: "relative" }}>
+      {/* Floating toolbar: language + theme */}
+      <div
+        style={{
+          position: "fixed",
+          top: isMobile ? 8 : 16,
+          right: isMobile ? 8 : 24,
+          zIndex: 100,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          background: isDark ? "rgba(31,41,55,0.85)" : "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(12px)",
+          borderRadius: 12,
+          padding: "4px 6px",
+          boxShadow: isDark
+            ? "0 2px 12px rgba(0,0,0,0.3)"
+            : "0 2px 12px rgba(0,0,0,0.08)",
+          border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+          transition: "all 0.3s ease",
+        }}
+      >
+        <Dropdown menu={langItems} placement="bottomRight" trigger={["click"]}>
+          <Button type="text" style={toolbarBtnStyle}>
+            <GlobalOutlined />
+          </Button>
+        </Dropdown>
+        <Tooltip title={isDark ? "Light mode" : "Dark mode"} mouseEnterDelay={0.4}>
+          <Button
+            type="text"
+            onClick={toggleTheme}
+            style={{
+              ...toolbarBtnStyle,
+              color: isDark ? "#facc15" : "#64748b",
+            }}
+          >
+            {isDark ? <SunOutlined /> : <MoonOutlined />}
+          </Button>
+        </Tooltip>
+      </div>
+
       {/* Left branding panel — full on desktop, compact banner on mobile */}
       <div
         style={{
@@ -50,7 +127,10 @@ export default function Login() {
                 flex: "0 0 480px",
                 padding: "48px 40px",
               }),
-          background: "linear-gradient(160deg, #312e81 0%, #4f46e5 50%, #6366f1 100%)",
+          background: isDark
+            ? "linear-gradient(160deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%)"
+            : "linear-gradient(160deg, #312e81 0%, #4f46e5 50%, #6366f1 100%)",
+          transition: "background 0.4s ease",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -157,15 +237,16 @@ export default function Login() {
           alignItems: "center",
           justifyContent: "center",
           background: isDark ? "#1f2937" : "#f8fafc",
+          transition: "background 0.4s ease",
           padding: isMobile ? "32px 20px" : "48px 24px",
         }}
       >
         <div style={{ width: "100%", maxWidth: 400 }}>
-          <div style={{ marginBottom: isMobile ? 28 : 40 }}>
-            <Title level={3} style={{ marginBottom: 8, color: isDark ? "#e2e8f0" : "#1e293b" }}>
+          <div style={{ marginBottom: isMobile ? 20 : 24 }}>
+            <Title level={3} style={{ marginBottom: 4, color: isDark ? "#e2e8f0" : "#1e293b" }}>
               {t("login.welcomeBack")}
             </Title>
-            <Text style={{ color: isDark ? "#94a3b8" : "#64748b", fontSize: 15 }}>
+            <Text style={{ color: isDark ? "#94a3b8" : "#64748b", fontSize: 14 }}>
               {t("login.signInSubtitle")}
             </Text>
           </div>
@@ -178,11 +259,12 @@ export default function Login() {
                 { required: true, message: t("login.emailRequired") },
                 { type: "email", message: t("login.emailInvalid") },
               ]}
+              style={{ marginBottom: 16 }}
             >
               <Input
                 prefix={<MailOutlined style={{ color: "#94a3b8" }} />}
                 placeholder={t("login.emailPlaceholder")}
-                style={{ height: 48, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
+                style={{ height: 44, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
               />
             </Form.Item>
 
@@ -190,22 +272,23 @@ export default function Login() {
               name="password"
               label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>{t("login.passwordLabel")}</span>}
               rules={[{ required: true, message: t("login.passwordRequired") }]}
+              style={{ marginBottom: 20 }}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#94a3b8" }} />}
                 placeholder={t("login.passwordPlaceholder")}
-                style={{ height: 48, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
+                style={{ height: 44, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
               />
             </Form.Item>
 
-            <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
+            <Form.Item style={{ marginBottom: 0 }}>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loading}
                 block
                 style={{
-                  height: 48,
+                  height: 44,
                   borderRadius: 10,
                   fontWeight: 600,
                   fontSize: 15,
@@ -220,8 +303,8 @@ export default function Login() {
           <div
             style={{
               textAlign: "center",
-              marginTop: 32,
-              padding: "16px 0",
+              marginTop: 24,
+              padding: "12px 0",
               borderTop: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
             }}
           >

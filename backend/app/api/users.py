@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.rbac import require_role
 from app.database import get_db
 from app.models.user import Role, User
-from app.schemas.user import BulkImportResult, UserCreate, UserOut, UserUpdate
+from app.core.exceptions import BadRequestError
+from app.core.security import verify_password, hash_password
+from app.schemas.user import BulkImportResult, PasswordChange, UserCreate, UserOut, UserUpdate
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -34,6 +36,19 @@ async def create_user(
 @router.get("/me", response_model=UserOut)
 async def get_me(current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR, Role.STUDENT))):
     return current_user
+
+
+@router.put("/me/password")
+async def change_password(
+    body: PasswordChange,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)),
+):
+    if not verify_password(body.old_password, current_user.hashed_password):
+        raise BadRequestError("Current password is incorrect")
+    current_user.hashed_password = hash_password(body.new_password)
+    await db.commit()
+    return {"message": "Password changed successfully"}
 
 
 @router.get("/{user_id}", response_model=UserOut)

@@ -31,6 +31,13 @@ export async function updateUser(
   return data;
 }
 
+export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+  await apiClient.put("/users/me/password", {
+    old_password: oldPassword,
+    new_password: newPassword,
+  });
+}
+
 export async function deactivateUser(userId: number): Promise<void> {
   await apiClient.delete(`/users/${userId}`);
 }

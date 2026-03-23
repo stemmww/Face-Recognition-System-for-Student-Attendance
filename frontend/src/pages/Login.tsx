@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Button, Dropdown, Form, Input, Tooltip, Typography, message } from "antd";
+import { Button, Dropdown, Form, Input, Modal, Tooltip, Typography, message } from "antd";
 import {
   GlobalOutlined,
   LockOutlined,
@@ -10,6 +10,7 @@ import {
   ScanOutlined,
   SunOutlined,
 } from "@ant-design/icons";
+import { forgotPassword } from "@/api/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useThemeStore } from "@/stores/themeStore";
@@ -24,6 +25,9 @@ const LANGS = [
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotForm] = Form.useForm();
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -73,6 +77,25 @@ export default function Login() {
       message.error(t("login.loginFailed"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onForgotSubmit = async (values: { email: string }) => {
+    setForgotLoading(true);
+    try {
+      const res = await forgotPassword(values.email);
+      if ("dev_token" in res) {
+        message.info("SMTP not configured — check browser console for reset link", 6);
+        console.log(`Reset link: ${window.location.origin}/reset-password?token=${(res as Record<string, string>).dev_token}`);
+      } else {
+        message.success(t("login.forgotSent"));
+      }
+      setForgotOpen(false);
+      forgotForm.resetFields();
+    } catch {
+      message.error(t("login.forgotFailed"));
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -272,7 +295,7 @@ export default function Login() {
               name="password"
               label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>{t("login.passwordLabel")}</span>}
               rules={[{ required: true, message: t("login.passwordRequired") }]}
-              style={{ marginBottom: 20 }}
+              style={{ marginBottom: 8 }}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#94a3b8" }} />}
@@ -280,6 +303,12 @@ export default function Login() {
                 style={{ height: 44, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
               />
             </Form.Item>
+
+            <div style={{ textAlign: "right", marginBottom: 16 }}>
+              <Button type="link" style={{ padding: 0, fontSize: 13, color: "#6366f1" }} onClick={() => setForgotOpen(true)}>
+                {t("login.forgotPassword")}
+              </Button>
+            </div>
 
             <Form.Item style={{ marginBottom: 0 }}>
               <Button
@@ -314,6 +343,39 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      <Modal
+        open={forgotOpen}
+        title={t("login.forgotPasswordTitle")}
+        onCancel={() => { setForgotOpen(false); forgotForm.resetFields(); }}
+        footer={null}
+        destroyOnClose
+      >
+        <Text style={{ display: "block", marginBottom: 16, color: isDark ? "#94a3b8" : "#64748b" }}>
+          {t("login.forgotDescription")}
+        </Text>
+        <Form form={forgotForm} onFinish={onForgotSubmit} layout="vertical" requiredMark={false}>
+          <Form.Item
+            name="email"
+            label={t("login.emailLabel")}
+            rules={[
+              { required: true, message: t("login.emailRequired") },
+              { type: "email", message: t("login.emailInvalid") },
+            ]}
+          >
+            <Input
+              prefix={<MailOutlined style={{ color: "#94a3b8" }} />}
+              placeholder={t("login.emailPlaceholder")}
+              style={{ height: 44, borderRadius: 10 }}
+            />
+          </Form.Item>
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button type="primary" htmlType="submit" loading={forgotLoading} block style={{ height: 44, borderRadius: 10 }}>
+              {t("login.sendResetLink")}
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

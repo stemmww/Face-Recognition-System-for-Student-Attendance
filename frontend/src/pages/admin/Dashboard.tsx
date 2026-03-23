@@ -20,8 +20,8 @@ import {
 } from "recharts";
 import { listUsers } from "@/api/users";
 import { listCourses } from "@/api/courses";
-import { getCourseTrends, type SessionTrendPoint } from "@/api/statistics";
-import type { User, Course } from "@/types";
+import { getCourseTrends } from "@/api/statistics";
+import type { User, Course, SessionTrendPoint } from "@/types";
 
 const { Title, Text } = Typography;
 

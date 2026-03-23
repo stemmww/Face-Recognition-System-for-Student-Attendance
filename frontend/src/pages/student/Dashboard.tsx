@@ -28,9 +28,10 @@ import {
   Legend,
 } from "recharts";
 import { useAuth } from "@/hooks/useAuth";
-import { getMyAttendanceSummary, type CourseAttendanceSummary } from "@/api/attendance";
+import type { CourseAttendanceSummary, StudentTrendPoint } from "@/types";
+import { getMyAttendanceSummary } from "@/api/attendance";
 import { getUnreadCount } from "@/api/notifications";
-import { getMyTrends, type StudentTrendPoint } from "@/api/statistics";
+import { getMyTrends } from "@/api/statistics";
 
 const { Title, Text } = Typography;
 

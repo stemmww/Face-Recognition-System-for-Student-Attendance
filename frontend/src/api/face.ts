@@ -1,37 +1,10 @@
+import type {
+  FaceEmbedding,
+  FaceEnrollResponse,
+  FaceVerifyResponse,
+  PipelineStatus,
+} from "@/types";
 import apiClient from "./client";
-
-export interface FaceEmbedding {
-  id: number;
-  user_id: number;
-  photo_path: string;
-  created_at: string;
-}
-
-export interface FaceEnrollResponse {
-  id: number;
-  user_id: number;
-  photo_path: string;
-  faces_detected: number;
-  message: string;
-}
-
-export interface FaceVerifyMatch {
-  user_id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  similarity: number;
-}
-
-export interface FaceVerifyResponse {
-  faces_detected: number;
-  matches: FaceVerifyMatch[];
-}
-
-export interface PipelineStatus {
-  insightface_loaded: boolean;
-  yolo_loaded: boolean;
-}
 
 export async function getPipelineStatus(): Promise<PipelineStatus> {
   const { data } = await apiClient.get<PipelineStatus>("/face/status");

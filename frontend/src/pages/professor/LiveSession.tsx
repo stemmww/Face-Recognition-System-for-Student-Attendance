@@ -33,7 +33,7 @@ import {
 } from "@ant-design/icons";
 import { QRCodeSVG } from "qrcode.react";
 import dayjs from "dayjs";
-import type { AttendanceSession, Course, QRToken, Schedule } from "@/types";
+import type { AttendanceSession, AttendanceRecord, Course, EnrolledStudent, QRToken, Schedule } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSchedules } from "@/api/schedules";
 import { getQRToken, listSessions, startSession, stopSession } from "@/api/sessions";
@@ -41,9 +41,7 @@ import {
   batchManualAttendance,
   getEnrolledStudentsForSession,
   getSessionAttendance,
-  type EnrolledStudent,
 } from "@/api/attendance";
-import type { AttendanceRecord } from "@/types";
 
 const { Title, Text } = Typography;
 

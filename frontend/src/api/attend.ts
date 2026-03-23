@@ -1,11 +1,5 @@
-import type { VerifyAttendanceResponse } from "@/types";
+import type { LivenessChallenge, VerifyAttendanceResponse } from "@/types";
 import apiClient from "./client";
-
-export interface LivenessChallenge {
-  challenge_type: string;
-  instruction: string;
-  token: string;
-}
 
 export async function fetchChallenge(qrToken: string): Promise<LivenessChallenge> {
   const form = new FormData();

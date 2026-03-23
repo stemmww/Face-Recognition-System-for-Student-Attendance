@@ -29,7 +29,7 @@ import {
   SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import type { User } from "@/types";
+import type { User, FaceEmbedding, FaceVerifyMatch, PipelineStatus } from "@/types";
 import { listUsers } from "@/api/users";
 import {
   deleteAllEmbeddings,
@@ -38,9 +38,6 @@ import {
   getPipelineStatus,
   listEmbeddings,
   verifyFace,
-  type FaceEmbedding,
-  type FaceVerifyMatch,
-  type PipelineStatus,
 } from "@/api/face";
 import { formatDateTime } from "@/utils/formatters";
 

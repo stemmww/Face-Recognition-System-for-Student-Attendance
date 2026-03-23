@@ -19,8 +19,8 @@ import {
 } from "@ant-design/icons";
 import { Html5Qrcode } from "html5-qrcode";
 import { useTranslation } from "react-i18next";
-import { fetchChallenge, verifyAttendance, type LivenessChallenge } from "@/api/attend";
-import type { VerifyAttendanceResponse } from "@/types";
+import type { LivenessChallenge, VerifyAttendanceResponse } from "@/types";
+import { fetchChallenge, verifyAttendance } from "@/api/attend";
 
 const { Title, Text } = Typography;
 

@@ -1,8 +1,14 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+# Locate .env: check current dir first, then parent (so running from backend/ or root both work)
+_env_candidates = [Path(".env"), Path("../.env")]
+_env_file = next((str(p) for p in _env_candidates if p.is_file()), None)
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://app:changeme@localhost:5432/attendance"
+    DATABASE_URL: str = "postgresql+asyncpg://app:changeme@localhost:5433/attendance"
 
     JWT_SECRET_KEY: str = "dev_secret_change_in_production"
     JWT_ALGORITHM: str = "HS256"
@@ -32,9 +38,9 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "noreply@attendance.edu"
     PASSWORD_RESET_EXPIRE_MINUTES: int = 15
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "http://localhost:3000"
 
-    model_config = {"env_file": ".env", "extra": "ignore"}
+    model_config = {"env_file": _env_file, "extra": "ignore"}
 
 
 settings = Settings()

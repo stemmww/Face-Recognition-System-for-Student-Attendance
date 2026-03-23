@@ -23,8 +23,8 @@ import {
   SearchOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
-import type { User, Role } from "@/types";
-import { createUser, deactivateUser, importStudentsCSV, listUsers, updateUser, type BulkImportResult } from "@/api/users";
+import type { User, Role, BulkImportResult } from "@/types";
+import { createUser, deactivateUser, importStudentsCSV, listUsers, updateUser } from "@/api/users";
 import { formatDateTime } from "@/utils/formatters";
 
 const { Title } = Typography;

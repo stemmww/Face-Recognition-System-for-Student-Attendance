@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { Layout } from "antd";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import ErrorBoundary from "./ErrorBoundary";
 import type { User } from "@/types";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useThemeStore } from "@/stores/themeStore";
@@ -49,7 +50,9 @@ export default function AppLayout({ user, onLogout }: Props) {
             boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.04)",
           }}
         >
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </Content>
       </Layout>
     </Layout>

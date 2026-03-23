@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Button,
   Empty,
@@ -24,6 +25,8 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AppealsReview() {
+  const { t } = useTranslation();
+
   const [appeals, setAppeals] = useState<Appeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string | undefined>(undefined);
@@ -33,11 +36,11 @@ export default function AppealsReview() {
     try {
       setAppeals(await listAppeals(filter));
     } catch {
-      message.error("Failed to load appeals");
+      message.error(t("appeals.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, t]);
 
   useEffect(() => {
     fetchAppeals();
@@ -46,72 +49,79 @@ export default function AppealsReview() {
   const handleReview = async (id: number, status: "approved" | "rejected") => {
     try {
       await reviewAppeal(id, status);
-      message.success(`Appeal ${status}`);
+      message.success(t("appeals.statusUpdated", { status: status === "approved" ? t("common.approved") : t("common.rejected") }));
       fetchAppeals();
     } catch {
-      message.error("Failed to review appeal");
+      message.error(t("appeals.reviewFailed"));
     }
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === "pending") return t("common.pending");
+    if (status === "approved") return t("common.approved");
+    if (status === "rejected") return t("common.rejected");
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const columns = [
     {
-      title: "ID",
+      title: t("common.id"),
       dataIndex: "id",
       width: 60,
     },
     {
-      title: "Student",
+      title: t("attendance.studentCol"),
       dataIndex: "student_id",
       width: 100,
       render: (id: number) => `Student #${id}`,
     },
     {
-      title: "Record",
+      title: t("appeals.record"),
       dataIndex: "attendance_id",
       width: 100,
       render: (id: number) => `#${id}`,
     },
     {
-      title: "Reason",
+      title: t("appeals.reason"),
       dataIndex: "reason",
       ellipsis: true,
     },
     {
-      title: "Status",
+      title: t("common.status"),
       dataIndex: "status",
       width: 110,
       render: (status: string) => (
-        <Tag color={statusColors[status]}>{status.charAt(0).toUpperCase() + status.slice(1)}</Tag>
+        <Tag color={statusColors[status]}>{statusLabel(status)}</Tag>
       ),
     },
     {
-      title: "Submitted",
+      title: t("appeals.submitted"),
       dataIndex: "created_at",
       width: 160,
       render: (v: string) => dayjs(v).format("YYYY-MM-DD HH:mm"),
     },
     {
-      title: "Actions",
+      title: t("common.actions"),
       width: 160,
       render: (_: unknown, record: Appeal) => {
-        if (record.status !== "pending") return <Tag>Reviewed</Tag>;
+        if (record.status !== "pending") return <Tag>{t("common.reviewed")}</Tag>;
         return (
           <Space>
             <Popconfirm
-              title="Approve this appeal?"
-              description="The student's attendance will be updated to Present."
+              title={t("appeals.approveTitle")}
+              description={t("appeals.approveDesc")}
               onConfirm={() => handleReview(record.id, "approved")}
             >
               <Button type="primary" size="small" icon={<CheckOutlined />}>
-                Approve
+                {t("appeals.approve")}
               </Button>
             </Popconfirm>
             <Popconfirm
-              title="Reject this appeal?"
+              title={t("appeals.rejectTitle")}
               onConfirm={() => handleReview(record.id, "rejected")}
             >
               <Button danger size="small" icon={<CloseOutlined />}>
-                Reject
+                {t("appeals.reject")}
               </Button>
             </Popconfirm>
           </Space>
@@ -122,19 +132,19 @@ export default function AppealsReview() {
 
   return (
     <>
-      <Title level={4}>Appeals Review</Title>
+      <Title level={4}>{t("appeals.reviewTitle")}</Title>
 
       <Space style={{ marginBottom: 16 }}>
         <Select
-          placeholder="Filter by status"
+          placeholder={t("appeals.filterByStatus")}
           value={filter}
           onChange={setFilter}
           allowClear
           style={{ width: 200 }}
           options={[
-            { value: "pending", label: "Pending" },
-            { value: "approved", label: "Approved" },
-            { value: "rejected", label: "Rejected" },
+            { value: "pending", label: t("common.pending") },
+            { value: "approved", label: t("common.approved") },
+            { value: "rejected", label: t("common.rejected") },
           ]}
         />
       </Space>
@@ -145,7 +155,7 @@ export default function AppealsReview() {
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 15 }}
-        locale={{ emptyText: <Empty description="No appeals found" /> }}
+        locale={{ emptyText: <Empty description={t("appeals.noAppealsFound")} /> }}
       />
     </>
   );

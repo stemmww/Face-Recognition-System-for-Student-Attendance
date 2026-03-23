@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Badge,
@@ -47,6 +48,7 @@ const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
 
 export default function FaceRegistry() {
+  const { t } = useTranslation();
   const [students, setStudents] = useState<User[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
   const [embeddings, setEmbeddings] = useState<FaceEmbedding[]>([]);
@@ -65,9 +67,9 @@ export default function FaceRegistry() {
       const users = await listUsers("student");
       setStudents(users);
     } catch {
-      message.error("Failed to load students");
+      message.error(t("faces.loadFailed"));
     }
-  }, []);
+  }, [t]);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -88,11 +90,11 @@ export default function FaceRegistry() {
     try {
       setEmbeddings(await listEmbeddings(userId));
     } catch {
-      message.error("Failed to load embeddings");
+      message.error(t("faces.embeddingsLoadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (selectedStudent) fetchEmbeddings(selectedStudent);
@@ -101,7 +103,7 @@ export default function FaceRegistry() {
 
   const handleEnroll = async (file: File) => {
     if (!selectedStudent) {
-      message.warning("Select a student first");
+      message.warning(t("faces.selectFirst"));
       return;
     }
     setEnrolling(true);
@@ -111,7 +113,7 @@ export default function FaceRegistry() {
       fetchEmbeddings(selectedStudent);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-      message.error(detail || "Enrollment failed");
+      message.error(detail || t("faces.enrollFailed"));
     } finally {
       setEnrolling(false);
     }
@@ -120,10 +122,10 @@ export default function FaceRegistry() {
   const handleDeleteEmbedding = async (id: number) => {
     try {
       await deleteEmbedding(id);
-      message.success("Embedding deleted");
+      message.success(t("faces.embeddingDeleted"));
       if (selectedStudent) fetchEmbeddings(selectedStudent);
     } catch {
-      message.error("Failed to delete");
+      message.error(t("faces.deleteFailed"));
     }
   };
 
@@ -131,10 +133,10 @@ export default function FaceRegistry() {
     if (!selectedStudent) return;
     try {
       await deleteAllEmbeddings(selectedStudent);
-      message.success("All embeddings deleted");
+      message.success(t("faces.allDeleted"));
       setEmbeddings([]);
     } catch {
-      message.error("Failed to delete");
+      message.error(t("faces.deleteFailed"));
     }
   };
 
@@ -146,10 +148,10 @@ export default function FaceRegistry() {
       setVerifyFaceCount(result.faces_detected);
       setVerifyMatches(result.matches);
       if (result.faces_detected === 0) {
-        message.warning("No face detected in the image");
+        message.warning(t("faces.noFaceDetected"));
       }
     } catch (err: any) {
-      message.error(err?.response?.data?.detail || "Verification failed");
+      message.error(err?.response?.data?.detail || t("faces.verifyFailed"));
     } finally {
       setVerifying(false);
     }
@@ -160,9 +162,9 @@ export default function FaceRegistry() {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>Face Registry</Title>
+        <Title level={4} style={{ margin: 0 }}>{t("faces.title")}</Title>
         <Button icon={<SearchOutlined />} onClick={() => { setVerifyModalOpen(true); setVerifyMatches([]); setVerifyFaceCount(0); }}>
-          Verify Face
+          {t("faces.verifyFace")}
         </Button>
       </div>
 
@@ -174,8 +176,8 @@ export default function FaceRegistry() {
           icon={pipelineStatus.insightface_loaded ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
           message={
             pipelineStatus.insightface_loaded
-              ? "AI pipeline ready — InsightFace model loaded"
-              : "AI models not yet loaded — they will initialize on first face enrollment"
+              ? t("faces.pipelineReady")
+              : t("faces.pipelineNotReady")
           }
           style={{ marginBottom: 16 }}
         />
@@ -184,13 +186,13 @@ export default function FaceRegistry() {
       <Row gutter={24}>
         {/* Left: Student selector + upload */}
         <Col xs={24} lg={10}>
-          <Card title="Enroll Face" style={{ marginBottom: 16 }}>
+          <Card title={t("faces.enrollFace")} style={{ marginBottom: 16 }}>
             <Space direction="vertical" style={{ width: "100%" }}>
-              <Text strong>Select Student</Text>
+              <Text strong>{t("faces.selectStudent")}</Text>
               <Select
                 showSearch
                 optionFilterProp="label"
-                placeholder="Search by name or email"
+                placeholder={t("faces.searchByNameEmail")}
                 value={selectedStudent}
                 onChange={setSelectedStudent}
                 style={{ width: "100%" }}
@@ -217,13 +219,13 @@ export default function FaceRegistry() {
                           "#52c41a"
                       }}
                     >
-                      <Tag>photos</Tag>
+                      <Tag>{t("faces.photos")}</Tag>
                     </Badge>
                   </Space>
                   {embeddings.length < 3 && (
                     <Alert
                       type="warning"
-                      message={`${embeddings.length} photo(s) enrolled. We recommend at least 3 photos from different angles for reliable recognition.`}
+                      message={t("faces.photosRecommend", { count: embeddings.length })}
                       showIcon
                       style={{ marginTop: 8 }}
                     />
@@ -231,7 +233,7 @@ export default function FaceRegistry() {
                   {embeddings.length >= 3 && embeddings.length <= 5 && (
                     <Alert
                       type="success"
-                      message={`Good coverage: ${embeddings.length} photo(s) enrolled.`}
+                      message={t("faces.photosGood", { count: embeddings.length })}
                       showIcon
                       style={{ marginTop: 8 }}
                     />
@@ -239,7 +241,7 @@ export default function FaceRegistry() {
                   {embeddings.length > 5 && (
                     <Alert
                       type="info"
-                      message={`${embeddings.length} photos enrolled. 3–5 is typically sufficient.`}
+                      message={t("faces.photosSufficient", { count: embeddings.length })}
                       showIcon
                       style={{ marginTop: 8 }}
                     />
@@ -262,15 +264,15 @@ export default function FaceRegistry() {
                   <CameraOutlined style={{ fontSize: 40, color: "#1677ff" }} />
                 </p>
                 <p className="ant-upload-text">
-                  {enrolling ? "Processing..." : "Click or drag a student photo to enroll"}
+                  {enrolling ? t("faces.processing") : t("faces.uploadHint")}
                 </p>
                 <p className="ant-upload-hint">
-                  JPG, PNG, or WebP. Max 10 MB. One clear face per photo.
+                  {t("faces.uploadFormat")}
                 </p>
               </Dragger>
 
               <Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
-                Tip: Upload 3-5 photos per student from different angles for best accuracy.
+                {t("faces.uploadTip")}
               </Paragraph>
             </Space>
           </Card>
@@ -279,21 +281,21 @@ export default function FaceRegistry() {
         {/* Right: Stored embeddings */}
         <Col xs={24} lg={14}>
           <Card
-            title={student ? `Embeddings for ${student.first_name} ${student.last_name}` : "Stored Embeddings"}
+            title={student ? t("faces.embeddingsFor", { name: `${student.first_name} ${student.last_name}` }) : t("faces.storedEmbeddings")}
             extra={
               embeddings.length > 0 && (
-                <Popconfirm title="Delete ALL embeddings for this student?" onConfirm={handleDeleteAll} okButtonProps={{ danger: true }}>
-                  <Button size="small" danger icon={<DeleteOutlined />}>Delete All</Button>
+                <Popconfirm title={t("faces.deleteAllConfirm")} onConfirm={handleDeleteAll} okButtonProps={{ danger: true }}>
+                  <Button size="small" danger icon={<DeleteOutlined />}>{t("faces.deleteAll")}</Button>
                 </Popconfirm>
               )
             }
           >
             {!selectedStudent ? (
-              <Empty description="Select a student to view their face embeddings" />
+              <Empty description={t("faces.selectStudentView")} />
             ) : loading ? (
               <div style={{ textAlign: "center", padding: 32 }}><Progress type="circle" percent={-1} /></div>
             ) : embeddings.length === 0 ? (
-              <Empty description="No face embeddings registered yet" />
+              <Empty description={t("faces.noEmbeddings")} />
             ) : (
               <List
                 grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3 }}
@@ -311,7 +313,7 @@ export default function FaceRegistry() {
                         />
                       }
                       actions={[
-                        <Popconfirm key="del" title="Delete?" onConfirm={() => handleDeleteEmbedding(emb.id)}>
+                        <Popconfirm key="del" title={`${t("common.delete")}?`} onConfirm={() => handleDeleteEmbedding(emb.id)}>
                           <Button type="text" danger size="small" icon={<DeleteOutlined />} />
                         </Popconfirm>,
                       ]}
@@ -328,7 +330,7 @@ export default function FaceRegistry() {
 
       {/* Verify Face Modal */}
       <Modal
-        title="Verify Face"
+        title={t("faces.verifyFace")}
         open={verifyModalOpen}
         onCancel={() => setVerifyModalOpen(false)}
         footer={null}
@@ -349,15 +351,15 @@ export default function FaceRegistry() {
               <SearchOutlined style={{ fontSize: 32, color: "#1677ff" }} />
             </p>
             <p className="ant-upload-text">
-              {verifying ? "Searching..." : "Drop a photo to identify the person"}
+              {verifying ? t("faces.searching") : t("faces.dropToIdentify")}
             </p>
           </Dragger>
 
           {verifyFaceCount > 0 && (
             <div style={{ marginTop: 16 }}>
-              <Text type="secondary">{verifyFaceCount} face(s) detected</Text>
+              <Text type="secondary">{t("faces.facesDetected", { count: verifyFaceCount })}</Text>
               {verifyMatches.length === 0 ? (
-                <Alert type="warning" message="No matching students found" style={{ marginTop: 8 }} />
+                <Alert type="warning" message={t("faces.noMatchFound")} style={{ marginTop: 8 }} />
               ) : (
                 <List
                   style={{ marginTop: 8 }}
@@ -371,7 +373,7 @@ export default function FaceRegistry() {
                         description={m.email}
                       />
                       <Tag color={m.similarity > 0.6 ? "green" : m.similarity > 0.4 ? "orange" : "red"}>
-                        {(m.similarity * 100).toFixed(1)}% match
+                        {(m.similarity * 100).toFixed(1)}% {t("faces.match")}
                       </Tag>
                     </List.Item>
                   )}

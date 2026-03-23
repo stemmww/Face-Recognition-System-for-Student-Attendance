@@ -12,6 +12,7 @@ import {
   message,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import type { Appeal } from "@/types";
 import { createAppeal, getMyAppeals } from "@/api/appeals";
@@ -26,6 +27,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Appeals() {
+  const { t } = useTranslation();
   const [appeals, setAppeals] = useState<Appeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -36,11 +38,11 @@ export default function Appeals() {
     try {
       setAppeals(await getMyAppeals());
     } catch {
-      message.error("Failed to load appeals");
+      message.error(t("appeals.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchAppeals();
@@ -51,12 +53,12 @@ export default function Appeals() {
       const values = await form.validateFields();
       setSubmitting(true);
       await createAppeal(values);
-      message.success("Appeal submitted successfully");
+      message.success(t("appeals.submitSuccess"));
       setModalOpen(false);
       form.resetFields();
       fetchAppeals();
     } catch {
-      message.error("Failed to submit appeal");
+      message.error(t("appeals.submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -64,31 +66,31 @@ export default function Appeals() {
 
   const columns = [
     {
-      title: "ID",
+      title: t("common.id"),
       dataIndex: "id",
       width: 60,
     },
     {
-      title: "Attendance Record",
+      title: t("appeals.attendanceRecord"),
       dataIndex: "attendance_id",
       width: 140,
       render: (id: number) => `Record #${id}`,
     },
     {
-      title: "Reason",
+      title: t("appeals.reason"),
       dataIndex: "reason",
       ellipsis: true,
     },
     {
-      title: "Status",
+      title: t("common.status"),
       dataIndex: "status",
       width: 110,
       render: (status: string) => (
-        <Tag color={statusColors[status]}>{status.charAt(0).toUpperCase() + status.slice(1)}</Tag>
+        <Tag color={statusColors[status]}>{t(`common.${status}`)}</Tag>
       ),
     },
     {
-      title: "Submitted",
+      title: t("appeals.submitted"),
       dataIndex: "created_at",
       width: 160,
       render: (v: string) => dayjs(v).format("YYYY-MM-DD HH:mm"),
@@ -98,9 +100,9 @@ export default function Appeals() {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>My Appeals</Title>
+        <Title level={4} style={{ margin: 0 }}>{t("appeals.title")}</Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-          New Appeal
+          {t("appeals.newAppeal")}
         </Button>
       </div>
 
@@ -110,35 +112,35 @@ export default function Appeals() {
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 15 }}
-        locale={{ emptyText: <Empty description="No appeals submitted yet" /> }}
+        locale={{ emptyText: <Empty description={t("appeals.noAppeals")} /> }}
       />
 
       <Modal
-        title="Submit Appeal"
+        title={t("appeals.submitAppeal")}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={handleSubmit}
         confirmLoading={submitting}
-        okText="Submit"
+        okText={t("common.submit")}
       >
         <Form form={form} layout="vertical">
           <Form.Item
             name="attendance_id"
-            label="Attendance Record ID"
-            rules={[{ required: true, message: "Enter the attendance record ID" }]}
-            extra="You can find this ID from your Attendance History page"
+            label={t("appeals.attendanceRecordId")}
+            rules={[{ required: true, message: t("appeals.enterRecordId") }]}
+            extra={t("appeals.findIdHint")}
           >
-            <InputNumber min={1} style={{ width: "100%" }} placeholder="e.g. 42" />
+            <InputNumber min={1} style={{ width: "100%" }} placeholder={t("appeals.recordIdPlaceholder")} />
           </Form.Item>
           <Form.Item
             name="reason"
-            label="Reason for Appeal"
+            label={t("appeals.reasonForAppeal")}
             rules={[
-              { required: true, message: "Please explain your reason" },
-              { min: 10, message: "Please provide at least 10 characters" },
+              { required: true, message: t("appeals.reasonRequired") },
+              { min: 10, message: t("appeals.reasonMinLength") },
             ]}
           >
-            <TextArea rows={4} placeholder="Explain why you believe the attendance status was incorrect..." />
+            <TextArea rows={4} placeholder={t("appeals.reasonPlaceholder")} />
           </Form.Item>
         </Form>
       </Modal>

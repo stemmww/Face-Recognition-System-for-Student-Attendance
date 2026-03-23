@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Avatar,
   Badge,
@@ -7,14 +8,21 @@ import {
   Dropdown,
   Layout,
   List,
-  Popover,
-  Space,
   Tag,
+  Tooltip,
   Typography,
 } from "antd";
-import { BellOutlined, LogoutOutlined, MenuOutlined, MoonOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  BellOutlined,
+  CheckOutlined,
+  GlobalOutlined,
+  LogoutOutlined,
+  MenuOutlined,
+  MoonOutlined,
+  SunOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import type { Notification, User } from "@/types";
-import { ROLE_LABELS } from "@/utils/constants";
 import { getUnreadCount, listNotifications, markRead, markAllRead } from "@/api/notifications";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -34,12 +42,35 @@ const roleColors: Record<string, string> = {
   student: "cyan",
 };
 
+const LANGS = [
+  { key: "en", label: "English" },
+  { key: "kk", label: "Қазақша" },
+  { key: "ru", label: "Русский" },
+] as const;
+
+const iconBtnStyle = (isDark: boolean): React.CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: 36,
+  height: 36,
+  borderRadius: 8,
+  fontSize: 17,
+  color: isDark ? "#c7d2fe" : "#475569",
+  transition: "all 0.2s",
+});
+
 export default function Header({ user, onLogout, isMobile, onMenuClick }: Props) {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { isDark, toggle: toggleTheme } = useThemeStore();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [bellOpen, setBellOpen] = useState(false);
+
+  const changeLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem("language", lang);
+  };
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -56,7 +87,6 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
   }, [fetchUnread]);
 
   const handleBellOpen = async (open: boolean) => {
-    setBellOpen(open);
     if (open) {
       try {
         setNotifications(await listNotifications());
@@ -86,63 +116,104 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
     }
   };
 
-  const dropdownItems = {
+  const langItems = {
+    items: LANGS.map((l) => ({
+      key: l.key,
+      label: l.label,
+      onClick: () => changeLanguage(l.key),
+      style: i18n.language === l.key
+        ? { fontWeight: 600, color: "#6366f1" }
+        : undefined,
+    })),
+  };
+
+  const userItems = {
     items: [
       {
         key: "profile",
         icon: <UserOutlined />,
-        label: "Profile",
+        label: t("common.profile"),
         onClick: () => navigate("/profile"),
       },
       { type: "divider" as const },
       {
         key: "logout",
         icon: <LogoutOutlined />,
-        label: "Logout",
+        label: t("common.logout"),
         danger: true,
         onClick: onLogout,
       },
     ],
   };
 
-  const bellContent = (
-    <div style={{ width: isMobile ? 260 : 320, maxHeight: 400, overflowY: "auto" }}>
-      {notifications.length > 0 && unreadCount > 0 && (
-        <div style={{ textAlign: "right", marginBottom: 8 }}>
-          <a onClick={handleMarkAllRead}>Mark all as read</a>
-        </div>
-      )}
-      <List
-        size="small"
-        dataSource={notifications.slice(0, 20)}
-        locale={{ emptyText: "No notifications" }}
-        renderItem={(n) => (
-          <List.Item
-            style={{
-              background: n.is_read ? undefined : (isDark ? "rgba(99,102,241,0.15)" : "#eef2ff"),
-              cursor: n.is_read ? "default" : "pointer",
-              padding: "8px 12px",
-              borderRadius: 6,
-              marginBottom: 2,
-            }}
-            onClick={() => !n.is_read && handleMarkRead(n.id)}
-          >
-            <List.Item.Meta
-              description={
-                <>
-                  <Text style={{ fontSize: 13 }}>{n.message}</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: 11 }}>
-                    {new Date(n.created_at).toLocaleString()}
-                  </Text>
-                </>
-              }
+  const bellDropdown = {
+    items: [
+      ...(notifications.length > 0 && unreadCount > 0
+        ? [{
+            key: "mark-all",
+            label: (
+              <div style={{ textAlign: "center", padding: "2px 0" }}>
+                <Button type="link" size="small" icon={<CheckOutlined />} onClick={handleMarkAllRead}>
+                  {t("header.markAllRead")}
+                </Button>
+              </div>
+            ),
+          }]
+        : []),
+      {
+        key: "list",
+        label: (
+          <div style={{ width: isMobile ? 260 : 340, maxHeight: 380, overflowY: "auto" as const }}>
+            <List
+              size="small"
+              dataSource={notifications.slice(0, 20)}
+              locale={{ emptyText: t("header.noNotifications") }}
+              renderItem={(n) => (
+                <List.Item
+                  style={{
+                    background: n.is_read
+                      ? "transparent"
+                      : isDark ? "rgba(99,102,241,0.12)" : "#f0f0ff",
+                    cursor: n.is_read ? "default" : "pointer",
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    marginBottom: 4,
+                    transition: "background 0.2s",
+                  }}
+                  onClick={(e) => {
+                    if (!n.is_read) {
+                      e.stopPropagation();
+                      handleMarkRead(n.id);
+                    }
+                  }}
+                >
+                  <List.Item.Meta
+                    description={
+                      <>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: n.is_read ? 400 : 500,
+                            color: isDark ? "#e2e8f0" : "#1e293b",
+                          }}
+                        >
+                          {n.message}
+                        </Text>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: 11 }}>
+                          {new Date(n.created_at).toLocaleString()}
+                        </Text>
+                      </>
+                    }
+                  />
+                </List.Item>
+              )}
             />
-          </List.Item>
-        )}
-      />
-    </div>
-  );
+          </div>
+        ),
+      },
+    ],
+  };
 
   return (
     <AntHeader
@@ -153,12 +224,13 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
         alignItems: "center",
         justifyContent: "space-between",
         borderBottom: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
-        gap: isMobile ? 8 : 16,
         boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.04)",
+        height: 56,
+        lineHeight: "56px",
       }}
     >
       {/* Left: hamburger on mobile */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
         {isMobile && (
           <Button
             type="text"
@@ -169,39 +241,75 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
         )}
       </div>
 
-      {/* Right: theme toggle, notifications, role, user */}
-      <Space size={isMobile ? 8 : 16}>
-        <Button
-          type="text"
-          icon={isDark ? <SunOutlined /> : <MoonOutlined />}
-          onClick={toggleTheme}
-          style={{ color: isDark ? "#facc15" : "#475569", fontSize: 18 }}
+      {/* Right: actions */}
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 4 : 8 }}>
+        {/* Language */}
+        <Dropdown menu={langItems} placement="bottomRight" trigger={["click"]}>
+          <Button type="text" style={iconBtnStyle(isDark)}>
+            <GlobalOutlined />
+          </Button>
+        </Dropdown>
+
+        {/* Theme */}
+        <Tooltip title={isDark ? "Light mode" : "Dark mode"} mouseEnterDelay={0.4}>
+          <Button type="text" onClick={toggleTheme} style={{
+            ...iconBtnStyle(isDark),
+            color: isDark ? "#facc15" : "#475569",
+          }}>
+            {isDark ? <SunOutlined /> : <MoonOutlined />}
+          </Button>
+        </Tooltip>
+
+        {/* Notifications */}
+        <Dropdown
+          menu={bellDropdown}
+          placement="bottomRight"
+          trigger={["click"]}
+          onOpenChange={handleBellOpen}
+          overlayStyle={{ minWidth: isMobile ? 280 : 360 }}
+        >
+          <Button type="text" style={iconBtnStyle(isDark)}>
+            <Badge count={unreadCount} size="small" offset={[4, -4]}>
+              <BellOutlined style={{ fontSize: 17, color: isDark ? "#c7d2fe" : "#475569" }} />
+            </Badge>
+          </Button>
+        </Dropdown>
+
+        {/* Divider */}
+        <div
+          style={{
+            width: 1,
+            height: 24,
+            background: isDark ? "#374151" : "#e2e8f0",
+            margin: isMobile ? "0 2px" : "0 6px",
+          }}
         />
 
-        <Popover
-          content={bellContent}
-          title="Notifications"
-          trigger="click"
-          open={bellOpen}
-          onOpenChange={handleBellOpen}
-          placement="bottomRight"
-        >
-          <Badge count={unreadCount} size="small" offset={[-2, 2]}>
-            <BellOutlined style={{ fontSize: 18, cursor: "pointer", color: isDark ? "#c7d2fe" : "#475569" }} />
-          </Badge>
-        </Popover>
-
+        {/* Role tag */}
         {!isMobile && (
           <Tag
             color={roleColors[user.role]}
-            style={{ borderRadius: 6, fontWeight: 500, textTransform: "capitalize" }}
+            style={{ borderRadius: 6, fontWeight: 500, textTransform: "capitalize", margin: 0 }}
           >
-            {ROLE_LABELS[user.role]}
+            {t(`roles.${user.role}`)}
           </Tag>
         )}
 
-        <Dropdown menu={dropdownItems} placement="bottomRight">
-          <Space style={{ cursor: "pointer" }}>
+        {/* User dropdown */}
+        <Dropdown menu={userItems} placement="bottomRight">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              padding: "4px 8px",
+              borderRadius: 8,
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
             <Avatar
               icon={<UserOutlined />}
               src={user.photo_url}
@@ -209,13 +317,13 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
               style={{ backgroundColor: user.photo_url ? undefined : "#6366f1" }}
             />
             {!isMobile && (
-              <Text strong style={{ color: isDark ? "#e2e8f0" : "#1e293b" }}>
+              <Text strong style={{ color: isDark ? "#e2e8f0" : "#1e293b", whiteSpace: "nowrap" }}>
                 {user.first_name} {user.last_name}
               </Text>
             )}
-          </Space>
+          </div>
         </Dropdown>
-      </Space>
+      </div>
     </AntHeader>
   );
 }

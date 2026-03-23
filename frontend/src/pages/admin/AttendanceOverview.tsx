@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Button,
   Card,
@@ -22,6 +23,7 @@ import { exportCourseCSV } from "@/api/attendance";
 const { Title } = Typography;
 
 export default function AttendanceOverview() {
+  const { t } = useTranslation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<number | undefined>(undefined);
@@ -31,9 +33,9 @@ export default function AttendanceOverview() {
     try {
       setCourses(await listCourses());
     } catch {
-      message.error("Failed to load courses");
+      message.error(t("overview.loadFailed"));
     }
-  }, []);
+  }, [t]);
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
@@ -41,11 +43,11 @@ export default function AttendanceOverview() {
       const params = selectedCourse ? { course_id: selectedCourse } : {};
       setSessions(await listSessions(params));
     } catch {
-      message.error("Failed to load sessions");
+      message.error(t("overview.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [selectedCourse]);
+  }, [selectedCourse, t]);
 
   useEffect(() => {
     fetchCourses();
@@ -59,33 +61,33 @@ export default function AttendanceOverview() {
   const completedSessions = sessions.filter((s) => s.status === "completed");
 
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id", width: 60 },
+    { title: t("common.id"), dataIndex: "id", key: "id", width: 60 },
     {
-      title: "Date",
+      title: t("common.date"),
       dataIndex: "date",
       key: "date",
       width: 120,
     },
     {
-      title: "Started",
+      title: t("session.started"),
       key: "started_at",
       width: 100,
       render: (_: unknown, r: AttendanceSession) => dayjs(r.started_at).format("HH:mm"),
     },
     {
-      title: "Ended",
+      title: t("overview.ended"),
       key: "ended_at",
       width: 100,
       render: (_: unknown, r: AttendanceSession) =>
         r.ended_at ? dayjs(r.ended_at).format("HH:mm") : "—",
     },
     {
-      title: "Status",
+      title: t("common.status"),
       key: "status",
       width: 100,
       render: (_: unknown, r: AttendanceSession) => (
         <Tag color={r.status === "active" ? "green" : "default"}>
-          {r.status === "active" ? "Active" : "Completed"}
+          {r.status === "active" ? t("common.active") : t("common.completed")}
         </Tag>
       ),
     },
@@ -93,18 +95,18 @@ export default function AttendanceOverview() {
 
   return (
     <>
-      <Title level={4}>Attendance Overview</Title>
+      <Title level={4}>{t("overview.title")}</Title>
 
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card>
-            <Statistic title="Total Sessions" value={sessions.length} />
+            <Statistic title={t("overview.totalSessions")} value={sessions.length} />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
             <Statistic
-              title="Active Now"
+              title={t("overview.activeNow")}
               value={activeSessions.length}
               valueStyle={{ color: activeSessions.length > 0 ? "#52c41a" : undefined }}
             />
@@ -112,19 +114,19 @@ export default function AttendanceOverview() {
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic title="Completed" value={completedSessions.length} />
+            <Statistic title={t("overview.completed")} value={completedSessions.length} />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic title="Courses" value={courses.length} />
+            <Statistic title={t("overview.courses")} value={courses.length} />
           </Card>
         </Col>
       </Row>
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
-          placeholder="Filter by course"
+          placeholder={t("common.filterByCourse")}
           value={selectedCourse}
           onChange={setSelectedCourse}
           allowClear
@@ -137,9 +139,9 @@ export default function AttendanceOverview() {
         {selectedCourse && (
           <Button
             icon={<DownloadOutlined />}
-            onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error("Export failed"))}
+            onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error(t("attendance.exportFailed")))}
           >
-            Export CSV
+            {t("attendance.exportCSV")}
           </Button>
         )}
       </Space>
@@ -149,7 +151,7 @@ export default function AttendanceOverview() {
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 15, showTotal: (t) => `${t} sessions` }}
+        pagination={{ pageSize: 15, showTotal: (total) => `${total} ${t("common.sessions")}` }}
       />
     </>
   );

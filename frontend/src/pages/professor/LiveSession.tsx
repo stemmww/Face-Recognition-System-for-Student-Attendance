@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Badge,
@@ -46,17 +47,19 @@ import type { AttendanceRecord } from "@/types";
 
 const { Title, Text } = Typography;
 
-const statusConfig = {
-  present: { color: "green", icon: <CheckCircleFilled style={{ color: "#52c41a" }} />, label: "Present" },
-  late: { color: "orange", icon: <ClockCircleFilled style={{ color: "#fa8c16" }} />, label: "Late" },
-  absent: { color: "red", icon: <CloseCircleFilled style={{ color: "#ff4d4f" }} />, label: "Absent" },
-} as const;
-
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export default function LiveSession() {
+  const { t } = useTranslation();
+
+  const statusConfig = {
+    present: { color: "green", icon: <CheckCircleFilled style={{ color: "#52c41a" }} />, label: t("common.present") },
+    late: { color: "orange", icon: <ClockCircleFilled style={{ color: "#fa8c16" }} />, label: t("common.late") },
+    absent: { color: "red", icon: <CloseCircleFilled style={{ color: "#ff4d4f" }} />, label: t("common.absent") },
+  } as const;
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
@@ -84,9 +87,9 @@ export default function LiveSession() {
     try {
       setCourses(await listCourses());
     } catch {
-      message.error("Failed to load courses");
+      message.error(t("coursesPage.loadFailed"));
     }
-  }, []);
+  }, [t]);
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -192,12 +195,12 @@ export default function LiveSession() {
         status,
       }));
       await batchManualAttendance(activeSession.id, entries);
-      message.success("Roll call saved successfully");
+      message.success(t("session.rollCallSaved"));
       // Refresh session records
       const records = await getSessionAttendance(activeSession.id);
       setSessionRecords(records);
     } catch (err: any) {
-      message.error(err?.response?.data?.detail || "Failed to save roll call");
+      message.error(err?.response?.data?.detail || t("session.rollCallFailed"));
     } finally {
       setSavingManual(false);
     }
@@ -219,7 +222,7 @@ export default function LiveSession() {
           latitude = pos.coords.latitude;
           longitude = pos.coords.longitude;
         } catch {
-          message.warning("Could not get GPS location. Session will start without GPS validation.");
+          message.warning(t("session.gpsWarning"));
         }
       }
 
@@ -232,9 +235,9 @@ export default function LiveSession() {
       });
       setActiveSession(session);
       setStartModalOpen(false);
-      message.success("Session started!");
+      message.success(t("session.sessionStarted"));
     } catch (err: any) {
-      message.error(err?.response?.data?.detail || "Failed to start session");
+      message.error(err?.response?.data?.detail || t("session.startFailed"));
     }
   };
 
@@ -242,13 +245,13 @@ export default function LiveSession() {
     if (!activeSession) return;
     try {
       await stopSession(activeSession.id);
-      message.success("Session stopped. Absent students have been auto-marked.");
+      message.success(t("session.sessionStopped"));
       setActiveSession(null);
       setSessionRecords([]);
       setQrToken(null);
       fetchSessions();
     } catch (err: any) {
-      message.error(err?.response?.data?.detail || "Failed to stop session");
+      message.error(err?.response?.data?.detail || t("session.stopFailed"));
     }
   };
 
@@ -259,29 +262,29 @@ export default function LiveSession() {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>Live Attendance Session</Title>
+        <Title level={4} style={{ margin: 0 }}>{t("session.title")}</Title>
         {!activeSession ? (
           <Button type="primary" icon={<PlayCircleOutlined />} onClick={() => setStartModalOpen(true)}>
-            Start Session
+            {t("session.startSession")}
           </Button>
         ) : (
           <Button danger icon={<StopOutlined />} onClick={handleStop}>
-            Stop Session
+            {t("session.stopSession")}
           </Button>
         )}
       </div>
 
       {!activeSession ? (
         <Card>
-          <Empty description="No active session. Click 'Start Session' to begin attendance tracking." />
+          <Empty description={t("session.noActiveSession")} />
           {sessions.length > 0 && (
             <Alert
               type="info"
-              message={`${sessions.length} active session(s) found`}
+              message={t("session.activeSessionsFound", { count: sessions.length })}
               style={{ marginTop: 16 }}
               action={
                 <Button size="small" onClick={() => setActiveSession(sessions[0])}>
-                  Rejoin
+                  {t("common.rejoin")}
                 </Button>
               }
             />
@@ -294,26 +297,26 @@ export default function LiveSession() {
             {
               key: "qr",
               label: (
-                <span><QrcodeOutlined /> QR Attendance</span>
+                <span><QrcodeOutlined /> {t("session.qrAttendance")}</span>
               ),
               children: (
                 <Row gutter={[16, 16]}>
                   <Col xs={24} lg={16}>
                     <Card
-                      title="Recognized Students"
+                      title={t("session.recognizedStudents")}
                       extra={
                         <Space>
                           <Badge count={presentCount} style={{ backgroundColor: "#52c41a" }} />
-                          <Text type="secondary">Present</Text>
+                          <Text type="secondary">{t("common.present")}</Text>
                           <Badge count={lateCount} style={{ backgroundColor: "#fa8c16" }} />
-                          <Text type="secondary">Late</Text>
+                          <Text type="secondary">{t("common.late")}</Text>
                           <Badge count={absentCount} style={{ backgroundColor: "#ff4d4f" }} />
-                          <Text type="secondary">Absent</Text>
+                          <Text type="secondary">{t("common.absent")}</Text>
                         </Space>
                       }
                     >
                       {sessionRecords.length === 0 ? (
-                        <Empty description="Waiting for students to scan the QR code and verify their face..." />
+                        <Empty description={t("session.waitingForStudents")} />
                       ) : (
                         <List
                           dataSource={sessionRecords}
@@ -348,7 +351,7 @@ export default function LiveSession() {
                       title={
                         <Space>
                           <QrcodeOutlined />
-                          <span>Attendance QR Code</span>
+                          <span>{t("session.attendanceQRCode")}</span>
                         </Space>
                       }
                       extra={
@@ -358,7 +361,7 @@ export default function LiveSession() {
                             icon={<FullscreenOutlined />}
                             onClick={() => setQrFullscreen(true)}
                           >
-                            Fullscreen
+                            {t("common.fullscreen")}
                           </Button>
                         )
                       }
@@ -372,7 +375,7 @@ export default function LiveSession() {
                             style={{ margin: "0 auto" }}
                           />
                           <div style={{ marginTop: 16 }}>
-                            <Text type="secondary">Refreshes in</Text>
+                            <Text type="secondary">{t("session.refreshesIn")}</Text>
                             <Progress
                               type="circle"
                               percent={Math.round((qrSeconds / (qrToken?.interval_seconds ?? 45)) * 100)}
@@ -382,34 +385,34 @@ export default function LiveSession() {
                             />
                           </div>
                           <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
-                            Project this QR code on screen for students to scan
+                            {t("session.projectQR")}
                           </Text>
                         </div>
                       ) : (
-                        <Empty description="Generating QR code..." />
+                        <Empty description={t("session.generatingQR")} />
                       )}
                     </Card>
 
-                    <Card title="Session Info" style={{ marginTop: 16 }}>
+                    <Card title={t("session.sessionInfo")} style={{ marginTop: 16 }}>
                       <Descriptions column={1} size="small">
-                        <Descriptions.Item label="Session ID">{activeSession.id}</Descriptions.Item>
-                        <Descriptions.Item label="Date">{activeSession.date}</Descriptions.Item>
-                        <Descriptions.Item label="Started">
+                        <Descriptions.Item label={t("session.sessionId")}>{activeSession.id}</Descriptions.Item>
+                        <Descriptions.Item label={t("common.date")}>{activeSession.date}</Descriptions.Item>
+                        <Descriptions.Item label={t("session.started")}>
                           {dayjs(activeSession.started_at).format("HH:mm:ss")}
                         </Descriptions.Item>
-                        <Descriptions.Item label="Status">
-                          <Tag color="green">Active</Tag>
+                        <Descriptions.Item label={t("common.status")}>
+                          <Tag color="green">{t("common.active")}</Tag>
                         </Descriptions.Item>
                       </Descriptions>
                     </Card>
 
-                    <Card title="How It Works" style={{ marginTop: 16 }} size="small">
+                    <Card title={t("session.howItWorks")} style={{ marginTop: 16 }} size="small">
                       <ol style={{ paddingLeft: 16, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
-                        <li>Start a session for a scheduled class</li>
-                        <li>Project the QR code on screen</li>
-                        <li>Students scan the QR and verify with face + GPS</li>
-                        <li>Status is assigned based on arrival time</li>
-                        <li>Stop the session to auto-mark absent students</li>
+                        <li>{t("session.step1")}</li>
+                        <li>{t("session.step2")}</li>
+                        <li>{t("session.step3")}</li>
+                        <li>{t("session.step4")}</li>
+                        <li>{t("session.step5")}</li>
                       </ol>
                     </Card>
                   </Col>
@@ -419,11 +422,11 @@ export default function LiveSession() {
             {
               key: "rollcall",
               label: (
-                <span><OrderedListOutlined /> Manual Roll Call</span>
+                <span><OrderedListOutlined /> {t("session.manualRollCall")}</span>
               ),
               children: (
                 <Card
-                  title="Manual Roll Call"
+                  title={t("session.manualRollCall")}
                   extra={
                     <Button
                       type="primary"
@@ -432,17 +435,17 @@ export default function LiveSession() {
                       disabled={enrolledStudents.length === 0}
                       onClick={handleSaveManual}
                     >
-                      Save All
+                      {t("session.saveAll")}
                     </Button>
                   }
                 >
                   {enrolledStudents.length === 0 ? (
-                    <Empty description="No enrolled students found for this session's course." />
+                    <Empty description={t("session.noEnrolledStudents")} />
                   ) : (
                     <>
                       <Alert
                         type="info"
-                        message="Use this fallback when QR/face recognition isn't working. Select a status for each student and click Save All."
+                        message={t("session.rollCallFallback")}
                         showIcon
                         style={{ marginBottom: 16 }}
                       />
@@ -462,9 +465,9 @@ export default function LiveSession() {
                                   }
                                   style={{ width: 130 }}
                                   options={[
-                                    { value: "present", label: "Present" },
-                                    { value: "late", label: "Late" },
-                                    { value: "absent", label: "Absent" },
+                                    { value: "present", label: t("common.present") },
+                                    { value: "late", label: t("common.late") },
+                                    { value: "absent", label: t("common.absent") },
                                   ]}
                                 />,
                               ]}
@@ -524,7 +527,7 @@ export default function LiveSession() {
               />
               <div style={{ marginTop: 12 }}>
                 <Text type="secondary" style={{ fontSize: 16 }}>
-                  Scan this QR code to mark your attendance
+                  {t("session.scanQR")}
                 </Text>
               </div>
             </div>
@@ -534,28 +537,28 @@ export default function LiveSession() {
 
       {/* Start Session Modal */}
       <Modal
-        title="Start Attendance Session"
+        title={t("session.startSessionModal")}
         open={startModalOpen}
         onOk={handleStart}
         onCancel={() => setStartModalOpen(false)}
-        okText="Start"
+        okText={t("common.start")}
         okButtonProps={{ disabled: !selectedSchedule }}
       >
         <Space direction="vertical" style={{ width: "100%", marginTop: 12 }}>
-          <Text strong>Course</Text>
+          <Text strong>{t("session.course")}</Text>
           <Select
             showSearch
             optionFilterProp="label"
-            placeholder="Select course"
+            placeholder={t("common.selectCourse")}
             value={selectedCourse}
             onChange={(v) => { setSelectedCourse(v); setSelectedSchedule(null); }}
             style={{ width: "100%" }}
             options={courses.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
           />
 
-          <Text strong>Schedule</Text>
+          <Text strong>{t("session.schedule")}</Text>
           <Select
-            placeholder="Select class time"
+            placeholder={t("session.selectClassTime")}
             value={selectedSchedule}
             onChange={setSelectedSchedule}
             style={{ width: "100%" }}
@@ -566,30 +569,30 @@ export default function LiveSession() {
             }))}
           />
 
-          <Text strong>Date</Text>
+          <Text strong>{t("common.date")}</Text>
           <DatePicker
             value={selectedDate}
             onChange={(d) => d && setSelectedDate(d)}
             style={{ width: "100%" }}
           />
 
-          <Text strong>QR Code Rotation Interval</Text>
+          <Text strong>{t("session.qrRotationInterval")}</Text>
           <Select
             value={qrIntervalSeconds}
             onChange={setQrIntervalSeconds}
             style={{ width: "100%" }}
             options={[
-              { value: 15, label: "15 seconds (high security)" },
-              { value: 30, label: "30 seconds" },
-              { value: 45, label: "45 seconds (default)" },
-              { value: 60, label: "60 seconds" },
-              { value: 90, label: "90 seconds (large room)" },
+              { value: 15, label: t("session.qrInterval15") },
+              { value: 30, label: t("session.qrInterval30") },
+              { value: 45, label: t("session.qrInterval45") },
+              { value: 60, label: t("session.qrInterval60") },
+              { value: 90, label: t("session.qrInterval90") },
             ]}
           />
 
           <Alert
             type="info"
-            message="Your GPS location will be captured to validate student proximity."
+            message={t("session.gpsInfo")}
             showIcon
             style={{ marginTop: 8 }}
           />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Button,
   Drawer,
@@ -48,6 +49,7 @@ interface CourseFormValues {
 }
 
 export default function CourseManagement() {
+  const { t } = useTranslation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -70,11 +72,11 @@ export default function CourseManagement() {
     try {
       setCourses(await listCourses());
     } catch {
-      message.error("Failed to load courses");
+      message.error(t("coursesPage.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchCourses();
@@ -100,25 +102,25 @@ export default function CourseManagement() {
       const values = await form.validateFields();
       if (editingCourse) {
         await updateCourse(editingCourse.id, values as Partial<Course>);
-        message.success("Course updated");
+        message.success(t("coursesPage.courseUpdated"));
       } else {
         await createCourse(values);
-        message.success("Course created");
+        message.success(t("coursesPage.courseCreated"));
       }
       setModalOpen(false);
       fetchCourses();
     } catch {
-      message.error("Operation failed");
+      message.error(t("common.operationFailed"));
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
       await deleteCourse(id);
-      message.success("Course deleted");
+      message.success(t("coursesPage.courseDeleted"));
       fetchCourses();
     } catch {
-      message.error("Failed to delete course");
+      message.error(t("coursesPage.deleteFailed"));
     }
   };
 
@@ -138,7 +140,7 @@ export default function CourseManagement() {
       setAllProfessors(allProfs);
       setAllStudents(allStuds);
     } catch {
-      message.error("Failed to load course members");
+      message.error(t("coursesPage.membersFailed"));
     }
   };
 
@@ -146,12 +148,12 @@ export default function CourseManagement() {
     if (!selectedCourse || selectedUserIds.length === 0) return;
     try {
       await assignProfessors(selectedCourse.id, selectedUserIds);
-      message.success("Professors assigned");
+      message.success(t("coursesPage.professorsAssigned"));
       setAssignProfModalOpen(false);
       setSelectedUserIds([]);
       setCourseProfessors(await getCourseProfessors(selectedCourse.id));
     } catch {
-      message.error("Failed to assign professors");
+      message.error(t("coursesPage.assignFailed"));
     }
   };
 
@@ -161,7 +163,7 @@ export default function CourseManagement() {
       await removeProfessor(selectedCourse.id, profId);
       setCourseProfessors(await getCourseProfessors(selectedCourse.id));
     } catch {
-      message.error("Failed to remove professor");
+      message.error(t("coursesPage.removeProfFailed"));
     }
   };
 
@@ -169,12 +171,12 @@ export default function CourseManagement() {
     if (!selectedCourse || selectedUserIds.length === 0) return;
     try {
       await enrollStudents(selectedCourse.id, selectedUserIds);
-      message.success("Students enrolled");
+      message.success(t("coursesPage.studentsEnrolledSuccess"));
       setEnrollStudentModalOpen(false);
       setSelectedUserIds([]);
       setCourseStudents(await getCourseStudents(selectedCourse.id));
     } catch {
-      message.error("Failed to enroll students");
+      message.error(t("coursesPage.enrollFailed"));
     }
   };
 
@@ -184,7 +186,7 @@ export default function CourseManagement() {
       await removeStudent(selectedCourse.id, studentId);
       setCourseStudents(await getCourseStudents(selectedCourse.id));
     } catch {
-      message.error("Failed to remove student");
+      message.error(t("coursesPage.removeStudentFailed"));
     }
   };
 
@@ -195,31 +197,31 @@ export default function CourseManagement() {
   const availableStudents = allStudents.filter((s) => !existingStudentIds.has(s.id));
 
   const columns = [
-    { title: "Code", dataIndex: "code", key: "code", width: 100 },
-    { title: "Name", dataIndex: "name", key: "name" },
-    { title: "Semester", dataIndex: "semester", key: "semester", width: 120 },
-    { title: "Year", dataIndex: "academic_year", key: "academic_year", width: 100 },
+    { title: t("coursesPage.code"), dataIndex: "code", key: "code", width: 100 },
+    { title: t("common.name"), dataIndex: "name", key: "name" },
+    { title: t("coursesPage.semester"), dataIndex: "semester", key: "semester", width: 120 },
+    { title: t("coursesPage.year"), dataIndex: "academic_year", key: "academic_year", width: 100 },
     {
-      title: "Created",
+      title: t("coursesPage.created"),
       dataIndex: "created_at",
       key: "created_at",
       width: 160,
       render: (d: string) => formatDateTime(d),
     },
     {
-      title: "Actions",
+      title: t("common.actions"),
       key: "actions",
       width: 260,
       render: (_: unknown, record: Course) => (
         <Space>
           <Button type="link" icon={<TeamOutlined />} onClick={() => openDrawer(record)}>
-            Members
+            {t("coursesPage.members")}
           </Button>
           <Button type="link" icon={<EditOutlined />} onClick={() => openEdit(record)}>
-            Edit
+            {t("common.edit")}
           </Button>
-          <Popconfirm title="Delete this course?" onConfirm={() => handleDelete(record.id)} okButtonProps={{ danger: true }}>
-            <Button type="link" danger icon={<DeleteOutlined />}>Delete</Button>
+          <Popconfirm title={t("coursesPage.deleteCourse")} onConfirm={() => handleDelete(record.id)} okButtonProps={{ danger: true }}>
+            <Button type="link" danger icon={<DeleteOutlined />}>{t("common.delete")}</Button>
           </Popconfirm>
         </Space>
       ),
@@ -229,43 +231,43 @@ export default function CourseManagement() {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>Course Management</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Create Course</Button>
+        <Title level={4} style={{ margin: 0 }}>{t("coursesPage.managementTitle")}</Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>{t("coursesPage.createCourse")}</Button>
       </div>
 
       <Table dataSource={courses} columns={columns} rowKey="id" loading={loading}
-        pagination={{ pageSize: 10, showTotal: (t) => `${t} courses` }} />
+        pagination={{ pageSize: 10, showTotal: (total) => `${total} ${t("common.courses")}` }} />
 
       {/* Create/Edit Modal */}
       <Modal
-        title={editingCourse ? "Edit Course" : "Create Course"}
+        title={editingCourse ? t("coursesPage.editCourse") : t("coursesPage.createCourse")}
         open={modalOpen}
         onOk={handleSubmit}
         onCancel={() => setModalOpen(false)}
-        okText={editingCourse ? "Save" : "Create"}
+        okText={editingCourse ? t("common.save") : t("common.create")}
         width={520}
         destroyOnClose
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item name="code" label="Course Code" rules={[{ required: true }]}>
+          <Form.Item name="code" label={t("coursesPage.courseCode")} rules={[{ required: true }]}>
             <Input placeholder="CS101" disabled={!!editingCourse} />
           </Form.Item>
-          <Form.Item name="name" label="Course Name" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t("coursesPage.courseName")} rules={[{ required: true }]}>
             <Input placeholder="Introduction to Computer Science" />
           </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea rows={3} placeholder="Optional description" />
+          <Form.Item name="description" label={t("coursesPage.description")}>
+            <Input.TextArea rows={3} placeholder={t("coursesPage.optionalDescription")} />
           </Form.Item>
           <Space>
-            <Form.Item name="semester" label="Semester" rules={[{ required: true }]}>
-              <Select style={{ width: 160 }} placeholder="Select"
+            <Form.Item name="semester" label={t("coursesPage.semester")} rules={[{ required: true }]}>
+              <Select style={{ width: 160 }} placeholder={t("coursesPage.semester")}
                 options={[
-                  { value: "Fall", label: "Fall" },
-                  { value: "Spring", label: "Spring" },
-                  { value: "Summer", label: "Summer" },
+                  { value: "Fall", label: t("coursesPage.fall") },
+                  { value: "Spring", label: t("coursesPage.spring") },
+                  { value: "Summer", label: t("coursesPage.summer") },
                 ]} />
             </Form.Item>
-            <Form.Item name="academic_year" label="Academic Year" rules={[{ required: true }]}>
+            <Form.Item name="academic_year" label={t("coursesPage.academicYear")} rules={[{ required: true }]}>
               <Input placeholder="2025-2026" style={{ width: 140 }} />
             </Form.Item>
           </Space>
@@ -281,22 +283,22 @@ export default function CourseManagement() {
       >
         {/* Professors */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <Title level={5} style={{ margin: 0 }}>Professors</Title>
+          <Title level={5} style={{ margin: 0 }}>{t("coursesPage.professors")}</Title>
           <Button size="small" icon={<UserAddOutlined />}
             onClick={() => { setSelectedUserIds([]); setAssignProfModalOpen(true); }}
             disabled={availableProfessors.length === 0}>
-            Assign
+            {t("common.assign")}
           </Button>
         </div>
         <List
           size="small"
           bordered
           dataSource={courseProfessors}
-          locale={{ emptyText: "No professors assigned" }}
+          locale={{ emptyText: t("coursesPage.noProfessors") }}
           renderItem={(p) => (
             <List.Item
               actions={[
-                <Popconfirm key="rm" title="Remove?" onConfirm={() => handleRemoveProf(p.id)}>
+                <Popconfirm key="rm" title={t("common.remove")} onConfirm={() => handleRemoveProf(p.id)}>
                   <Button type="link" danger size="small" icon={<UserDeleteOutlined />} />
                 </Popconfirm>,
               ]}
@@ -310,22 +312,22 @@ export default function CourseManagement() {
 
         {/* Students */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <Title level={5} style={{ margin: 0 }}>Enrolled Students</Title>
+          <Title level={5} style={{ margin: 0 }}>{t("coursesPage.enrolledStudents")}</Title>
           <Button size="small" icon={<UserAddOutlined />}
             onClick={() => { setSelectedUserIds([]); setEnrollStudentModalOpen(true); }}
             disabled={availableStudents.length === 0}>
-            Enroll
+            {t("common.enroll")}
           </Button>
         </div>
         <List
           size="small"
           bordered
           dataSource={courseStudents}
-          locale={{ emptyText: "No students enrolled" }}
+          locale={{ emptyText: t("coursesPage.noStudents") }}
           renderItem={(s) => (
             <List.Item
               actions={[
-                <Popconfirm key="rm" title="Remove?" onConfirm={() => handleRemoveStudent(s.id)}>
+                <Popconfirm key="rm" title={t("common.remove")} onConfirm={() => handleRemoveStudent(s.id)}>
                   <Button type="link" danger size="small" icon={<UserDeleteOutlined />} />
                 </Popconfirm>,
               ]}
@@ -338,17 +340,17 @@ export default function CourseManagement() {
 
       {/* Assign Professors Modal */}
       <Modal
-        title="Assign Professors"
+        title={t("coursesPage.assignProfessors")}
         open={assignProfModalOpen}
         onOk={handleAssignProfessors}
         onCancel={() => setAssignProfModalOpen(false)}
-        okText="Assign"
+        okText={t("common.assign")}
         okButtonProps={{ disabled: selectedUserIds.length === 0 }}
       >
         <Select
           mode="multiple"
           style={{ width: "100%", marginTop: 12 }}
-          placeholder="Select professors"
+          placeholder={t("coursesPage.selectProfessors")}
           value={selectedUserIds}
           onChange={setSelectedUserIds}
           options={availableProfessors.map((p) => ({
@@ -360,17 +362,17 @@ export default function CourseManagement() {
 
       {/* Enroll Students Modal */}
       <Modal
-        title="Enroll Students"
+        title={t("coursesPage.enrollStudents")}
         open={enrollStudentModalOpen}
         onOk={handleEnrollStudents}
         onCancel={() => setEnrollStudentModalOpen(false)}
-        okText="Enroll"
+        okText={t("common.enroll")}
         okButtonProps={{ disabled: selectedUserIds.length === 0 }}
       >
         <Select
           mode="multiple"
           style={{ width: "100%", marginTop: 12 }}
-          placeholder="Select students"
+          placeholder={t("coursesPage.selectStudents")}
           value={selectedUserIds}
           onChange={setSelectedUserIds}
           options={availableStudents.map((s) => ({

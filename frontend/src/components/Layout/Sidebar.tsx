@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Drawer, Layout, Menu } from "antd";
 import {
   DashboardOutlined,
@@ -24,90 +25,95 @@ interface Props {
   onMobileClose: () => void;
 }
 
-function getMenuItems(role: Role) {
+function useMenuItems(role: Role) {
+  const { t } = useTranslation();
+
   const shared = [
     {
       key: "/dashboard",
       icon: <DashboardOutlined />,
-      label: "Dashboard",
+      label: t("nav.dashboard"),
     },
   ];
 
   if (role === "admin") {
     return [
       ...shared,
-      { key: "/admin/users", icon: <TeamOutlined />, label: "User Management" },
-      { key: "/admin/courses", icon: <BookOutlined />, label: "Courses" },
-      { key: "/admin/schedules", icon: <CalendarOutlined />, label: "Schedules" },
-      { key: "/admin/faces", icon: <ScanOutlined />, label: "Face Registry" },
-      { key: "/admin/attendance", icon: <BarChartOutlined />, label: "Attendance" },
-      { key: "/profile", icon: <UserOutlined />, label: "Profile" },
+      { key: "/admin/users", icon: <TeamOutlined />, label: t("nav.userManagement") },
+      { key: "/admin/courses", icon: <BookOutlined />, label: t("nav.courses") },
+      { key: "/admin/schedules", icon: <CalendarOutlined />, label: t("nav.schedules") },
+      { key: "/admin/faces", icon: <ScanOutlined />, label: t("nav.faceRegistry") },
+      { key: "/admin/attendance", icon: <BarChartOutlined />, label: t("nav.attendance") },
+      { key: "/profile", icon: <UserOutlined />, label: t("nav.profile") },
     ];
   }
 
   if (role === "professor") {
     return [
       ...shared,
-      { key: "/courses", icon: <BookOutlined />, label: "My Courses" },
-      { key: "/sessions", icon: <ScanOutlined />, label: "Live Sessions" },
-      { key: "/attendance", icon: <CalendarOutlined />, label: "Attendance" },
-      { key: "/statistics", icon: <BarChartOutlined />, label: "Statistics" },
-      { key: "/appeals-review", icon: <FileTextOutlined />, label: "Appeals" },
-      { key: "/profile", icon: <UserOutlined />, label: "Profile" },
+      { key: "/courses", icon: <BookOutlined />, label: t("nav.myCourses") },
+      { key: "/sessions", icon: <ScanOutlined />, label: t("nav.liveSessions") },
+      { key: "/attendance", icon: <CalendarOutlined />, label: t("nav.attendance") },
+      { key: "/statistics", icon: <BarChartOutlined />, label: t("nav.statistics") },
+      { key: "/appeals-review", icon: <FileTextOutlined />, label: t("nav.appeals") },
+      { key: "/profile", icon: <UserOutlined />, label: t("nav.profile") },
     ];
   }
 
   return [
     ...shared,
-    { key: "/attend", icon: <ScanOutlined />, label: "Attend" },
-    { key: "/courses", icon: <BookOutlined />, label: "My Courses" },
-    { key: "/appeals", icon: <FileTextOutlined />, label: "Appeals" },
-    { key: "/notifications", icon: <BellOutlined />, label: "Notifications" },
-    { key: "/profile", icon: <UserOutlined />, label: "Profile" },
+    { key: "/attend", icon: <ScanOutlined />, label: t("nav.attend") },
+    { key: "/courses", icon: <BookOutlined />, label: t("nav.myCourses") },
+    { key: "/appeals", icon: <FileTextOutlined />, label: t("nav.appeals") },
+    { key: "/notifications", icon: <BellOutlined />, label: t("nav.notifications") },
+    { key: "/profile", icon: <UserOutlined />, label: t("nav.profile") },
   ];
 }
 
-const logoArea = (collapsed: boolean) => (
-  <div
-    style={{
-      height: 64,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 10,
-      borderBottom: "1px solid rgba(255,255,255,0.08)",
-      margin: "0 0 8px",
-    }}
-  >
+function LogoArea({ collapsed }: { collapsed: boolean }) {
+  const { t } = useTranslation();
+  return (
     <div
       style={{
-        width: 32,
-        height: 32,
-        borderRadius: 8,
-        background: "rgba(99,102,241,0.4)",
+        height: 64,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        flexShrink: 0,
+        gap: 10,
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        margin: "0 0 8px",
       }}
     >
-      <ScanOutlined style={{ color: "#c7d2fe", fontSize: 16 }} />
-    </div>
-    {!collapsed && (
-      <span
+      <div
         style={{
-          color: "#e0e7ff",
-          fontWeight: 700,
-          fontSize: 15,
-          whiteSpace: "nowrap",
-          letterSpacing: -0.3,
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          background: "rgba(99,102,241,0.4)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
         }}
       >
-        Face Attendance
-      </span>
-    )}
-  </div>
-);
+        <ScanOutlined style={{ color: "#c7d2fe", fontSize: 16 }} />
+      </div>
+      {!collapsed && (
+        <span
+          style={{
+            color: "#e0e7ff",
+            fontWeight: 700,
+            fontSize: 15,
+            whiteSpace: "nowrap",
+            letterSpacing: -0.3,
+          }}
+        >
+          {t("nav.faceAttendance")}
+        </span>
+      )}
+    </div>
+  );
+}
 
 const sidebarBg = "linear-gradient(180deg, #1e1b4b 0%, #312e81 100%)";
 
@@ -119,9 +125,10 @@ export default function Sidebar({
   mobileOpen,
   onMobileClose,
 }: Props) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const items = getMenuItems(role);
+  const items = useMenuItems(role);
 
   const handleClick = (key: string) => {
     navigate(key);
@@ -152,7 +159,7 @@ export default function Sidebar({
         }}
       >
         <div style={{ background: sidebarBg, minHeight: "100vh" }}>
-          {logoArea(false)}
+          <LogoArea collapsed={false} />
           {menuContent}
         </div>
       </Drawer>
@@ -180,11 +187,11 @@ export default function Sidebar({
             borderTop: "1px solid rgba(255,255,255,0.08)",
           }}
         >
-          {collapsed ? "\u203A" : "\u2039 Collapse"}
+          {collapsed ? "\u203A" : `\u2039 ${t("common.collapse")}`}
         </div>
       }
     >
-      {logoArea(collapsed)}
+      <LogoArea collapsed={collapsed} />
       {menuContent}
     </Sider>
   );

@@ -19,6 +19,7 @@ import {
   ClockCircleOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import { getCourse } from "@/api/courses";
 import { getMyCourseAttendance, type StudentCourseRecord } from "@/api/attendance";
@@ -26,18 +27,19 @@ import type { Course } from "@/types";
 
 const { Title, Text } = Typography;
 
-const statusConfig: Record<string, { color: string; label: string }> = {
-  present: { color: "green", label: "Present" },
-  late: { color: "orange", label: "Late" },
-  absent: { color: "red", label: "Absent" },
-};
-
 export default function AttendanceHistory() {
+  const { t } = useTranslation();
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [records, setRecords] = useState<StudentCourseRecord[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const statusConfig: Record<string, { color: string; label: string }> = {
+    present: { color: "green", label: t("common.present") },
+    late: { color: "orange", label: t("common.late") },
+    absent: { color: "red", label: t("common.absent") },
+  };
 
   const fetchData = useCallback(async () => {
     if (!courseId) return;
@@ -50,11 +52,11 @@ export default function AttendanceHistory() {
       setCourse(c);
       setRecords(r);
     } catch {
-      message.error("Failed to load attendance data");
+      message.error(t("attendance.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [courseId]);
+  }, [courseId, t]);
 
   useEffect(() => {
     fetchData();
@@ -68,7 +70,7 @@ export default function AttendanceHistory() {
 
   const columns = [
     {
-      title: "Date",
+      title: t("common.date"),
       dataIndex: "session_date",
       width: 120,
       sorter: (a: StudentCourseRecord, b: StudentCourseRecord) =>
@@ -76,7 +78,7 @@ export default function AttendanceHistory() {
       defaultSortOrder: "descend" as const,
     },
     {
-      title: "Status",
+      title: t("common.status"),
       key: "status",
       width: 100,
       render: (_: unknown, r: StudentCourseRecord) => {
@@ -84,29 +86,29 @@ export default function AttendanceHistory() {
         return <Tag color={cfg.color}>{cfg.label}</Tag>;
       },
       filters: [
-        { text: "Present", value: "present" },
-        { text: "Late", value: "late" },
-        { text: "Absent", value: "absent" },
+        { text: t("common.present"), value: "present" },
+        { text: t("common.late"), value: "late" },
+        { text: t("common.absent"), value: "absent" },
       ],
       onFilter: (value: unknown, record: StudentCourseRecord) => record.status === value,
     },
     {
-      title: "Time Recognized",
+      title: t("attendance.timeRecognized"),
       key: "recognized_at",
       width: 140,
       render: (_: unknown, r: StudentCourseRecord) =>
-        r.recognized_at ? dayjs(r.recognized_at).format("HH:mm:ss") : "Not recognized",
+        r.recognized_at ? dayjs(r.recognized_at).format("HH:mm:ss") : t("attendance.notRecognized"),
     },
     {
-      title: "Marked By",
+      title: t("attendance.markedBy"),
       key: "marked_by",
       width: 110,
       render: (_: unknown, r: StudentCourseRecord) => (
-        <Tag>{r.marked_by === "system" ? "System" : "Professor"}</Tag>
+        <Tag>{r.marked_by === "system" ? t("common.system") : t("common.professor")}</Tag>
       ),
     },
     {
-      title: "Record ID",
+      title: t("attendance.recordId"),
       dataIndex: "id",
       width: 90,
       render: (id: number) => <Text type="secondary">#{id}</Text>,
@@ -121,11 +123,11 @@ export default function AttendanceHistory() {
         onClick={() => navigate("/courses")}
         style={{ padding: 0, marginBottom: 8 }}
       >
-        Back to My Courses
+        {t("attendance.backToMyCourses")}
       </Button>
 
       <Title level={4}>
-        {course ? `${course.code} — ${course.name}` : "Attendance History"}
+        {course ? `${course.code} — ${course.name}` : t("attendance.attendanceHistory")}
       </Title>
 
       {/* Summary cards */}
@@ -133,7 +135,7 @@ export default function AttendanceHistory() {
         <Col xs={12} sm={6}>
           <Card loading={loading} size="small">
             <Statistic
-              title="Attendance Rate"
+              title={t("attendance.attendanceRate")}
               value={rate}
               suffix="%"
               valueStyle={{ color: rate >= 75 ? "#52c41a" : rate >= 50 ? "#fa8c16" : "#ff4d4f" }}
@@ -143,7 +145,7 @@ export default function AttendanceHistory() {
         <Col xs={12} sm={6}>
           <Card loading={loading} size="small">
             <Statistic
-              title={<><CheckCircleOutlined /> Present</>}
+              title={<><CheckCircleOutlined /> {t("common.present")}</>}
               value={present}
               valueStyle={{ color: "#52c41a" }}
             />
@@ -152,7 +154,7 @@ export default function AttendanceHistory() {
         <Col xs={12} sm={6}>
           <Card loading={loading} size="small">
             <Statistic
-              title={<><ClockCircleOutlined /> Late</>}
+              title={<><ClockCircleOutlined /> {t("common.late")}</>}
               value={late}
               valueStyle={{ color: "#fa8c16" }}
             />
@@ -161,7 +163,7 @@ export default function AttendanceHistory() {
         <Col xs={12} sm={6}>
           <Card loading={loading} size="small">
             <Statistic
-              title={<><CloseCircleOutlined /> Absent</>}
+              title={<><CloseCircleOutlined /> {t("common.absent")}</>}
               value={absent}
               valueStyle={{ color: "#ff4d4f" }}
             />
@@ -182,8 +184,8 @@ export default function AttendanceHistory() {
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 20, showTotal: (t) => `${t} session(s)` }}
-        locale={{ emptyText: <Empty description="No attendance recorded for this course yet" /> }}
+        pagination={{ pageSize: 20, showTotal: (total) => t("attendance.sessionCount", { count: total }) }}
+        locale={{ emptyText: <Empty description={t("attendance.noRecordsForCourse")} /> }}
       />
     </>
   );

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Col, Empty, Row, Space, Tag, Typography, message } from "antd";
 import { BookOutlined, CalendarOutlined, RightOutlined } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 import type { Course, Schedule } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSchedules } from "@/api/schedules";
@@ -26,6 +27,7 @@ interface CourseWithSchedule {
 }
 
 export default function StudentMyCourses() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState<CourseWithSchedule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,11 +41,11 @@ export default function StudentMyCourses() {
       }));
       setData(result);
     } catch {
-      message.error("Failed to load courses");
+      message.error(t("coursesPage.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -52,16 +54,16 @@ export default function StudentMyCourses() {
   if (!loading && data.length === 0) {
     return (
       <>
-        <Title level={4}>My Courses</Title>
-        <Empty description="You are not enrolled in any courses yet." />
+        <Title level={4}>{t("coursesPage.title")}</Title>
+        <Empty description={t("coursesPage.notEnrolled")} />
       </>
     );
   }
 
   return (
     <>
-      <Title level={4}>My Courses</Title>
-      <Paragraph type="secondary">Click on a course to view your attendance history.</Paragraph>
+      <Title level={4}>{t("coursesPage.title")}</Title>
+      <Paragraph type="secondary">{t("coursesPage.clickToView")}</Paragraph>
       <Row gutter={[16, 16]}>
         {data.map(({ course, schedules }) => (
           <Col xs={24} md={12} xl={8} key={course.id}>
@@ -88,7 +90,7 @@ export default function StudentMyCourses() {
 
               {schedules.length > 0 && (
                 <div style={{ marginTop: 8 }}>
-                  <CalendarOutlined /> <Text strong>Schedule:</Text>
+                  <CalendarOutlined /> <Text strong>{t("coursesPage.scheduleLabel")}:</Text>
                   {schedules.map((s) => (
                     <div key={s.id} style={{ marginLeft: 20, marginTop: 4 }}>
                       <Tag color={classTypeColors[s.class_type]}>{capitalize(s.class_type)}</Tag>

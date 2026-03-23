@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Button,
   Card,
@@ -28,26 +29,28 @@ import { exportCourseCSV } from "@/api/attendance";
 const { Title, Text } = Typography;
 
 export default function Statistics() {
+  const { t } = useTranslation();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<number | undefined>(undefined);
   const [stats, setStats] = useState<CourseStatistics | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    listCourses().then(setCourses).catch(() => message.error("Failed to load courses"));
-  }, []);
+    listCourses().then(setCourses).catch(() => message.error(t("stats.loadFailed")));
+  }, [t]);
 
   const fetchStats = useCallback(async (courseId: number) => {
     setLoading(true);
     try {
       setStats(await getCourseStatistics(courseId));
     } catch {
-      message.error("Failed to load statistics");
+      message.error(t("stats.loadFailed"));
       setStats(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const handleCourseChange = (courseId: number) => {
     setSelectedCourse(courseId);
@@ -59,39 +62,39 @@ export default function Statistics() {
 
   const columns = [
     {
-      title: "Student",
+      title: t("attendance.studentCol"),
       dataIndex: "student_name",
       sorter: (a: StudentAttendanceStat, b: StudentAttendanceStat) =>
         a.student_name.localeCompare(b.student_name),
     },
     {
-      title: "Present",
+      title: t("common.present"),
       dataIndex: "present_count",
       width: 90,
       render: (v: number) => <Tag color="green">{v}</Tag>,
       sorter: (a: StudentAttendanceStat, b: StudentAttendanceStat) => a.present_count - b.present_count,
     },
     {
-      title: "Late",
+      title: t("common.late"),
       dataIndex: "late_count",
       width: 80,
       render: (v: number) => <Tag color="orange">{v}</Tag>,
       sorter: (a: StudentAttendanceStat, b: StudentAttendanceStat) => a.late_count - b.late_count,
     },
     {
-      title: "Absent",
+      title: t("common.absent"),
       dataIndex: "absent_count",
       width: 80,
       render: (v: number) => <Tag color="red">{v}</Tag>,
       sorter: (a: StudentAttendanceStat, b: StudentAttendanceStat) => a.absent_count - b.absent_count,
     },
     {
-      title: "Sessions",
+      title: t("stats.sessions"),
       dataIndex: "total_sessions",
       width: 90,
     },
     {
-      title: "Rate",
+      title: t("stats.rate"),
       dataIndex: "attendance_rate",
       width: 140,
       render: (rate: number) => (
@@ -108,11 +111,11 @@ export default function Statistics() {
 
   return (
     <>
-      <Title level={4}>Attendance Statistics</Title>
+      <Title level={4}>{t("stats.title")}</Title>
 
       <Space style={{ marginBottom: 24 }} wrap>
         <Select
-          placeholder="Select a course"
+          placeholder={t("stats.selectCourse")}
           value={selectedCourse}
           onChange={handleCourseChange}
           style={{ width: 350 }}
@@ -124,16 +127,16 @@ export default function Statistics() {
         {selectedCourse && (
           <Button
             icon={<DownloadOutlined />}
-            onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error("Export failed"))}
+            onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error(t("attendance.exportFailed")))}
           >
-            Export CSV
+            {t("attendance.exportCSV")}
           </Button>
         )}
       </Space>
 
       {!selectedCourse && (
         <Card>
-          <Empty description="Select a course to view statistics" />
+          <Empty description={t("stats.selectCourseToView")} />
         </Card>
       )}
 
@@ -144,7 +147,7 @@ export default function Statistics() {
             <Col xs={12} sm={6}>
               <Card loading={loading}>
                 <Statistic
-                  title="Enrolled Students"
+                  title={t("stats.enrolledStudents")}
                   value={stats.total_enrolled}
                   prefix={<TeamOutlined />}
                 />
@@ -153,7 +156,7 @@ export default function Statistics() {
             <Col xs={12} sm={6}>
               <Card loading={loading}>
                 <Statistic
-                  title="Total Sessions"
+                  title={t("stats.totalSessions")}
                   value={stats.total_sessions}
                   prefix={<CalendarOutlined />}
                 />
@@ -162,7 +165,7 @@ export default function Statistics() {
             <Col xs={12} sm={6}>
               <Card loading={loading}>
                 <Statistic
-                  title="Avg Attendance Rate"
+                  title={t("stats.avgRate")}
                   value={stats.avg_attendance_rate}
                   suffix="%"
                   prefix={<BarChartOutlined />}
@@ -173,7 +176,7 @@ export default function Statistics() {
             <Col xs={12} sm={6}>
               <Card loading={loading}>
                 <Statistic
-                  title="Course"
+                  title={t("stats.course")}
                   value={stats.course_code}
                 />
               </Card>
@@ -182,18 +185,18 @@ export default function Statistics() {
 
           {/* Attendance distribution bar */}
           <Card style={{ marginBottom: 24 }} loading={loading}>
-            <Title level={5}>Class Attendance Distribution</Title>
+            <Title level={5}>{t("stats.distribution")}</Title>
             {(() => {
               const totalP = stats.students.reduce((s, st) => s + st.present_count, 0);
               const totalL = stats.students.reduce((s, st) => s + st.late_count, 0);
               const totalA = stats.students.reduce((s, st) => s + st.absent_count, 0);
               const total = totalP + totalL + totalA;
-              if (total === 0) return <Text type="secondary">No attendance data yet</Text>;
+              if (total === 0) return <Text type="secondary">{t("stats.noDataYet")}</Text>;
               return (
                 <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
-                  <Statistic title="Present" value={totalP} suffix={`(${Math.round(totalP / total * 100)}%)`} valueStyle={{ color: "#52c41a" }} />
-                  <Statistic title="Late" value={totalL} suffix={`(${Math.round(totalL / total * 100)}%)`} valueStyle={{ color: "#fa8c16" }} />
-                  <Statistic title="Absent" value={totalA} suffix={`(${Math.round(totalA / total * 100)}%)`} valueStyle={{ color: "#ff4d4f" }} />
+                  <Statistic title={t("common.present")} value={totalP} suffix={`(${Math.round(totalP / total * 100)}%)`} valueStyle={{ color: "#52c41a" }} />
+                  <Statistic title={t("common.late")} value={totalL} suffix={`(${Math.round(totalL / total * 100)}%)`} valueStyle={{ color: "#fa8c16" }} />
+                  <Statistic title={t("common.absent")} value={totalA} suffix={`(${Math.round(totalA / total * 100)}%)`} valueStyle={{ color: "#ff4d4f" }} />
                 </div>
               );
             })()}
@@ -201,14 +204,14 @@ export default function Statistics() {
 
           {/* Per-student table */}
           <Card loading={loading}>
-            <Title level={5}>Per-Student Breakdown</Title>
+            <Title level={5}>{t("stats.perStudent")}</Title>
             <Table
               dataSource={stats.students}
               columns={columns}
               rowKey="student_id"
               pagination={false}
               size="middle"
-              locale={{ emptyText: <Empty description="No students enrolled" /> }}
+              locale={{ emptyText: <Empty description={t("stats.noStudents")} /> }}
             />
           </Card>
         </>

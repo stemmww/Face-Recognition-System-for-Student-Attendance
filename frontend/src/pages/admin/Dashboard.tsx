@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Card, Col, Row, Select, Statistic, Typography, message } from "antd";
 import {
   TeamOutlined,
@@ -25,6 +26,7 @@ import type { User, Course } from "@/types";
 const { Title, Text } = Typography;
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -40,11 +42,11 @@ export default function AdminDashboard() {
       setCourses(c);
       if (c.length > 0) setTrendCourse(c[0].id);
     } catch {
-      message.error("Failed to load dashboard data");
+      message.error(t("dashboard.failedToLoad"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -66,25 +68,25 @@ export default function AdminDashboard() {
 
   const cards = [
     {
-      title: "Total Users",
+      title: t("dashboard.totalUsers"),
       value: users.length,
       icon: <TeamOutlined style={{ fontSize: 28, color: "#1677ff" }} />,
       onClick: () => navigate("/admin/users"),
     },
     {
-      title: "Students",
+      title: t("dashboard.students"),
       value: studentCount,
       icon: <UserOutlined style={{ fontSize: 28, color: "#52c41a" }} />,
       onClick: () => navigate("/admin/users"),
     },
     {
-      title: "Professors",
+      title: t("dashboard.professors"),
       value: professorCount,
       icon: <IdcardOutlined style={{ fontSize: 28, color: "#722ed1" }} />,
       onClick: () => navigate("/admin/users"),
     },
     {
-      title: "Active Accounts",
+      title: t("dashboard.activeAccounts"),
       value: activeCount,
       icon: <BookOutlined style={{ fontSize: 28, color: "#faad14" }} />,
       onClick: () => navigate("/admin/users"),
@@ -93,7 +95,7 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <Title level={4}>Admin Dashboard</Title>
+      <Title level={4}>{t("dashboard.adminTitle")}</Title>
       <Row gutter={[16, 16]}>
         {cards.map((card) => (
           <Col xs={24} sm={12} lg={6} key={card.title}>
@@ -113,7 +115,7 @@ export default function AdminDashboard() {
       </Row>
       {/* Attendance trend chart */}
       <Card
-        title="Attendance Trends"
+        title={t("dashboard.attendanceTrends")}
         extra={
           <Select
             value={trendCourse}
@@ -133,13 +135,13 @@ export default function AdminDashboard() {
               <YAxis fontSize={12} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="present" name="Present" fill="#52c41a" stackId="a" />
-              <Bar dataKey="late" name="Late" fill="#fa8c16" stackId="a" />
-              <Bar dataKey="absent" name="Absent" fill="#ff4d4f" stackId="a" />
+              <Bar dataKey="present" name={t("common.present")} fill="#52c41a" stackId="a" />
+              <Bar dataKey="late" name={t("common.late")} fill="#fa8c16" stackId="a" />
+              <Bar dataKey="absent" name={t("common.absent")} fill="#ff4d4f" stackId="a" />
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <Text type="secondary">Select a course to view attendance trends</Text>
+          <Text type="secondary">{t("dashboard.selectCourseForTrends")}</Text>
         )}
       </Card>
     </>

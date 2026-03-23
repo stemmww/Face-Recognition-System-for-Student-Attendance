@@ -27,6 +27,7 @@ from app.services.face_service import FaceService
 from app.utils.geo import haversine_distance
 from app.utils.liveness import (
     ChallengeType,
+    detect_screen_spoof,
     generate_challenge,
     get_challenge_instruction,
     is_live,
@@ -96,7 +97,7 @@ async def verify_attendance(
     frames: list[UploadFile] = File(...),
     latitude: float | None = Form(None),
     longitude: float | None = Form(None),
-    challenge_token: str | None = Form(None),
+    challenge_token: str = Form(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -113,7 +114,10 @@ async def verify_attendance(
         raise BadRequestError("Session is not active")
 
     try:
-        payload = jwt.decode(token, session.qr_secret, algorithms=["HS256"])
+        payload = jwt.decode(
+            token, session.qr_secret, algorithms=["HS256"],
+            options={"leeway": 10},
+        )
     except JWTError:
         raise BadRequestError("Invalid or expired QR token")
 
@@ -198,6 +202,7 @@ async def verify_attendance(
     # --- 6. Liveness check (multi-frame landmark analysis) ---
     if len(images) >= 2:
         frame_landmarks = []
+        frame_detections = []
         for img in images:
             dets = pipe.detector.detect(img)
             if not dets:
@@ -206,6 +211,7 @@ async def verify_attendance(
             if largest.landmarks is None:
                 raise BadRequestError("Could not detect facial landmarks. Please try again.")
             frame_landmarks.append(largest.landmarks)
+            frame_detections.append(largest)
 
         live, score = is_live(frame_landmarks, threshold=settings.LIVENESS_THRESHOLD)
         if not live:
@@ -214,32 +220,65 @@ async def verify_attendance(
                 "Photos and screens are not accepted."
             )
 
-        # --- 6.5. Active challenge validation ---
-        if challenge_token:
-            try:
-                ch_payload = jwt.decode(
-                    challenge_token, settings.JWT_SECRET_KEY, algorithms=["HS256"]
-                )
-                if ch_payload.get("student_id") != current_user.id:
-                    raise BadRequestError("Challenge token does not match current user")
-                if ch_payload.get("session_id") != session_id:
-                    raise BadRequestError("Challenge token does not match session")
+        # --- 6.5. Active challenge validation (mandatory) ---
+        try:
+            ch_payload = jwt.decode(
+                challenge_token, settings.JWT_SECRET_KEY, algorithms=["HS256"]
+            )
+            if ch_payload.get("student_id") != current_user.id:
+                raise BadRequestError("Challenge token does not match current user")
+            if ch_payload.get("session_id") != session_id:
+                raise BadRequestError("Challenge token does not match session")
 
-                challenge_type = ChallengeType(ch_payload["challenge"])
-                passed, reason = validate_challenge(challenge_type, frame_landmarks)
-                if not passed:
-                    raise BadRequestError(f"Liveness challenge failed: {reason}")
-            except JWTError:
-                raise BadRequestError("Invalid or expired challenge token")
+            challenge_type = ChallengeType(ch_payload["challenge"])
+            passed, reason = validate_challenge(challenge_type, frame_landmarks)
+            if not passed:
+                raise BadRequestError(f"Liveness challenge failed: {reason}")
+        except JWTError:
+            raise BadRequestError("Invalid or expired challenge token")
 
-    # --- 7. Face recognition on the last frame ---
-    image = images[-1]
-    embedding, face_count = pipe.extract_embedding(image)
-    if embedding is None:
+        # --- 6.7. Screen / print spoof detection on face crops ---
+        spoof_scores = []
+        for img, det in zip(images, frame_detections):
+            x1, y1, x2, y2 = det.bbox
+            h, w = img.shape[:2]
+            # Pad bbox slightly for better analysis
+            pad = int(max(x2 - x1, y2 - y1) * 0.1)
+            x1 = max(0, x1 - pad)
+            y1 = max(0, y1 - pad)
+            x2 = min(w, x2 + pad)
+            y2 = min(h, y2 + pad)
+            face_crop = img[y1:y2, x1:x2]
+            is_real, s = detect_screen_spoof(face_crop)
+            spoof_scores.append(s)
+            if not is_real:
+                break
+
+        avg_spoof = float(np.mean(spoof_scores))
+        if avg_spoof >= settings.SCREEN_SPOOF_THRESHOLD:
+            raise BadRequestError(
+                "Screen or printed photo detected. Please use a real face, "
+                "not a photo or video on a screen."
+            )
+
+    # --- 7. Face recognition using averaged embeddings from all frames ---
+    embeddings = []
+    for img in images:
+        emb, _ = pipe.extract_embedding(img)
+        if emb is not None:
+            embeddings.append(emb)
+
+    if not embeddings:
         raise BadRequestError("No face detected in the image. Please try again.")
 
+    # Average all frame embeddings for a more robust representation
+    avg_embedding = np.mean(embeddings, axis=0)
+    avg_embedding = avg_embedding / (np.linalg.norm(avg_embedding) + 1e-8)
+
     matches = await FaceService.find_matches(
-        db, embedding, threshold=None, limit=1,
+        db, avg_embedding,
+        threshold=settings.SELF_RECOGNITION_THRESHOLD,
+        limit=1,
         user_ids=[current_user.id],
     )
     if not matches:

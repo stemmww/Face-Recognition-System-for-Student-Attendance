@@ -1,14 +1,17 @@
-"""Liveness detection: passive landmark analysis + active challenge validation.
+"""Liveness detection: passive landmark analysis + active challenge validation
++ screen/print spoof detection.
 
 Passive check: multi-frame landmark stability analysis.
 Active challenges: blink, head turn (left/right), nod — validated via
 5-point SCRFD landmarks [left_eye, right_eye, nose, left_mouth, right_mouth].
+Screen detection: high-frequency texture analysis (moire patterns, pixel grids).
 """
 
 import enum
 import logging
 import random
 
+import cv2
 import numpy as np
 
 from app.config import settings
@@ -207,3 +210,75 @@ def validate_challenge(
         ok = validate_nod(landmark_sets)
         return ok, "Nod detected" if ok else "Nod not detected — please try again"
     return False, "Unknown challenge type"
+
+
+# ---------------------------------------------------------------------------
+# Screen / print spoof detection
+# ---------------------------------------------------------------------------
+
+def detect_screen_spoof(
+    face_crop: np.ndarray,
+    threshold: float | None = None,
+) -> tuple[bool, float]:
+    """Detect whether a face image is captured from a screen or printed photo.
+
+    Uses high-frequency energy analysis in the face region:
+    - Screens emit moire patterns and pixel grids that create abnormal
+      high-frequency energy compared to real skin.
+    - Printed photos show halftone dot patterns with similar characteristics.
+
+    The Laplacian operator highlights edges and high-freq texture. We compute
+    the ratio of high-frequency energy to total energy in the frequency domain
+    of the Laplacian-filtered face crop. A real face has mostly low-frequency
+    (smooth skin), while screens/prints have elevated high-freq content.
+
+    Returns (is_real, score). Higher score = more high-freq content = more
+    likely a spoof. is_real is True when score < threshold.
+    """
+    if threshold is None:
+        threshold = settings.SCREEN_SPOOF_THRESHOLD
+
+    # Convert to grayscale and resize to standard size
+    if len(face_crop.shape) == 3:
+        gray = cv2.cvtColor(face_crop, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = face_crop
+    gray = cv2.resize(gray, (128, 128))
+
+    # Method 1: Laplacian variance (screens/prints have sharper micro-edges)
+    laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+    lap_var = float(laplacian.var())
+
+    # Method 2: High-frequency energy ratio via DCT
+    gray_f = gray.astype(np.float32)
+    dct = cv2.dct(gray_f)
+    total_energy = float(np.sum(dct ** 2)) + 1e-8
+    # High-freq = bottom-right quadrant of DCT
+    h, w = dct.shape
+    hf_energy = float(np.sum(dct[h // 2:, w // 2:] ** 2))
+    hf_ratio = hf_energy / total_energy
+
+    # Method 3: Color channel correlation (screens have highly correlated RGB)
+    color_score = 0.0
+    if len(face_crop.shape) == 3 and face_crop.shape[2] == 3:
+        b, g, r = cv2.split(face_crop.astype(np.float32))
+        b_flat, g_flat, r_flat = b.flatten(), g.flatten(), r.flatten()
+        rg_corr = float(np.corrcoef(r_flat, g_flat)[0, 1])
+        rb_corr = float(np.corrcoef(r_flat, b_flat)[0, 1])
+        # Real skin has moderate channel correlation; screens have very high
+        avg_corr = (abs(rg_corr) + abs(rb_corr)) / 2.0
+        # Score contribution: high correlation -> more likely screen
+        color_score = max(0.0, avg_corr - 0.85) * 10  # 0 for natural, up to ~1.5 for screens
+
+    # Combined score (weighted)
+    # Normalize lap_var: typical real face ~50-200, screen ~300-1000+
+    lap_score = min(lap_var / 500.0, 2.0)
+    score = 0.4 * lap_score + 0.4 * (hf_ratio * 20) + 0.2 * color_score
+
+    is_real = score < threshold
+    logger.info(
+        "Screen spoof check — lap_var: %.1f, hf_ratio: %.4f, color: %.3f, "
+        "combined: %.4f, threshold: %.4f → %s",
+        lap_var, hf_ratio, color_score, score, threshold, "REAL" if is_real else "SPOOF",
+    )
+    return is_real, score

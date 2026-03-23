@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     AI_MODEL_PATH: str = "./models"
     RECOGNITION_THRESHOLD: float = 0.5
+    SELF_RECOGNITION_THRESHOLD: float = 0.35
 
     UPLOAD_DIR: str = "./uploads"
 
@@ -28,6 +29,7 @@ class Settings(BaseSettings):
     LIVENESS_BLINK_THRESHOLD: float = 0.08
     LIVENESS_HEAD_TURN_THRESHOLD: float = 0.10
     LIVENESS_NOD_THRESHOLD: float = 0.07
+    SCREEN_SPOOF_THRESHOLD: float = 0.6
 
     ADMIN_EMAIL: str = "admin@attendance.edu"
     ADMIN_PASSWORD: str = "admin123"

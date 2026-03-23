@@ -51,28 +51,57 @@ export default function Attend() {
   const streamRef = useRef<MediaStream | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
+  const [scannerLoading, setScannerLoading] = useState(false);
+
   // --- Step 1: QR Scanner ---
   const startScanner = useCallback(async () => {
     setError(null);
     setCameraFailed(false);
-    try {
-      const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
-      scannerRef.current = scanner;
-      await scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          setQrToken(decodedText);
-          scanner.stop().catch(() => {});
-          scannerRef.current = null;
-          setStep("face");
-        },
-        () => {},
-      );
-    } catch {
+    setScannerLoading(true);
+
+    const onSuccess = (decodedText: string) => {
+      setQrToken(decodedText);
+      // Defer stop() so html5-qrcode finishes its frame processing first
+      setTimeout(() => {
+        scannerRef.current?.stop().catch(() => {});
+        scannerRef.current = null;
+      }, 0);
+      setStep("face");
+    };
+
+    // Try back camera first, then front camera
+    const cameraConfigs = [
+      { facingMode: "environment" },
+      { facingMode: "user" },
+    ];
+
+    let started = false;
+    for (const config of cameraConfigs) {
+      try {
+        // Clear any leftover DOM content from previous failed attempt
+        const el = document.getElementById(SCANNER_ELEMENT_ID);
+        if (el) el.innerHTML = "";
+
+        const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
+        await scanner.start(
+          config,
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          onSuccess,
+          () => {},
+        );
+        scannerRef.current = scanner;
+        started = true;
+        break;
+      } catch {
+        // Try next camera config
+      }
+    }
+
+    if (!started) {
       setCameraFailed(true);
       setError(t("attend.cameraFailed"));
     }
+    setScannerLoading(false);
   }, [t]);
 
   useEffect(() => {
@@ -107,7 +136,7 @@ export default function Attend() {
           if (!cancelled) setChallenge(ch);
         })
         .catch(() => {
-          // Challenge endpoint unavailable — proceed without
+          if (!cancelled) setError(t("attend.challengeLoadFailed"));
         })
         .finally(() => {
           if (!cancelled) setLoadingChallenge(false);
@@ -194,7 +223,7 @@ export default function Attend() {
         frames: blobs,
         latitude,
         longitude,
-        challenge_token: challenge?.token ?? null,
+        challenge_token: challenge!.token,
       });
       setResult(res);
       setStep("done");
@@ -239,10 +268,18 @@ export default function Attend() {
               {t("attend.pointCamera")}
             </Title>
           </div>
+          {scannerLoading && (
+            <div style={{ textAlign: "center", padding: 32 }}>
+              <Spin indicator={<LoadingOutlined style={{ fontSize: 32 }} spin />} />
+              <div style={{ marginTop: 12 }}>
+                <Text type="secondary">{t("attend.initializingCamera")}</Text>
+              </div>
+            </div>
+          )}
           {!cameraFailed && (
             <div
               id={SCANNER_ELEMENT_ID}
-              style={{ maxWidth: 400, margin: "0 auto" }}
+              style={{ maxWidth: 400, margin: "0 auto", minHeight: scannerLoading ? 0 : 300 }}
             />
           )}
           {error && (
@@ -253,25 +290,24 @@ export default function Attend() {
               showIcon
             />
           )}
-          {cameraFailed && (
-            <div style={{ marginTop: 16, maxWidth: 400, margin: "16px auto 0" }}>
-              <Text strong>{t("attend.pasteToken")}</Text>
-              <Space.Compact style={{ width: "100%", marginTop: 8 }}>
-                <Input
-                  placeholder={t("attend.tokenPlaceholder")}
-                  value={manualToken}
-                  onChange={(e) => setManualToken(e.target.value)}
-                  onPressEnter={handleManualSubmit}
-                />
-                <Button type="primary" onClick={handleManualSubmit} disabled={!manualToken.trim()}>
-                  {t("common.submit")}
-                </Button>
-              </Space.Compact>
-              <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
-                {t("attend.askProfessor")}
-              </Text>
-            </div>
-          )}
+          {/* Always show manual input as fallback */}
+          <div style={{ marginTop: 16, maxWidth: 400, margin: "16px auto 0" }}>
+            <Text strong>{t("attend.pasteToken")}</Text>
+            <Space.Compact style={{ width: "100%", marginTop: 8 }}>
+              <Input
+                placeholder={t("attend.tokenPlaceholder")}
+                value={manualToken}
+                onChange={(e) => setManualToken(e.target.value)}
+                onPressEnter={handleManualSubmit}
+              />
+              <Button type="primary" onClick={handleManualSubmit} disabled={!manualToken.trim()}>
+                {t("common.submit")}
+              </Button>
+            </Space.Compact>
+            <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
+              {t("attend.askProfessor")}
+            </Text>
+          </div>
         </Card>
       )}
 
@@ -358,7 +394,7 @@ export default function Attend() {
                 size="large"
                 icon={<CameraOutlined />}
                 onClick={captureAndVerify}
-                disabled={captureProgress > 0}
+                disabled={captureProgress > 0 || !challenge || loadingChallenge}
               >
                 {captureProgress > 0
                   ? t("attend.capturing", { current: captureProgress, total: FRAME_COUNT })

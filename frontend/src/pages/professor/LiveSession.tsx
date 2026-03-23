@@ -123,31 +123,43 @@ export default function LiveSession() {
   }, [activeSession]);
 
   // --- QR token polling ---
-  const fetchQR = useCallback(async () => {
-    if (!activeSession) return;
-    try {
-      const tok = await getQRToken(activeSession.id);
-      setQrToken(tok);
-      const remaining = Math.max(
-        0,
-        Math.floor((new Date(tok.expires_at).getTime() - Date.now()) / 1000),
-      );
-      setQrSeconds(remaining);
-    } catch {
-      /* session may have been stopped */
-    }
-  }, [activeSession]);
-
   useEffect(() => {
     if (!activeSession) {
       setQrToken(null);
       return;
     }
-    fetchQR();
-    const refreshMs = ((qrToken?.interval_seconds ?? 45) - 5) * 1000;
-    const interval = setInterval(fetchQR, refreshMs);
-    return () => clearInterval(interval);
-  }, [activeSession, fetchQR]);
+
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const tok = await getQRToken(activeSession.id);
+        if (cancelled) return;
+        setQrToken(tok);
+        const remaining = Math.max(
+          0,
+          Math.floor((new Date(tok.expires_at).getTime() - Date.now()) / 1000),
+        );
+        setQrSeconds(remaining);
+        // Schedule next fetch when the token expires
+        const refreshMs = tok.interval_seconds * 1000;
+        timeoutId = setTimeout(poll, refreshMs);
+      } catch {
+        // Session may have been stopped; retry after a delay
+        if (!cancelled) {
+          timeoutId = setTimeout(poll, 10000);
+        }
+      }
+    };
+
+    poll();
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [activeSession]);
 
   // countdown timer
   useEffect(() => {

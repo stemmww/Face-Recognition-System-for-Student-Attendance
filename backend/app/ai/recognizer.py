@@ -80,6 +80,11 @@ class FaceRecognizer:
             return None
 
         img = cv2.resize(face_crop, (112, 112))
+        # CLAHE histogram equalization per channel for lighting normalization
+        lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = np.transpose(img, (2, 0, 1)).astype(np.float32)
         img = (img - 127.5) / 127.5

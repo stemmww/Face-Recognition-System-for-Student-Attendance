@@ -17,7 +17,7 @@ export async function verifyAttendance(payload: {
   frames: Blob[];
   latitude?: number | null;
   longitude?: number | null;
-  challenge_token?: string | null;
+  challenge_token: string;
 }): Promise<VerifyAttendanceResponse> {
   const form = new FormData();
   form.append("token", payload.token);
@@ -28,9 +28,7 @@ export async function verifyAttendance(payload: {
     form.append("latitude", String(payload.latitude));
     form.append("longitude", String(payload.longitude));
   }
-  if (payload.challenge_token) {
-    form.append("challenge_token", payload.challenge_token);
-  }
+  form.append("challenge_token", payload.challenge_token);
   const { data } = await apiClient.post<VerifyAttendanceResponse>(
     "/attend/verify",
     form,

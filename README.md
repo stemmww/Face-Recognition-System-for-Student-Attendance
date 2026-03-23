@@ -7,7 +7,7 @@ AI-powered attendance tracking system using face recognition. Built as a diploma
 - **Backend:** Python 3.11 + FastAPI + SQLAlchemy 2.0 (async)
 - **Frontend:** React 18 + TypeScript + Vite + Ant Design
 - **Database:** PostgreSQL 16 + pgvector (face embeddings)
-- **AI Models:** YOLOv8-face (detection) + InsightFace buffalo_l (recognition)
+- **AI Models:** SCRFD (detection) + ArcFace (recognition) via ONNX Runtime
 - **Auth:** JWT (access + refresh tokens) + RBAC (Admin / Professor / Student)
 - **Deployment:** Docker Compose
 
@@ -78,7 +78,7 @@ alembic revision --autogenerate -m "description"  # Create new migration
 │   │   ├── models/          # SQLAlchemy ORM models
 │   │   ├── schemas/         # Pydantic request/response schemas
 │   │   ├── services/        # Business logic layer
-│   │   └── utils/           # Helpers (file storage, time logic)
+│   │   └── utils/           # Helpers (file storage, geo, liveness)
 │   ├── alembic/             # Database migrations
 │   └── tests/               # Pytest test suite
 │
@@ -95,7 +95,6 @@ alembic revision --autogenerate -m "description"  # Create new migration
 │       ├── types/           # TypeScript interfaces
 │       └── utils/           # Constants & formatters
 │
-├── camera-client/           # Lightweight camera capture script
 ├── docker-compose.yml
 └── PLAN.md                  # Full implementation roadmap
 ```

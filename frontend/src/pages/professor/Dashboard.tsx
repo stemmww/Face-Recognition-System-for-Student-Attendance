@@ -34,7 +34,8 @@ import type { Course, AttendanceSession } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSessions } from "@/api/sessions";
 import { listAppeals } from "@/api/appeals";
-import { getCourseTrends, type SessionTrendPoint } from "@/api/statistics";
+import type { SessionTrendPoint } from "@/types";
+import { getCourseTrends } from "@/api/statistics";
 
 const { Title, Text } = Typography;
 

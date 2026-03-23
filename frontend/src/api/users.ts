@@ -1,4 +1,4 @@
-import type { User } from "@/types";
+import type { BulkImportResult, User } from "@/types";
 import apiClient from "./client";
 
 export async function getMe(): Promise<User> {
@@ -40,13 +40,6 @@ export async function changePassword(oldPassword: string, newPassword: string): 
 
 export async function deactivateUser(userId: number): Promise<void> {
   await apiClient.delete(`/users/${userId}`);
-}
-
-export interface BulkImportResult {
-  created: number;
-  skipped: number;
-  enrolled: number;
-  errors: string[];
 }
 
 export async function importStudentsCSV(file: File): Promise<BulkImportResult> {

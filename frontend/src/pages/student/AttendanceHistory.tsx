@@ -22,8 +22,8 @@ import {
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import { getCourse } from "@/api/courses";
-import { getMyCourseAttendance, type StudentCourseRecord } from "@/api/attendance";
-import type { Course } from "@/types";
+import type { Course, StudentCourseRecord } from "@/types";
+import { getMyCourseAttendance } from "@/api/attendance";
 
 const { Title, Text } = Typography;
 

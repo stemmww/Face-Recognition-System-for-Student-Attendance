@@ -160,9 +160,9 @@ def validate_head_turn(
 
     half = threshold * 0.5
     if direction == "left":
-        return max(nose_offsets) > nose_offsets[0] + half
+        return bool(max(nose_offsets) > nose_offsets[0] + half)
     else:
-        return min(nose_offsets) < nose_offsets[0] - half
+        return bool(min(nose_offsets) < nose_offsets[0] - half)
 
 
 def validate_nod(
@@ -186,7 +186,7 @@ def validate_nod(
     if len(nose_vert) < 3:
         return False
 
-    return (max(nose_vert) - min(nose_vert)) > threshold
+    return bool((max(nose_vert) - min(nose_vert)) > threshold)
 
 
 def validate_challenge(

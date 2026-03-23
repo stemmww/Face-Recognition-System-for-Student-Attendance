@@ -21,9 +21,9 @@ import {
   BarChartOutlined,
   DownloadOutlined,
 } from "@ant-design/icons";
-import type { Course } from "@/types";
+import type { Course, CourseStatistics, StudentAttendanceStat } from "@/types";
 import { listCourses } from "@/api/courses";
-import { getCourseStatistics, type CourseStatistics, type StudentAttendanceStat } from "@/api/statistics";
+import { getCourseStatistics } from "@/api/statistics";
 import { exportCourseCSV } from "@/api/attendance";
 
 const { Title, Text } = Typography;

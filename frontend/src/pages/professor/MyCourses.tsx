@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, Col, Empty, Row, Space, Tag, Typography, message } from "antd";
 import {
   BookOutlined,
@@ -30,6 +31,8 @@ interface CourseDetail {
 }
 
 export default function ProfessorMyCourses() {
+  const { t } = useTranslation();
+
   const [details, setDetails] = useState<CourseDetail[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,11 +55,11 @@ export default function ProfessorMyCourses() {
       }
       setDetails(result);
     } catch {
-      message.error("Failed to load courses");
+      message.error(t("coursesPage.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -65,15 +68,15 @@ export default function ProfessorMyCourses() {
   if (!loading && details.length === 0) {
     return (
       <>
-        <Title level={4}>My Courses</Title>
-        <Empty description="You are not assigned to any courses yet." />
+        <Title level={4}>{t("coursesPage.title")}</Title>
+        <Empty description={t("coursesPage.notAssigned")} />
       </>
     );
   }
 
   return (
     <>
-      <Title level={4}>My Courses</Title>
+      <Title level={4}>{t("coursesPage.title")}</Title>
       <Row gutter={[16, 16]}>
         {details.map(({ course, schedules, studentCount }) => (
           <Col xs={24} md={12} xl={8} key={course.id}>
@@ -96,12 +99,12 @@ export default function ProfessorMyCourses() {
               <Space direction="vertical" style={{ width: "100%", marginTop: 8 }}>
                 <Space>
                   <TeamOutlined />
-                  <Text>{studentCount} student{studentCount !== 1 ? "s" : ""} enrolled</Text>
+                  <Text>{t("coursesPage.studentsEnrolled", { count: studentCount })}</Text>
                 </Space>
 
                 {schedules.length > 0 && (
                   <div>
-                    <CalendarOutlined /> <Text strong>Schedule:</Text>
+                    <CalendarOutlined /> <Text strong>{t("coursesPage.scheduleLabel")}:</Text>
                     {schedules.map((s) => (
                       <div key={s.id} style={{ marginLeft: 20, marginTop: 4 }}>
                         <Tag color={classTypeColors[s.class_type]}>{capitalize(s.class_type)}</Tag>

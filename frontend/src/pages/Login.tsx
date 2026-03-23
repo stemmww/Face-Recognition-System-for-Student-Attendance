@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button, Form, Input, Typography, message } from "antd";
 import {
   LockOutlined,
@@ -18,6 +19,7 @@ export default function Login() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const isDark = useThemeStore((s) => s.isDark);
+  const { t } = useTranslation();
 
   if (isAuthenticated) {
     navigate("/dashboard", { replace: true });
@@ -28,10 +30,10 @@ export default function Login() {
     setLoading(true);
     try {
       await login(values.email, values.password);
-      message.success("Login successful");
+      message.success(t("login.loginSuccess"));
       navigate("/dashboard", { replace: true });
     } catch {
-      message.error("Invalid email or password");
+      message.error(t("login.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -101,10 +103,10 @@ export default function Login() {
           </div>
 
           <Title level={isMobile ? 4 : 2} style={{ color: "#fff", marginBottom: 4, fontWeight: 700 }}>
-            Face Attendance
+            {t("login.title")}
           </Title>
           <Text style={{ color: "#c7d2fe", fontSize: isMobile ? 13 : 16 }}>
-            AI-Powered Attendance Tracking
+            {t("login.subtitle")}
           </Text>
 
           {/* Description box — desktop only */}
@@ -120,8 +122,7 @@ export default function Login() {
               }}
             >
               <Paragraph style={{ color: "#e0e7ff", fontSize: 14, lineHeight: 1.8, margin: 0 }}>
-                Automated attendance tracking powered by facial recognition technology.
-                Students scan a QR code and verify their identity with a quick face scan.
+                {t("login.description")}
               </Paragraph>
             </div>
           )}
@@ -130,11 +131,11 @@ export default function Login() {
           {!isMobile && (
             <div style={{ marginTop: 48, display: "flex", justifyContent: "center", gap: 32 }}>
               {[
-                { value: "AI", label: "Face Recognition" },
-                { value: "QR", label: "QR Code Auth" },
-                { value: "GPS", label: "Location Check" },
+                { value: "AI", label: t("login.featureAI") },
+                { value: "QR", label: t("login.featureQR") },
+                { value: "GPS", label: t("login.featureGPS") },
               ].map((item) => (
-                <div key={item.label} style={{ textAlign: "center" }}>
+                <div key={item.value} style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 4 }}>
                     {item.value}
                   </div>
@@ -162,37 +163,37 @@ export default function Login() {
         <div style={{ width: "100%", maxWidth: 400 }}>
           <div style={{ marginBottom: isMobile ? 28 : 40 }}>
             <Title level={3} style={{ marginBottom: 8, color: isDark ? "#e2e8f0" : "#1e293b" }}>
-              Welcome back
+              {t("login.welcomeBack")}
             </Title>
             <Text style={{ color: isDark ? "#94a3b8" : "#64748b", fontSize: 15 }}>
-              Sign in to your account to continue
+              {t("login.signInSubtitle")}
             </Text>
           </div>
 
           <Form onFinish={onFinish} layout="vertical" size="large" requiredMark={false}>
             <Form.Item
               name="email"
-              label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>Email</span>}
+              label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>{t("login.emailLabel")}</span>}
               rules={[
-                { required: true, message: "Please enter your email" },
-                { type: "email", message: "Please enter a valid email" },
+                { required: true, message: t("login.emailRequired") },
+                { type: "email", message: t("login.emailInvalid") },
               ]}
             >
               <Input
                 prefix={<MailOutlined style={{ color: "#94a3b8" }} />}
-                placeholder="you@university.edu"
+                placeholder={t("login.emailPlaceholder")}
                 style={{ height: 48, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
               />
             </Form.Item>
 
             <Form.Item
               name="password"
-              label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>Password</span>}
-              rules={[{ required: true, message: "Please enter your password" }]}
+              label={<span style={{ fontWeight: 500, color: isDark ? "#cbd5e1" : "#334155" }}>{t("login.passwordLabel")}</span>}
+              rules={[{ required: true, message: t("login.passwordRequired") }]}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#94a3b8" }} />}
-                placeholder="Enter your password"
+                placeholder={t("login.passwordPlaceholder")}
                 style={{ height: 48, borderRadius: 10, borderColor: isDark ? "#334155" : "#e2e8f0" }}
               />
             </Form.Item>
@@ -211,7 +212,7 @@ export default function Login() {
                   boxShadow: "0 4px 14px rgba(99,102,241,0.35)",
                 }}
               >
-                Sign In
+                {t("login.signIn")}
               </Button>
             </Form.Item>
           </Form>
@@ -225,7 +226,7 @@ export default function Login() {
             }}
           >
             <Text style={{ color: "#94a3b8", fontSize: 13 }}>
-              Contact your administrator for account access
+              {t("login.contactAdmin")}
             </Text>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Button,
   Card,
@@ -28,6 +29,8 @@ import { exportCourseCSV, exportSessionCSV, getSessionAttendance, updateAttendan
 const { Title, Text } = Typography;
 
 export default function ProfessorAttendance() {
+  const { t } = useTranslation();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -41,9 +44,9 @@ export default function ProfessorAttendance() {
     try {
       setCourses(await listCourses());
     } catch {
-      message.error("Failed to load courses");
+      message.error(t("coursesPage.loadFailed"));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchCourses();
@@ -53,14 +56,14 @@ export default function ProfessorAttendance() {
     if (selectedCourse) {
       listSessions({ course_id: selectedCourse })
         .then(setSessions)
-        .catch(() => message.error("Failed to load sessions"));
+        .catch(() => message.error(t("session.loadFailed")));
       setSelectedSession(null);
       setRecords([]);
     } else {
       setSessions([]);
       setRecords([]);
     }
-  }, [selectedCourse]);
+  }, [selectedCourse, t]);
 
   useEffect(() => {
     if (selectedSession) {
@@ -73,23 +76,23 @@ export default function ProfessorAttendance() {
           setRecords(recs);
           setSessionDetail(sess);
         })
-        .catch(() => message.error("Failed to load attendance"))
+        .catch(() => message.error(t("attendance.loadFailed")))
         .finally(() => setLoading(false));
     } else {
       setRecords([]);
       setSessionDetail(null);
     }
-  }, [selectedSession]);
+  }, [selectedSession, t]);
 
   const handleStatusChange = async (recordId: number, newStatus: string) => {
     try {
       await updateAttendanceStatus(recordId, newStatus);
-      message.success("Status updated");
+      message.success(t("attendance.statusUpdated"));
       if (selectedSession) {
         setRecords(await getSessionAttendance(selectedSession));
       }
     } catch {
-      message.error("Failed to update status");
+      message.error(t("attendance.updateFailed"));
     }
   };
 
@@ -99,20 +102,20 @@ export default function ProfessorAttendance() {
 
   const columns = [
     {
-      title: "Student",
+      title: t("attendance.studentCol"),
       key: "student",
       render: (_: unknown, r: AttendanceRecord) =>
         r.student_name || `Student #${r.student_id}`,
     },
     {
-      title: "Email",
+      title: t("attendance.emailCol"),
       key: "email",
       render: (_: unknown, r: AttendanceRecord) => (
         <Text type="secondary">{r.student_email}</Text>
       ),
     },
     {
-      title: "Status",
+      title: t("common.status"),
       key: "status",
       width: 140,
       render: (_: unknown, r: AttendanceRecord) => (
@@ -121,22 +124,22 @@ export default function ProfessorAttendance() {
           onChange={(v) => handleStatusChange(r.id, v)}
           style={{ width: 120 }}
           options={[
-            { value: "present", label: <Tag color="green">Present</Tag> },
-            { value: "late", label: <Tag color="orange">Late</Tag> },
-            { value: "absent", label: <Tag color="red">Absent</Tag> },
+            { value: "present", label: <Tag color="green">{t("common.present")}</Tag> },
+            { value: "late", label: <Tag color="orange">{t("common.late")}</Tag> },
+            { value: "absent", label: <Tag color="red">{t("common.absent")}</Tag> },
           ]}
         />
       ),
     },
     {
-      title: "Recognized At",
+      title: t("attendance.recognizedAt"),
       key: "recognized_at",
       width: 120,
       render: (_: unknown, r: AttendanceRecord) =>
         r.recognized_at ? dayjs(r.recognized_at).format("HH:mm:ss") : "—",
     },
     {
-      title: "Marked By",
+      title: t("attendance.markedBy"),
       key: "marked_by",
       width: 100,
       render: (_: unknown, r: AttendanceRecord) => (
@@ -147,13 +150,13 @@ export default function ProfessorAttendance() {
 
   return (
     <>
-      <Title level={4}>Attendance Records</Title>
+      <Title level={4}>{t("attendance.title")}</Title>
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
           showSearch
           optionFilterProp="label"
-          placeholder="Select course"
+          placeholder={t("common.selectCourse")}
           value={selectedCourse}
           onChange={(v) => setSelectedCourse(v)}
           allowClear
@@ -164,7 +167,7 @@ export default function ProfessorAttendance() {
           }))}
         />
         <Select
-          placeholder="Select session"
+          placeholder={t("common.selectSession")}
           value={selectedSession}
           onChange={setSelectedSession}
           allowClear
@@ -172,7 +175,7 @@ export default function ProfessorAttendance() {
           style={{ width: 300 }}
           options={sessions.map((s) => ({
             value: s.id,
-            label: `${s.date} (${s.status === "active" ? "Active" : "Completed"})`,
+            label: `${s.date} (${s.status === "active" ? t("common.active") : t("common.completed")})`,
           }))}
         />
       </Space>
@@ -180,34 +183,34 @@ export default function ProfessorAttendance() {
       {selectedSession && records.length > 0 && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <Space wrap>
-            <Tag color="green">{presentCount} Present</Tag>
-            <Tag color="orange">{lateCount} Late</Tag>
-            <Tag color="red">{absentCount} Absent</Tag>
-            <Text type="secondary">{records.length} total</Text>
+            <Tag color="green">{presentCount} {t("common.present")}</Tag>
+            <Tag color="orange">{lateCount} {t("common.late")}</Tag>
+            <Tag color="red">{absentCount} {t("common.absent")}</Tag>
+            <Text type="secondary">{records.length} {t("common.total")}</Text>
           </Space>
           <Space wrap>
             <Segmented
               value={viewMode}
               onChange={(v) => setViewMode(v as string)}
               options={[
-                { value: "table", icon: <UnorderedListOutlined />, label: "Table" },
-                { value: "timeline", icon: <OrderedListOutlined />, label: "Timeline" },
+                { value: "table", icon: <UnorderedListOutlined />, label: t("attendance.tableView") },
+                { value: "timeline", icon: <OrderedListOutlined />, label: t("attendance.timelineView") },
               ]}
             />
             {selectedSession && (
               <Button
                 icon={<DownloadOutlined />}
-                onClick={() => exportSessionCSV(selectedSession).catch(() => message.error("Export failed"))}
+                onClick={() => exportSessionCSV(selectedSession).catch(() => message.error(t("attendance.exportFailed")))}
               >
-                Export Session
+                {t("attendance.exportSession")}
               </Button>
             )}
             {selectedCourse && (
               <Button
                 icon={<DownloadOutlined />}
-                onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error("Export failed"))}
+                onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error(t("attendance.exportFailed")))}
               >
-                Export Course
+                {t("attendance.exportCourse")}
               </Button>
             )}
           </Space>
@@ -220,13 +223,13 @@ export default function ProfessorAttendance() {
           columns={columns}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 20, showTotal: (t) => `${t} records` }}
-          locale={{ emptyText: selectedSession ? "No attendance records" : "Select a course and session" }}
+          pagination={{ pageSize: 20, showTotal: (total) => `${total} ${t("common.total")}` }}
+          locale={{ emptyText: selectedSession ? t("attendance.noRecords") : t("attendance.selectCourseAndSession") }}
         />
       ) : (
         <Card loading={loading}>
           {records.length === 0 ? (
-            <Text type="secondary">{selectedSession ? "No attendance records" : "Select a course and session"}</Text>
+            <Text type="secondary">{selectedSession ? t("attendance.noRecords") : t("attendance.selectCourseAndSession")}</Text>
           ) : (
             <Timeline
               items={(() => {
@@ -251,6 +254,12 @@ export default function ProfessorAttendance() {
                   return "red";
                 };
 
+                const statusLabel = (status: string) => {
+                  if (status === "present") return t("common.present");
+                  if (status === "late") return t("common.late");
+                  return t("common.absent");
+                };
+
                 const items = [];
 
                 if (sessionStart) {
@@ -258,7 +267,7 @@ export default function ProfessorAttendance() {
                     color: "#6366f1" as string,
                     children: (
                       <div>
-                        <Text strong>Session Started</Text>
+                        <Text strong>{t("attendance.sessionStarted")}</Text>
                         <br />
                         <Text type="secondary">{sessionStart.format("HH:mm:ss")}</Text>
                       </div>
@@ -277,11 +286,11 @@ export default function ProfessorAttendance() {
                       <div>
                         <Text strong>{r.student_name || `Student #${r.student_id}`}</Text>
                         <Tag color={r.status === "present" ? "green" : r.status === "late" ? "orange" : "red"} style={{ marginLeft: 8 }}>
-                          {r.status}
+                          {statusLabel(r.status)}
                         </Tag>
                         <br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          {time ? time.format("HH:mm:ss") : "Not recognized"}
+                          {time ? time.format("HH:mm:ss") : t("attendance.notRecognized")}
                           {delay !== null && ` (+${delay} min)`}
                           {" · "}
                           {r.marked_by}
@@ -296,7 +305,7 @@ export default function ProfessorAttendance() {
                     color: "#6366f1" as string,
                     children: (
                       <div>
-                        <Text strong>Session Ended</Text>
+                        <Text strong>{t("attendance.sessionEnded")}</Text>
                         <br />
                         <Text type="secondary">{dayjs(sessionDetail.ended_at).format("HH:mm:ss")}</Text>
                       </div>

@@ -18,6 +18,7 @@ import {
   ScanOutlined,
 } from "@ant-design/icons";
 import { Html5Qrcode } from "html5-qrcode";
+import { useTranslation } from "react-i18next";
 import { fetchChallenge, verifyAttendance, type LivenessChallenge } from "@/api/attend";
 import type { VerifyAttendanceResponse } from "@/types";
 
@@ -30,6 +31,7 @@ const FRAME_DELAY_MS = 400;
 type Step = "scan" | "face" | "verifying" | "done";
 
 export default function Attend() {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("scan");
   const [qrToken, setQrToken] = useState<string | null>(null);
   const [manualToken, setManualToken] = useState("");
@@ -69,12 +71,9 @@ export default function Attend() {
       );
     } catch {
       setCameraFailed(true);
-      setError(
-        "Could not access camera. On mobile, camera requires HTTPS. " +
-        "You can use the manual token input below instead."
-      );
+      setError(t("attend.cameraFailed"));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (step === "scan") {
@@ -122,7 +121,7 @@ export default function Attend() {
           video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
         });
         if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
+          stream.getTracks().forEach((tr) => tr.stop());
           return;
         }
         streamRef.current = stream;
@@ -130,16 +129,16 @@ export default function Attend() {
           videoRef.current.srcObject = stream;
         }
       } catch {
-        setError("Could not access front camera. Please allow camera permissions.");
+        setError(t("attend.cameraPermission"));
       }
     })();
 
     return () => {
       cancelled = true;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((tr) => tr.stop());
       streamRef.current = null;
     };
-  }, [step, qrToken]);
+  }, [step, qrToken, t]);
 
   const captureAndVerify = async () => {
     if (!videoRef.current || !qrToken) return;
@@ -171,7 +170,7 @@ export default function Attend() {
     // Switch to verifying UI and stop camera
     setStep("verifying");
     setCaptureProgress(0);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((tr) => tr.stop());
     streamRef.current = null;
 
     let latitude: number | null = null;
@@ -200,7 +199,7 @@ export default function Attend() {
       setResult(res);
       setStep("done");
     } catch (err: any) {
-      const detail = err?.response?.data?.detail || "Verification failed. Please try again.";
+      const detail = err?.response?.data?.detail || t("attend.verifyFailed");
       setError(detail);
       setStep("done");
     }
@@ -219,15 +218,15 @@ export default function Attend() {
 
   return (
     <>
-      <Title level={4}>Attend Class</Title>
+      <Title level={4}>{t("attend.title")}</Title>
 
       <Steps
         current={currentStep}
         style={{ marginBottom: 24 }}
         items={[
-          { title: "Scan QR", icon: <QrcodeOutlined /> },
-          { title: "Face Verify", icon: <CameraOutlined /> },
-          { title: "Done", icon: <CheckCircleOutlined /> },
+          { title: t("attend.scanQR"), icon: <QrcodeOutlined /> },
+          { title: t("attend.faceVerify"), icon: <CameraOutlined /> },
+          { title: t("common.done"), icon: <CheckCircleOutlined /> },
         ]}
       />
 
@@ -237,7 +236,7 @@ export default function Attend() {
           <div style={{ textAlign: "center", marginBottom: 16 }}>
             <ScanOutlined style={{ fontSize: 32, color: "#1677ff" }} />
             <Title level={5} style={{ marginTop: 8 }}>
-              Point your camera at the QR code on screen
+              {t("attend.pointCamera")}
             </Title>
           </div>
           {!cameraFailed && (
@@ -256,20 +255,20 @@ export default function Attend() {
           )}
           {cameraFailed && (
             <div style={{ marginTop: 16, maxWidth: 400, margin: "16px auto 0" }}>
-              <Text strong>Paste QR token manually:</Text>
+              <Text strong>{t("attend.pasteToken")}</Text>
               <Space.Compact style={{ width: "100%", marginTop: 8 }}>
                 <Input
-                  placeholder="Paste the QR token here..."
+                  placeholder={t("attend.tokenPlaceholder")}
                   value={manualToken}
                   onChange={(e) => setManualToken(e.target.value)}
                   onPressEnter={handleManualSubmit}
                 />
                 <Button type="primary" onClick={handleManualSubmit} disabled={!manualToken.trim()}>
-                  Submit
+                  {t("common.submit")}
                 </Button>
               </Space.Compact>
               <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
-                Ask your professor for the current token, or scan from a device with camera access.
+                {t("attend.askProfessor")}
               </Text>
             </div>
           )}
@@ -280,7 +279,7 @@ export default function Attend() {
       {step === "face" && (
         <Card>
           <div style={{ textAlign: "center" }}>
-            <Title level={5}>Position your face in the frame</Title>
+            <Title level={5}>{t("attend.positionFace")}</Title>
 
             {/* Challenge instruction */}
             {loadingChallenge && (
@@ -349,7 +348,7 @@ export default function Attend() {
                     fontSize: 14,
                   }}
                 >
-                  Capturing {captureProgress}/{FRAME_COUNT}...
+                  {t("attend.capturing", { current: captureProgress, total: FRAME_COUNT })}
                 </div>
               )}
             </div>
@@ -362,13 +361,13 @@ export default function Attend() {
                 disabled={captureProgress > 0}
               >
                 {captureProgress > 0
-                  ? `Capturing ${captureProgress}/${FRAME_COUNT}...`
-                  : "Capture & Verify"}
+                  ? t("attend.capturing", { current: captureProgress, total: FRAME_COUNT })
+                  : t("attend.captureVerify")}
               </Button>
               <Text type="secondary">
                 {challenge
-                  ? `Perform the action above, then tap Capture & Verify`
-                  : "Make sure your face is clearly visible and well-lit"}
+                  ? t("attend.challengeHint")
+                  : t("attend.faceHint")}
               </Text>
             </Space>
             {error && (
@@ -384,10 +383,10 @@ export default function Attend() {
           <div style={{ textAlign: "center", padding: 48 }}>
             <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
             <Title level={5} style={{ marginTop: 16 }}>
-              Verifying your identity...
+              {t("attend.verifying")}
             </Title>
             <Text type="secondary">
-              Checking QR code, GPS location, liveness, and face recognition
+              {t("attend.verifyingChecks")}
             </Text>
           </div>
         </Card>
@@ -399,22 +398,22 @@ export default function Attend() {
           {result?.success ? (
             <Result
               status="success"
-              title="Attendance Recorded!"
+              title={t("attend.attendanceRecorded")}
               subTitle={result.message}
               extra={
                 <Button type="primary" onClick={handleReset}>
-                  Done
+                  {t("common.done")}
                 </Button>
               }
             />
           ) : (
             <Result
               status="error"
-              title="Verification Failed"
-              subTitle={error || result?.message || "Something went wrong."}
+              title={t("attend.verificationFailed")}
+              subTitle={error || result?.message || t("attend.somethingWentWrong")}
               extra={
                 <Button type="primary" onClick={handleReset}>
-                  Try Again
+                  {t("attend.tryAgain")}
                 </Button>
               }
             />

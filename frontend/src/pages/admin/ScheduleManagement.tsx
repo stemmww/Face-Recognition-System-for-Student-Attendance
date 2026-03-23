@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Button,
   Form,
@@ -21,24 +22,9 @@ import { createSchedule, deleteSchedule, listSchedules, updateSchedule } from "@
 
 const { Title } = Typography;
 
-const DAY_OPTIONS = [
-  { value: "monday", label: "Monday" },
-  { value: "tuesday", label: "Tuesday" },
-  { value: "wednesday", label: "Wednesday" },
-  { value: "thursday", label: "Thursday" },
-  { value: "friday", label: "Friday" },
-  { value: "saturday", label: "Saturday" },
-];
-
 const DAY_ORDER: Record<string, number> = {
   monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
 };
-
-const CLASS_TYPE_OPTIONS = [
-  { value: "lecture", label: "Lecture" },
-  { value: "lab", label: "Lab" },
-  { value: "seminar", label: "Seminar" },
-];
 
 const classTypeColors: Record<string, string> = {
   lecture: "blue",
@@ -51,6 +37,26 @@ function formatTime(t: string) {
 }
 
 export default function ScheduleManagement() {
+  const { t } = useTranslation();
+
+  const DAY_OPTIONS = [
+    { value: "monday", label: t("schedulesPage.monday") },
+    { value: "tuesday", label: t("schedulesPage.tuesday") },
+    { value: "wednesday", label: t("schedulesPage.wednesday") },
+    { value: "thursday", label: t("schedulesPage.thursday") },
+    { value: "friday", label: t("schedulesPage.friday") },
+    { value: "saturday", label: t("schedulesPage.saturday") },
+  ];
+
+  const CLASS_TYPE_OPTIONS = [
+    { value: "lecture", label: t("schedulesPage.lecture") },
+    { value: "lab", label: t("schedulesPage.lab") },
+    { value: "seminar", label: t("schedulesPage.seminar") },
+  ];
+
+  const dayLabelMap = Object.fromEntries(DAY_OPTIONS.map((d) => [d.value, d.label]));
+  const classTypeLabelMap = Object.fromEntries(CLASS_TYPE_OPTIONS.map((ct) => [ct.value, ct.label]));
+
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,11 +72,11 @@ export default function ScheduleManagement() {
       setSchedules(s);
       setCourses(c);
     } catch {
-      message.error("Failed to load data");
+      message.error(t("schedulesPage.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [filterCourseId]);
+  }, [filterCourseId, t]);
 
   useEffect(() => {
     fetchData();
@@ -109,25 +115,25 @@ export default function ScheduleManagement() {
       if (editing) {
         const { course_id: _, ...updatePayload } = payload;
         await updateSchedule(editing.id, updatePayload);
-        message.success("Schedule updated");
+        message.success(t("schedulesPage.scheduleUpdated"));
       } else {
         await createSchedule(payload);
-        message.success("Schedule created");
+        message.success(t("schedulesPage.scheduleCreated"));
       }
       setModalOpen(false);
       fetchData();
     } catch {
-      message.error("Operation failed");
+      message.error(t("common.operationFailed"));
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
       await deleteSchedule(id);
-      message.success("Schedule deleted");
+      message.success(t("schedulesPage.scheduleDeleted"));
       fetchData();
     } catch {
-      message.error("Failed to delete");
+      message.error(t("schedulesPage.deleteFailed"));
     }
   };
 
@@ -137,7 +143,7 @@ export default function ScheduleManagement() {
 
   const columns = [
     {
-      title: "Course",
+      title: t("schedulesPage.course"),
       key: "course",
       render: (_: unknown, r: Schedule) => {
         const c = courseMap.get(r.course_id);
@@ -145,35 +151,35 @@ export default function ScheduleManagement() {
       },
     },
     {
-      title: "Day",
+      title: t("schedulesPage.day"),
       dataIndex: "day_of_week",
       key: "day_of_week",
       width: 120,
-      render: (d: string) => d.charAt(0).toUpperCase() + d.slice(1),
+      render: (d: string) => dayLabelMap[d] ?? (d.charAt(0).toUpperCase() + d.slice(1)),
     },
     {
-      title: "Time",
+      title: t("schedulesPage.time"),
       key: "time",
       width: 140,
       render: (_: unknown, r: Schedule) => `${formatTime(r.start_time)} – ${formatTime(r.end_time)}`,
     },
-    { title: "Room", dataIndex: "room", key: "room", width: 100 },
+    { title: t("schedulesPage.room"), dataIndex: "room", key: "room", width: 100 },
     {
-      title: "Type",
+      title: t("schedulesPage.type"),
       dataIndex: "class_type",
       key: "class_type",
       width: 100,
-      render: (t: string) => <Tag color={classTypeColors[t]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Tag>,
+      render: (ct: string) => <Tag color={classTypeColors[ct]}>{classTypeLabelMap[ct] ?? (ct.charAt(0).toUpperCase() + ct.slice(1))}</Tag>,
     },
     {
-      title: "Actions",
+      title: t("common.actions"),
       key: "actions",
       width: 160,
       render: (_: unknown, r: Schedule) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => openEdit(r)}>Edit</Button>
-          <Popconfirm title="Delete?" onConfirm={() => handleDelete(r.id)} okButtonProps={{ danger: true }}>
-            <Button type="link" danger icon={<DeleteOutlined />}>Delete</Button>
+          <Button type="link" icon={<EditOutlined />} onClick={() => openEdit(r)}>{t("common.edit")}</Button>
+          <Popconfirm title={`${t("common.delete")}?`} onConfirm={() => handleDelete(r.id)} okButtonProps={{ danger: true }}>
+            <Button type="link" danger icon={<DeleteOutlined />}>{t("common.delete")}</Button>
           </Popconfirm>
         </Space>
       ),
@@ -183,8 +189,8 @@ export default function ScheduleManagement() {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>Schedule Management</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Add Schedule</Button>
+        <Title level={4} style={{ margin: 0 }}>{t("schedulesPage.title")}</Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>{t("schedulesPage.addSchedule")}</Button>
       </div>
 
       <Space style={{ marginBottom: 16 }}>
@@ -192,50 +198,50 @@ export default function ScheduleManagement() {
           value={filterCourseId}
           onChange={setFilterCourseId}
           allowClear
-          placeholder="Filter by course"
+          placeholder={t("common.filterByCourse")}
           style={{ width: 300 }}
           options={courses.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
         />
       </Space>
 
       <Table dataSource={sorted} columns={columns} rowKey="id" loading={loading}
-        pagination={{ pageSize: 15, showTotal: (t) => `${t} entries` }} />
+        pagination={{ pageSize: 15, showTotal: (total) => `${total} ${t("common.entries")}` }} />
 
       <Modal
-        title={editing ? "Edit Schedule" : "Add Schedule"}
+        title={editing ? t("schedulesPage.editSchedule") : t("schedulesPage.addSchedule")}
         open={modalOpen}
         onOk={handleSubmit}
         onCancel={() => setModalOpen(false)}
-        okText={editing ? "Save" : "Create"}
+        okText={editing ? t("common.save") : t("common.create")}
         width={520}
         destroyOnClose
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item name="course_id" label="Course" rules={[{ required: true }]}>
+          <Form.Item name="course_id" label={t("schedulesPage.course")} rules={[{ required: true }]}>
             <Select
-              placeholder="Select course"
+              placeholder={t("schedulesPage.selectCourse")}
               disabled={!!editing}
               showSearch
               optionFilterProp="label"
               options={courses.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
             />
           </Form.Item>
-          <Form.Item name="day_of_week" label="Day" rules={[{ required: true }]}>
-            <Select options={DAY_OPTIONS} placeholder="Select day" />
+          <Form.Item name="day_of_week" label={t("schedulesPage.day")} rules={[{ required: true }]}>
+            <Select options={DAY_OPTIONS} placeholder={t("schedulesPage.selectDay")} />
           </Form.Item>
           <Space>
-            <Form.Item name="start_time" label="Start Time" rules={[{ required: true }]}>
+            <Form.Item name="start_time" label={t("schedulesPage.startTime")} rules={[{ required: true }]}>
               <TimePicker format="HH:mm" minuteStep={5} />
             </Form.Item>
-            <Form.Item name="end_time" label="End Time" rules={[{ required: true }]}>
+            <Form.Item name="end_time" label={t("schedulesPage.endTime")} rules={[{ required: true }]}>
               <TimePicker format="HH:mm" minuteStep={5} />
             </Form.Item>
           </Space>
           <Space>
-            <Form.Item name="room" label="Room" rules={[{ required: true }]}>
+            <Form.Item name="room" label={t("schedulesPage.room")} rules={[{ required: true }]}>
               <Input placeholder="A-101" style={{ width: 140 }} />
             </Form.Item>
-            <Form.Item name="class_type" label="Type" rules={[{ required: true }]}>
+            <Form.Item name="class_type" label={t("schedulesPage.type")} rules={[{ required: true }]}>
               <Select options={CLASS_TYPE_OPTIONS} style={{ width: 140 }} />
             </Form.Item>
           </Space>

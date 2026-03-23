@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Button,
@@ -24,7 +25,6 @@ import {
 } from "@ant-design/icons";
 import type { User, Role } from "@/types";
 import { createUser, deactivateUser, importStudentsCSV, listUsers, updateUser, type BulkImportResult } from "@/api/users";
-import { ROLE_LABELS } from "@/utils/constants";
 import { formatDateTime } from "@/utils/formatters";
 
 const { Title } = Typography;
@@ -44,6 +44,7 @@ interface UserFormValues {
 }
 
 export default function UserManagement() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -61,11 +62,11 @@ export default function UserManagement() {
       const data = await listUsers();
       setUsers(data);
     } catch {
-      message.error("Failed to load users");
+      message.error(t("usersPage.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchUsers();
@@ -100,7 +101,7 @@ export default function UserManagement() {
         };
         if (values.password) payload.password = values.password;
         await updateUser(editingUser.id, payload as Partial<User>);
-        message.success("User updated");
+        message.success(t("usersPage.userUpdated"));
       } else {
         await createUser({
           email: values.email,
@@ -109,13 +110,13 @@ export default function UserManagement() {
           last_name: values.last_name,
           role: values.role,
         });
-        message.success("User created");
+        message.success(t("usersPage.userCreated"));
       }
       setModalOpen(false);
       form.resetFields();
       fetchUsers();
     } catch {
-      message.error(editingUser ? "Failed to update user" : "Failed to create user");
+      message.error(editingUser ? t("usersPage.updateFailed") : t("usersPage.createFailed"));
     }
   };
 
@@ -126,13 +127,13 @@ export default function UserManagement() {
       const result = await importStudentsCSV(file);
       setImportResult(result);
       if (result.created > 0) {
-        message.success(`${result.created} student(s) created, ${result.enrolled} enrollment(s) added`);
+        message.success(t("usersPage.importSuccess", { created: result.created, enrolled: result.enrolled }));
         fetchUsers();
       } else {
-        message.info("No new students were created");
+        message.info(t("usersPage.noNewStudents"));
       }
     } catch {
-      message.error("Failed to import CSV");
+      message.error(t("usersPage.importFailed"));
     } finally {
       setImportLoading(false);
     }
@@ -141,10 +142,10 @@ export default function UserManagement() {
   const handleDeactivate = async (userId: number) => {
     try {
       await deactivateUser(userId);
-      message.success("User deactivated");
+      message.success(t("usersPage.userDeactivated"));
       fetchUsers();
     } catch {
-      message.error("Failed to deactivate user");
+      message.error(t("usersPage.deactivateFailed"));
     }
   };
 
@@ -160,40 +161,40 @@ export default function UserManagement() {
 
   const columns = [
     {
-      title: "Name",
+      title: t("common.name"),
       key: "name",
       render: (_: unknown, record: User) => `${record.first_name} ${record.last_name}`,
       sorter: (a: User, b: User) => a.last_name.localeCompare(b.last_name),
     },
     {
-      title: "Email",
+      title: t("common.email"),
       dataIndex: "email",
       key: "email",
     },
     {
-      title: "Role",
+      title: t("usersPage.role"),
       dataIndex: "role",
       key: "role",
       render: (role: Role) => (
-        <Tag color={roleColors[role]}>{ROLE_LABELS[role]}</Tag>
+        <Tag color={roleColors[role]}>{t(`roles.${role}`)}</Tag>
       ),
     },
     {
-      title: "Status",
+      title: t("common.status"),
       dataIndex: "is_active",
       key: "is_active",
       render: (active: boolean) => (
-        <Tag color={active ? "green" : "default"}>{active ? "Active" : "Inactive"}</Tag>
+        <Tag color={active ? "green" : "default"}>{active ? t("common.active") : t("common.inactive")}</Tag>
       ),
     },
     {
-      title: "Created",
+      title: t("coursesPage.created"),
       dataIndex: "created_at",
       key: "created_at",
       render: (d: string) => formatDateTime(d),
     },
     {
-      title: "Actions",
+      title: t("common.actions"),
       key: "actions",
       render: (_: unknown, record: User) => (
         <Space>
@@ -202,18 +203,18 @@ export default function UserManagement() {
             icon={<EditOutlined />}
             onClick={() => openEditModal(record)}
           >
-            Edit
+            {t("common.edit")}
           </Button>
           {record.is_active && (
             <Popconfirm
-              title="Deactivate this user?"
-              description="They will no longer be able to log in."
+              title={t("usersPage.deactivateTitle")}
+              description={t("usersPage.deactivateDesc")}
               onConfirm={() => handleDeactivate(record.id)}
-              okText="Deactivate"
+              okText={t("usersPage.deactivate")}
               okButtonProps={{ danger: true }}
             >
               <Button type="link" danger icon={<DeleteOutlined />}>
-                Deactivate
+                {t("usersPage.deactivate")}
               </Button>
             </Popconfirm>
           )}
@@ -225,22 +226,20 @@ export default function UserManagement() {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          User Management
-        </Title>
+        <Title level={4} style={{ margin: 0 }}>{t("usersPage.title")}</Title>
         <Space>
           <Button icon={<UploadOutlined />} onClick={() => { setImportModalOpen(true); setImportResult(null); }}>
-            Import CSV
+            {t("usersPage.importCSV")}
           </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-            Create User
+            {t("usersPage.createUser")}
           </Button>
         </Space>
       </div>
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Input
-          placeholder="Search by name or email"
+          placeholder={t("usersPage.searchPlaceholder")}
           prefix={<SearchOutlined />}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
@@ -252,10 +251,10 @@ export default function UserManagement() {
           onChange={setRoleFilter}
           style={{ width: 160 }}
           options={[
-            { value: "all", label: "All Roles" },
-            { value: "admin", label: "Administrator" },
-            { value: "professor", label: "Professor" },
-            { value: "student", label: "Student" },
+            { value: "all", label: t("usersPage.allRoles") },
+            { value: "admin", label: t("roles.admin") },
+            { value: "professor", label: t("roles.professor") },
+            { value: "student", label: t("roles.student") },
           ]}
         />
       </Space>
@@ -265,62 +264,62 @@ export default function UserManagement() {
         columns={columns}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `${total} users` }}
+        pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `${total} ${t("common.users")}` }}
       />
 
       <Modal
-        title={editingUser ? "Edit User" : "Create New User"}
+        title={editingUser ? t("usersPage.editUser") : t("usersPage.createUser")}
         open={modalOpen}
         onOk={handleSubmit}
         onCancel={() => { setModalOpen(false); form.resetFields(); }}
-        okText={editingUser ? "Save Changes" : "Create User"}
+        okText={editingUser ? t("usersPage.saveChanges") : t("usersPage.createUser")}
         width={520}
         destroyOnClose
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="first_name"
-            label="First Name"
-            rules={[{ required: true, message: "Required" }]}
+            label={t("usersPage.firstName")}
+            rules={[{ required: true, message: t("common.required") }]}
           >
             <Input placeholder="John" />
           </Form.Item>
           <Form.Item
             name="last_name"
-            label="Last Name"
-            rules={[{ required: true, message: "Required" }]}
+            label={t("usersPage.lastName")}
+            rules={[{ required: true, message: t("common.required") }]}
           >
             <Input placeholder="Doe" />
           </Form.Item>
           <Form.Item
             name="email"
-            label="Email"
+            label={t("common.email")}
             rules={[
-              { required: true, message: "Required" },
-              { type: "email", message: "Invalid email" },
+              { required: true, message: t("common.required") },
+              { type: "email", message: t("login.emailInvalid") },
             ]}
           >
             <Input placeholder="john.doe@university.edu" />
           </Form.Item>
           <Form.Item
             name="password"
-            label={editingUser ? "New Password (leave blank to keep current)" : "Password"}
-            rules={editingUser ? [] : [{ required: true, message: "Required" }, { min: 6, message: "Minimum 6 characters" }]}
+            label={editingUser ? t("usersPage.newPassword") : t("usersPage.password")}
+            rules={editingUser ? [] : [{ required: true, message: t("common.required") }, { min: 6, message: t("usersPage.minPassword") }]}
           >
-            <Input.Password placeholder={editingUser ? "••••••••" : "Enter password"} />
+            <Input.Password placeholder={editingUser ? "••••••••" : t("usersPage.enterPassword")} />
           </Form.Item>
           {!editingUser && (
             <Form.Item
               name="role"
-              label="Role"
-              rules={[{ required: true, message: "Required" }]}
+              label={t("usersPage.role")}
+              rules={[{ required: true, message: t("common.required") }]}
             >
               <Select
-                placeholder="Select role"
+                placeholder={t("usersPage.selectRole")}
                 options={[
-                  { value: "professor", label: "Professor" },
-                  { value: "student", label: "Student" },
-                  { value: "admin", label: "Administrator" },
+                  { value: "professor", label: t("roles.professor") },
+                  { value: "student", label: t("roles.student") },
+                  { value: "admin", label: t("roles.admin") },
                 ]}
               />
             </Form.Item>
@@ -329,22 +328,22 @@ export default function UserManagement() {
       </Modal>
 
       <Modal
-        title="Import Students from CSV"
+        title={t("usersPage.importTitle")}
         open={importModalOpen}
         onCancel={() => setImportModalOpen(false)}
         footer={[
           <Button key="close" onClick={() => setImportModalOpen(false)}>
-            Close
+            {t("common.close")}
           </Button>,
         ]}
         width={560}
       >
         <Alert
-          message="CSV Format"
+          message={t("usersPage.csvFormat")}
           description={
             <div>
-              <p style={{ margin: "4px 0" }}>Required columns: <strong>email, first_name, last_name, password</strong></p>
-              <p style={{ margin: "4px 0" }}>Optional: <strong>course_codes</strong> (comma or semicolon separated)</p>
+              <p style={{ margin: "4px 0" }}>{t("usersPage.csvRequired")}: <strong>email, first_name, last_name, password</strong></p>
+              <p style={{ margin: "4px 0" }}>{t("usersPage.csvOptional")}: <strong>course_codes</strong> ({t("usersPage.csvSeparated")})</p>
               <code style={{ fontSize: 12, display: "block", marginTop: 8, padding: 8, borderRadius: 4 }}>
                 email,first_name,last_name,password,course_codes<br />
                 john@uni.edu,John,Doe,pass123,SE2322<br />
@@ -369,28 +368,28 @@ export default function UserManagement() {
             <InboxOutlined />
           </p>
           <p className="ant-upload-text">
-            {importLoading ? "Importing..." : "Click or drag CSV file here"}
+            {importLoading ? t("usersPage.importing") : t("usersPage.dragCSV")}
           </p>
         </Upload.Dragger>
 
         {importResult && (
           <div style={{ marginTop: 16 }}>
             <Alert
-              message="Import Complete"
+              message={t("usersPage.importComplete")}
               description={
                 <ul style={{ margin: 0, paddingLeft: 20 }}>
-                  <li><strong>{importResult.created}</strong> students created</li>
-                  <li><strong>{importResult.skipped}</strong> existing accounts skipped</li>
-                  <li><strong>{importResult.enrolled}</strong> new enrollments added</li>
+                  <li><strong>{importResult.created}</strong> {t("usersPage.studentsCreated")}</li>
+                  <li><strong>{importResult.skipped}</strong> {t("usersPage.accountsSkipped")}</li>
+                  <li><strong>{importResult.enrolled}</strong> {t("usersPage.enrollmentsAdded")}</li>
                   {importResult.errors.length > 0 && (
                     <li style={{ color: "#ff4d4f" }}>
-                      <strong>{importResult.errors.length}</strong> error(s):
+                      <strong>{importResult.errors.length}</strong> {t("usersPage.errors")}:
                       <ul style={{ paddingLeft: 16 }}>
                         {importResult.errors.slice(0, 10).map((e, i) => (
                           <li key={i}>{e}</li>
                         ))}
                         {importResult.errors.length > 10 && (
-                          <li>...and {importResult.errors.length - 10} more</li>
+                          <li>...{t("usersPage.andMore", { count: importResult.errors.length - 10 })}</li>
                         )}
                       </ul>
                     </li>

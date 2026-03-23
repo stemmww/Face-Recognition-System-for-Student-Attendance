@@ -8,6 +8,7 @@ import {
   message,
 } from "antd";
 import { CheckOutlined } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import type { Notification } from "@/types";
 import { listNotifications, markRead, markAllRead } from "@/api/notifications";
@@ -16,6 +17,7 @@ import { useThemeStore } from "@/stores/themeStore";
 const { Title, Text } = Typography;
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const isDark = useThemeStore((s) => s.isDark);
@@ -24,11 +26,11 @@ export default function NotificationsPage() {
     try {
       setNotifications(await listNotifications());
     } catch {
-      message.error("Failed to load notifications");
+      message.error(t("notifications.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -42,7 +44,7 @@ export default function NotificationsPage() {
   const handleMarkAllRead = async () => {
     await markAllRead();
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    message.success("All notifications marked as read");
+    message.success(t("notifications.allRead"));
   };
 
   const unread = notifications.filter((n) => !n.is_read).length;
@@ -51,11 +53,11 @@ export default function NotificationsPage() {
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <Title level={4} style={{ margin: 0 }}>
-          Notifications {unread > 0 && <Tag color="red">{unread} unread</Tag>}
+          {t("notifications.title")} {unread > 0 && <Tag color="red">{t("notifications.unread", { count: unread })}</Tag>}
         </Title>
         {unread > 0 && (
           <Button icon={<CheckOutlined />} onClick={handleMarkAllRead}>
-            Mark All Read
+            {t("notifications.markAllRead")}
           </Button>
         )}
       </div>
@@ -63,7 +65,7 @@ export default function NotificationsPage() {
       <List
         loading={loading}
         dataSource={notifications}
-        locale={{ emptyText: <Empty description="No notifications" /> }}
+        locale={{ emptyText: <Empty description={t("notifications.noNotifications")} /> }}
         renderItem={(n) => (
           <List.Item
             style={{
@@ -78,7 +80,7 @@ export default function NotificationsPage() {
               !n.is_read
                 ? [
                     <Button size="small" type="link" onClick={() => handleMarkRead(n.id)}>
-                      Mark read
+                      {t("notifications.markRead")}
                     </Button>,
                   ]
                 : undefined

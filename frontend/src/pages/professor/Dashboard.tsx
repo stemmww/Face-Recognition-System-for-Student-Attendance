@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Button,
   Card,
@@ -38,6 +39,7 @@ import { getCourseTrends, type SessionTrendPoint } from "@/api/statistics";
 const { Title, Text } = Typography;
 
 export default function ProfessorDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -59,11 +61,11 @@ export default function ProfessorDashboard() {
       setSessions(s);
       setPendingAppeals(a.length);
     } catch {
-      message.error("Failed to load dashboard data");
+      message.error(t("dashboard.failedToLoad"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -74,12 +76,12 @@ export default function ProfessorDashboard() {
       setTrendLoading(true);
       getCourseTrends(trendCourse)
         .then(setTrendData)
-        .catch(() => message.error("Failed to load trends"))
+        .catch(() => message.error(t("dashboard.failedToLoadTrends")))
         .finally(() => setTrendLoading(false));
     } else {
       setTrendData([]);
     }
-  }, [trendCourse]);
+  }, [trendCourse, t]);
 
   // Auto-select first course for trends
   useEffect(() => {
@@ -92,10 +94,10 @@ export default function ProfessorDashboard() {
   const recentSessions = sessions.slice(0, 5);
 
   const sessionColumns = [
-    { title: "ID", dataIndex: "id", width: 60 },
-    { title: "Date", dataIndex: "date", width: 120 },
+    { title: t("common.id"), dataIndex: "id", width: 60 },
+    { title: t("common.date"), dataIndex: "date", width: 120 },
     {
-      title: "Status",
+      title: t("common.status"),
       dataIndex: "status",
       width: 100,
       render: (s: string) => (
@@ -108,18 +110,18 @@ export default function ProfessorDashboard() {
 
   return (
     <>
-      <Title level={4}>Welcome, {user?.first_name}!</Title>
+      <Title level={4}>{t("dashboard.welcomeUser", { name: user?.first_name })}</Title>
 
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={6}>
           <Card loading={loading} hoverable onClick={() => navigate("/courses")}>
-            <Statistic title="My Courses" value={courses.length} prefix={<BookOutlined />} />
+            <Statistic title={t("dashboard.myCoursesCount")} value={courses.length} prefix={<BookOutlined />} />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card loading={loading} hoverable onClick={() => navigate("/sessions")}>
             <Statistic
-              title="Active Sessions"
+              title={t("dashboard.activeSessions")}
               value={activeSessions.length}
               prefix={<PlayCircleOutlined />}
               valueStyle={{ color: activeSessions.length > 0 ? "#52c41a" : undefined }}
@@ -128,13 +130,13 @@ export default function ProfessorDashboard() {
         </Col>
         <Col xs={12} sm={6}>
           <Card loading={loading} hoverable onClick={() => navigate("/sessions")}>
-            <Statistic title="Total Sessions" value={sessions.length} prefix={<CalendarOutlined />} />
+            <Statistic title={t("dashboard.totalSessions")} value={sessions.length} prefix={<CalendarOutlined />} />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card loading={loading} hoverable onClick={() => navigate("/appeals-review")}>
             <Statistic
-              title="Pending Appeals"
+              title={t("dashboard.pendingAppeals")}
               value={pendingAppeals}
               prefix={<FileTextOutlined />}
               valueStyle={{ color: pendingAppeals > 0 ? "#ff4d4f" : undefined }}
@@ -145,7 +147,7 @@ export default function ProfessorDashboard() {
 
       {/* Attendance trend chart */}
       <Card
-        title="Attendance Trends"
+        title={t("dashboard.attendanceTrends")}
         extra={
           <Select
             value={trendCourse}
@@ -165,21 +167,21 @@ export default function ProfessorDashboard() {
               <YAxis fontSize={12} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="present" name="Present" fill="#52c41a" stackId="a" />
-              <Bar dataKey="late" name="Late" fill="#fa8c16" stackId="a" />
-              <Bar dataKey="absent" name="Absent" fill="#ff4d4f" stackId="a" />
+              <Bar dataKey="present" name={t("common.present")} fill="#52c41a" stackId="a" />
+              <Bar dataKey="late" name={t("common.late")} fill="#fa8c16" stackId="a" />
+              <Bar dataKey="absent" name={t("common.absent")} fill="#ff4d4f" stackId="a" />
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <Text type="secondary">No attendance data for this course yet</Text>
+          <Text type="secondary">{t("dashboard.noTrendData")}</Text>
         )}
       </Card>
 
       <Row gutter={16}>
         <Col xs={24} md={12}>
-          <Card title="Recent Sessions" loading={loading}>
+          <Card title={t("dashboard.recentSessions")} loading={loading}>
             {recentSessions.length === 0 ? (
-              <Text type="secondary">No sessions yet</Text>
+              <Text type="secondary">{t("dashboard.noSessionsYet")}</Text>
             ) : (
               <Table
                 dataSource={recentSessions}
@@ -190,24 +192,24 @@ export default function ProfessorDashboard() {
               />
             )}
             <Button type="link" onClick={() => navigate("/sessions")} style={{ marginTop: 8 }}>
-              View all sessions
+              {t("dashboard.viewAllSessions")}
             </Button>
           </Card>
         </Col>
         <Col xs={24} md={12}>
-          <Card title="Quick Actions" loading={loading}>
+          <Card title={t("dashboard.quickActions")} loading={loading}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <Button type="primary" icon={<PlayCircleOutlined />} onClick={() => navigate("/sessions")}>
-                Start Live Session
+                {t("dashboard.startLiveSession")}
               </Button>
               <Button icon={<BookOutlined />} onClick={() => navigate("/attendance")}>
-                View Attendance Records
+                {t("dashboard.viewAttendanceRecords")}
               </Button>
               <Button icon={<CalendarOutlined />} onClick={() => navigate("/statistics")}>
-                View Statistics
+                {t("dashboard.viewStatistics")}
               </Button>
               <Button icon={<FileTextOutlined />} onClick={() => navigate("/appeals-review")}>
-                Review Appeals {pendingAppeals > 0 && <Tag color="red" style={{ marginLeft: 8 }}>{pendingAppeals}</Tag>}
+                {t("dashboard.reviewAppeals")} {pendingAppeals > 0 && <Tag color="red" style={{ marginLeft: 8 }}>{pendingAppeals}</Tag>}
               </Button>
             </div>
           </Card>

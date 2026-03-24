@@ -51,6 +51,60 @@ async def pipeline_status(
     )
 
 
+def _check_face_quality(
+    image: np.ndarray,
+    det: "Detection",
+) -> list[str]:
+    """Run quality checks on a detected face. Returns list of warning/rejection messages."""
+    from app.ai.detector import Detection  # noqa: F811
+
+    issues: list[str] = []
+    img_h, img_w = image.shape[:2]
+
+    # 1. Face size — bounding box should cover at least 5% of image area
+    x1, y1, x2, y2 = det.bbox
+    face_area = (x2 - x1) * (y2 - y1)
+    img_area = img_h * img_w
+    face_ratio = face_area / img_area if img_area > 0 else 0
+    if face_ratio < 0.03:
+        issues.append("Face is too small — move closer to the camera")
+    elif face_ratio < 0.05:
+        issues.append("Face is a bit small — try moving closer for better results")
+
+    # 2. Blur detection — Laplacian variance on face crop
+    pad = int(max(x2 - x1, y2 - y1) * 0.05)
+    cx1, cy1 = max(0, x1 - pad), max(0, y1 - pad)
+    cx2, cy2 = min(img_w, x2 + pad), min(img_h, y2 + pad)
+    face_crop = image[cy1:cy2, cx1:cx2]
+    gray_crop = cv2.cvtColor(face_crop, cv2.COLOR_BGR2GRAY)
+    lap_var = cv2.Laplacian(gray_crop, cv2.CV_64F).var()
+    if lap_var < 30:
+        issues.append("Photo is too blurry — hold the camera steady")
+    elif lap_var < 60:
+        issues.append("Photo is slightly blurry — a sharper image would improve recognition")
+
+    # 3. Brightness — mean pixel value of face region
+    mean_brightness = float(gray_crop.mean())
+    if mean_brightness < 40:
+        issues.append("Photo is too dark — use better lighting")
+    elif mean_brightness > 220:
+        issues.append("Photo is overexposed — reduce lighting or avoid direct light")
+
+    # 4. Frontality — nose should be roughly centered between eyes
+    if det.landmarks is not None:
+        lm = det.landmarks
+        eye_mid_x = (lm[0][0] + lm[1][0]) / 2.0
+        iod = float(np.linalg.norm(lm[0] - lm[1]))
+        if iod > 5:
+            nose_offset = abs(lm[2][0] - eye_mid_x) / iod
+            if nose_offset > 0.35:
+                issues.append("Face is turned too far to the side — look directly at the camera")
+            elif nose_offset > 0.2:
+                issues.append("Face is slightly angled — looking straight ahead works best")
+
+    return issues
+
+
 @router.post("/enroll", response_model=FaceEnrollResponse, status_code=201)
 async def enroll_face(
     photo: UploadFile,
@@ -62,21 +116,46 @@ async def enroll_face(
     image = await _read_image(photo)
     pipe = get_pipeline()
 
-    embedding, face_count = pipe.extract_embedding(image)
-    if embedding is None:
+    # Detect face
+    detections = pipe.detector.detect(image)
+    if not detections:
         raise BadRequestError("No face detected in the uploaded image")
+
+    largest = max(detections, key=lambda d: (d.bbox[2] - d.bbox[0]) * (d.bbox[3] - d.bbox[1]))
+
+    # Quality gate
+    quality_issues = _check_face_quality(image, largest)
+    hard_issues = [i for i in quality_issues if not i.startswith("Face is slightly") and not i.startswith("Photo is slightly") and not i.startswith("Face is a bit")]
+    if hard_issues:
+        raise BadRequestError("Photo quality too low: " + hard_issues[0])
+
+    # Extract embedding from the largest face
+    from app.ai.recognizer import align_face
+    if largest.landmarks is None:
+        raise BadRequestError("Could not detect facial landmarks — try a clearer photo")
+    aligned = align_face(image, largest.landmarks)
+    embedding = pipe.recognizer.get_embedding(aligned)
+    if embedding is None:
+        raise BadRequestError("Failed to extract face embedding — try a different photo")
 
     photo_data = cv2.imencode(".jpg", image)[1].tobytes()
     photo_path = await FaceService.save_photo(photo_data, photo.filename or "face.jpg")
 
     record = await FaceService.enroll_face(db, user_id, embedding, photo_path)
 
+    # Include soft warnings in the success message
+    soft_warnings = [i for i in quality_issues if i not in hard_issues]
+    base_msg = f"Face enrolled successfully ({len(detections)} face(s) detected, largest used)"
+    if soft_warnings:
+        base_msg += ". Tip: " + soft_warnings[0]
+
     return FaceEnrollResponse(
         id=record.id,
         user_id=record.user_id,
         photo_path=record.photo_path,
-        faces_detected=face_count,
-        message=f"Face enrolled successfully ({face_count} face(s) detected, largest used)",
+        faces_detected=len(detections),
+        message=base_msg,
+        quality_warnings=soft_warnings,
     )
 
 

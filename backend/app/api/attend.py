@@ -71,6 +71,16 @@ async def get_liveness_challenge(
     if session.status != SessionStatus.ACTIVE:
         raise BadRequestError("Session is not active")
 
+    # Check if attendance already recorded — fail early before camera opens
+    existing = await db.execute(
+        select(AttendanceRecord).where(
+            AttendanceRecord.session_id == session.id,
+            AttendanceRecord.student_id == current_user.id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise BadRequestError("Your attendance was already recorded for this session.")
+
     challenge = generate_challenge()
     instruction = get_challenge_instruction(challenge)
 

@@ -21,6 +21,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { useTranslation } from "react-i18next";
 import type { LivenessChallenge, VerifyAttendanceResponse } from "@/types";
 import { fetchChallenge, verifyAttendance } from "@/api/attend";
+import ChallengeGuide from "@/components/ChallengeGuide";
 
 const { Title, Text } = Typography;
 
@@ -135,8 +136,16 @@ export default function Attend() {
         .then((ch) => {
           if (!cancelled) setChallenge(ch);
         })
-        .catch(() => {
-          if (!cancelled) setError(t("attend.challengeLoadFailed"));
+        .catch((err: any) => {
+          if (cancelled) return;
+          const detail = err?.response?.data?.detail || "";
+          if (detail.includes("already recorded")) {
+            // Skip camera — go straight to success
+            setResult({ success: true, status: "present", message: detail });
+            setStep("done");
+          } else {
+            setError(detail || t("attend.challengeLoadFailed"));
+          }
         })
         .finally(() => {
           if (!cancelled) setLoadingChallenge(false);
@@ -322,12 +331,9 @@ export default function Attend() {
               <Spin size="small" style={{ marginBottom: 12 }} />
             )}
             {challenge && !loadingChallenge && (
-              <Alert
-                type="info"
-                message={challenge.instruction}
-                style={{ marginBottom: 16, fontSize: 16, fontWeight: "bold" }}
-                showIcon
-                banner
+              <ChallengeGuide
+                challengeType={challenge.challenge_type}
+                instruction={challenge.instruction}
               />
             )}
 

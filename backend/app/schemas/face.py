@@ -18,6 +18,7 @@ class FaceEnrollResponse(BaseModel):
     photo_path: str
     faces_detected: int
     message: str
+    quality_warnings: list[str] = []
 
 
 class FaceVerifyMatch(BaseModel):

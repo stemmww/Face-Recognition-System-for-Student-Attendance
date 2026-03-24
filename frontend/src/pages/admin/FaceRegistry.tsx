@@ -106,6 +106,9 @@ export default function FaceRegistry() {
     setEnrolling(true);
     try {
       const result = await enrollFace(selectedStudent, file);
+      if (result.quality_warnings?.length) {
+        message.warning(result.quality_warnings[0], 5);
+      }
       message.success(result.message);
       fetchEmbeddings(selectedStudent);
     } catch (err: any) {

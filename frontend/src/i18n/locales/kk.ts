@@ -548,6 +548,7 @@ const kk = {
     markAllRead: "Барлығын оқылды деп белгілеу",
     noNotifications: "Хабарландырулар жоқ",
   },
+
 };
 
 export default kk;

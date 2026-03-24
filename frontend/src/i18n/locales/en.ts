@@ -557,6 +557,7 @@ const en = {
     markAllRead: "Mark all as read",
     noNotifications: "No notifications",
   },
+
 };
 
 export default en;

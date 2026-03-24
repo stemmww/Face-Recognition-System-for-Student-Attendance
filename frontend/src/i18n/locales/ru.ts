@@ -548,6 +548,7 @@ const ru = {
     markAllRead: "Отметить все прочитанными",
     noNotifications: "Нет уведомлений",
   },
+
 };
 
 export default ru;

@@ -307,6 +307,26 @@ async def verify_attendance(
 
     similarity = matches[0]["similarity"]
 
+    # --- 7.5. Progressive auto-enrollment ---
+    # Save the verified embedding to improve future recognition.
+    # Cap at 20 embeddings per student to avoid unbounded growth.
+    MAX_AUTO_EMBEDDINGS = 20
+    existing_embeddings = await FaceService.list_embeddings(db, current_user.id)
+    if len(existing_embeddings) < MAX_AUTO_EMBEDDINGS:
+        try:
+            # Save the best frame (first one) as the photo
+            photo_data = cv2.imencode(".jpg", images[0])[1].tobytes()
+            photo_path = await FaceService.save_photo(photo_data, "auto.jpg")
+            await FaceService.enroll_face(
+                db, current_user.id, avg_embedding, photo_path,
+            )
+            logger.info(
+                "Auto-enrolled embedding for user %d (now %d total)",
+                current_user.id, len(existing_embeddings) + 1,
+            )
+        except Exception:
+            logger.warning("Auto-enrollment failed for user %d, skipping", current_user.id)
+
     # --- 8. Record attendance ---
     record, is_new = await AttendanceRecordService.record_recognition(
         db, session.id, current_user.id, similarity

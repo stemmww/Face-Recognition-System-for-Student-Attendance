@@ -151,9 +151,26 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
       ...(notifications.length > 0 && unreadCount > 0
         ? [{
             key: "mark-all",
+            style: { padding: 0, cursor: "default", background: "transparent" },
+            className: "no-hover-highlight",
             label: (
-              <div style={{ textAlign: "center", padding: "2px 0" }}>
-                <Button type="link" size="small" icon={<CheckOutlined />} onClick={handleMarkAllRead}>
+              <div style={{
+                textAlign: "center",
+                padding: "6px 0 2px",
+                marginBottom: 4,
+                borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+              }}>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<CheckOutlined />}
+                  onClick={handleMarkAllRead}
+                  className="mark-all-read-btn"
+                  style={{
+                    color: isDark ? "#818cf8" : "#6366f1",
+                    fontWeight: 500,
+                  }}
+                >
                   {t("header.markAllRead")}
                 </Button>
               </div>
@@ -162,19 +179,22 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
         : []),
       {
         key: "list",
+        style: { padding: 0, cursor: "default", background: "transparent" },
+        className: "no-hover-highlight",
         label: (
-          <div style={{ width: isMobile ? 260 : 340, maxHeight: 380, overflowY: "auto" as const }}>
+          <div className="notification-scroll" style={{ width: isMobile ? 260 : 340, maxHeight: 380, overflowY: "auto" as const }}>
             <List
               size="small"
               dataSource={notifications.slice(0, 20)}
               locale={{ emptyText: t("header.noNotifications") }}
               renderItem={(n) => (
                 <List.Item
+                  className="notification-item"
                   style={{
                     background: n.is_read
                       ? "transparent"
                       : isDark ? "rgba(99,102,241,0.12)" : "#f0f0ff",
-                    cursor: n.is_read ? "default" : "pointer",
+                    cursor: "pointer",
                     padding: "10px 12px",
                     borderRadius: 8,
                     marginBottom: 4,
@@ -267,6 +287,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
           trigger={["click"]}
           onOpenChange={handleBellOpen}
           overlayStyle={{ minWidth: isMobile ? 280 : 360 }}
+          overlayClassName="notification-dropdown"
         >
           <Button type="text" style={iconBtnStyle(isDark)}>
             <Badge count={unreadCount} size="small" offset={[4, -4]}>
@@ -296,7 +317,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
         )}
 
         {/* User dropdown */}
-        <Dropdown menu={userItems} placement="bottomRight">
+        <Dropdown menu={userItems} placement="bottomRight" trigger={["click"]}>
           <div
             style={{
               display: "flex",

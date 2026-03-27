@@ -48,6 +48,7 @@ python -m venv .venv
 .venv/Scripts/activate      # Windows
 # source .venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
+python download_models.py    # Download AI models (~300 MB, one-time)
 uvicorn app.main:app --reload
 ```
 
@@ -109,11 +110,11 @@ alembic revision --autogenerate -m "description"  # Create new migration
 
 ## Default Admin Account
 
-After first run, log in with the credentials configured in `.env`:
+After first run, log in with the default credentials:
 - Email: `admin@attendance.edu`
-- Password: `admin_changeme`
+- Password: `admin123`
 
-**Change these immediately in production.**
+You can change these in `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).
 
 ## License
 

@@ -13,7 +13,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p /app/uploads
+RUN mkdir -p /app/uploads /app/models
+
+RUN python download_models.py
 
 EXPOSE 8000
 

@@ -40,6 +40,19 @@ import { formatDateTime } from "@/utils/formatters";
 
 const { Title, Text } = Typography;
 
+function getApiErrorMessage(error: unknown): string | undefined {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof (error as { response?: unknown }).response === "object" &&
+    (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
+  ) {
+    return (error as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+  }
+  return undefined;
+}
+
 interface CourseFormValues {
   code: string;
   name: string;
@@ -132,15 +145,15 @@ export default function CourseManagement() {
       const [profs, students, allProfs, allStuds] = await Promise.all([
         getCourseProfessors(course.id),
         getCourseStudents(course.id),
-        listUsers("professor"),
-        listUsers("student"),
+        listUsers("professor", true),
+        listUsers("student", true),
       ]);
       setCourseProfessors(profs);
       setCourseStudents(students);
       setAllProfessors(allProfs);
       setAllStudents(allStuds);
-    } catch {
-      message.error(t("coursesPage.membersFailed"));
+    } catch (error) {
+      message.error(getApiErrorMessage(error) || t("coursesPage.membersFailed"));
     }
   };
 
@@ -151,9 +164,14 @@ export default function CourseManagement() {
       message.success(t("coursesPage.professorsAssigned"));
       setAssignProfModalOpen(false);
       setSelectedUserIds([]);
-      setCourseProfessors(await getCourseProfessors(selectedCourse.id));
-    } catch {
-      message.error(t("coursesPage.assignFailed"));
+      const [profs, allProfs] = await Promise.all([
+        getCourseProfessors(selectedCourse.id),
+        listUsers("professor", true),
+      ]);
+      setCourseProfessors(profs);
+      setAllProfessors(allProfs);
+    } catch (error) {
+      message.error(getApiErrorMessage(error) || t("coursesPage.assignFailed"));
     }
   };
 
@@ -161,9 +179,14 @@ export default function CourseManagement() {
     if (!selectedCourse) return;
     try {
       await removeProfessor(selectedCourse.id, profId);
-      setCourseProfessors(await getCourseProfessors(selectedCourse.id));
-    } catch {
-      message.error(t("coursesPage.removeProfFailed"));
+      const [profs, allProfs] = await Promise.all([
+        getCourseProfessors(selectedCourse.id),
+        listUsers("professor", true),
+      ]);
+      setCourseProfessors(profs);
+      setAllProfessors(allProfs);
+    } catch (error) {
+      message.error(getApiErrorMessage(error) || t("coursesPage.removeProfFailed"));
     }
   };
 
@@ -174,9 +197,14 @@ export default function CourseManagement() {
       message.success(t("coursesPage.studentsEnrolledSuccess"));
       setEnrollStudentModalOpen(false);
       setSelectedUserIds([]);
-      setCourseStudents(await getCourseStudents(selectedCourse.id));
-    } catch {
-      message.error(t("coursesPage.enrollFailed"));
+      const [students, allStuds] = await Promise.all([
+        getCourseStudents(selectedCourse.id),
+        listUsers("student", true),
+      ]);
+      setCourseStudents(students);
+      setAllStudents(allStuds);
+    } catch (error) {
+      message.error(getApiErrorMessage(error) || t("coursesPage.enrollFailed"));
     }
   };
 
@@ -184,9 +212,14 @@ export default function CourseManagement() {
     if (!selectedCourse) return;
     try {
       await removeStudent(selectedCourse.id, studentId);
-      setCourseStudents(await getCourseStudents(selectedCourse.id));
-    } catch {
-      message.error(t("coursesPage.removeStudentFailed"));
+      const [students, allStuds] = await Promise.all([
+        getCourseStudents(selectedCourse.id),
+        listUsers("student", true),
+      ]);
+      setCourseStudents(students);
+      setAllStudents(allStuds);
+    } catch (error) {
+      message.error(getApiErrorMessage(error) || t("coursesPage.removeStudentFailed"));
     }
   };
 

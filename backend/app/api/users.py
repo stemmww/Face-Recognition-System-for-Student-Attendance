@@ -1,9 +1,12 @@
 import csv
 import io
+import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.core.rbac import require_role
 from app.database import get_db
 from app.models.user import Role, User
@@ -11,6 +14,8 @@ from app.core.exceptions import BadRequestError
 from app.core.security import verify_password, hash_password
 from app.schemas.user import BulkImportResult, PasswordChange, UserCreate, UserOut, UserUpdate
 from app.services.user_service import UserService
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 router = APIRouter()
 
@@ -49,6 +54,51 @@ async def change_password(
     current_user.hashed_password = hash_password(body.new_password)
     await db.commit()
     return {"message": "Password changed successfully"}
+
+
+@router.put("/me/photo", response_model=UserOut)
+async def upload_profile_photo(
+    file: UploadFile,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)),
+):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise BadRequestError("Only JPEG, PNG, and WebP images are allowed")
+
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise BadRequestError("Image must be smaller than 5 MB")
+
+    # Delete old photo file if it exists
+    if current_user.photo_url:
+        old_path = Path(settings.UPLOAD_DIR) / current_user.photo_url
+        old_path.unlink(missing_ok=True)
+
+    ext = file.content_type.split("/")[-1].replace("jpeg", "jpg")
+    filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+    relative_path = f"profiles/{filename}"
+    save_dir = Path(settings.UPLOAD_DIR) / "profiles"
+    save_dir.mkdir(parents=True, exist_ok=True)
+    (save_dir / filename).write_bytes(content)
+
+    current_user.photo_url = relative_path
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
+
+
+@router.delete("/me/photo", response_model=UserOut)
+async def delete_profile_photo(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)),
+):
+    if current_user.photo_url:
+        old_path = Path(settings.UPLOAD_DIR) / current_user.photo_url
+        old_path.unlink(missing_ok=True)
+        current_user.photo_url = None
+        await db.commit()
+        await db.refresh(current_user)
+    return current_user
 
 
 @router.get("/{user_id}", response_model=UserOut)

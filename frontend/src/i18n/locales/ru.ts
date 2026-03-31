@@ -153,6 +153,14 @@ const ru = {
     updatePassword: "Обновить пароль",
     passwordChanged: "Пароль успешно изменён",
     passwordChangeFailed: "Не удалось изменить пароль. Проверьте текущий пароль.",
+    changePhoto: "Изменить фото",
+    removePhoto: "Удалить фото",
+    photoUploaded: "Фото профиля обновлено",
+    photoUploadFailed: "Не удалось загрузить фото",
+    photoRemoved: "Фото профиля удалено",
+    photoRemoveFailed: "Не удалось удалить фото",
+    photoInvalidType: "Допускаются только изображения JPEG, PNG и WebP",
+    photoTooLarge: "Изображение должно быть меньше 5 МБ",
   },
 
   // Dashboards

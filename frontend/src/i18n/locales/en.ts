@@ -153,6 +153,14 @@ const en = {
     updatePassword: "Update Password",
     passwordChanged: "Password changed successfully",
     passwordChangeFailed: "Failed to change password. Please check your current password.",
+    changePhoto: "Change photo",
+    removePhoto: "Remove photo",
+    photoUploaded: "Profile photo updated",
+    photoUploadFailed: "Failed to upload photo",
+    photoRemoved: "Profile photo removed",
+    photoRemoveFailed: "Failed to remove photo",
+    photoInvalidType: "Only JPEG, PNG, and WebP images are allowed",
+    photoTooLarge: "Image must be smaller than 5 MB",
   },
 
   // Dashboards

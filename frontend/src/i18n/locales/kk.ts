@@ -153,6 +153,14 @@ const kk = {
     updatePassword: "Құпия сөзді жаңарту",
     passwordChanged: "Құпия сөз сәтті өзгертілді",
     passwordChangeFailed: "Құпия сөзді өзгерту сәтсіз аяқталды. Ағымдағы құпия сөзді тексеріңіз.",
+    changePhoto: "Фотосуретті өзгерту",
+    removePhoto: "Фотосуретті жою",
+    photoUploaded: "Профиль фотосуреті жаңартылды",
+    photoUploadFailed: "Фотосуретті жүктеу сәтсіз аяқталды",
+    photoRemoved: "Профиль фотосуреті жойылды",
+    photoRemoveFailed: "Фотосуретті жою сәтсіз аяқталды",
+    photoInvalidType: "Тек JPEG, PNG және WebP суреттеріне рұқсат етіледі",
+    photoTooLarge: "Сурет 5 МБ-тан кіші болуы керек",
   },
 
   // Dashboards

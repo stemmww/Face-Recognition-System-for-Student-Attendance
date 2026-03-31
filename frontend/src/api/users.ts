@@ -42,6 +42,20 @@ export async function deactivateUser(userId: number): Promise<void> {
   await apiClient.delete(`/users/${userId}`);
 }
 
+export async function uploadProfilePhoto(file: File): Promise<User> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await apiClient.put<User>("/users/me/photo", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function deleteProfilePhoto(): Promise<User> {
+  const { data } = await apiClient.delete<User>("/users/me/photo");
+  return data;
+}
+
 export async function importStudentsCSV(file: File): Promise<BulkImportResult> {
   const formData = new FormData();
   formData.append("file", file);

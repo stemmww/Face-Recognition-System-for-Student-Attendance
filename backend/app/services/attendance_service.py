@@ -136,7 +136,12 @@ class AttendanceSessionService:
         sched = schedule.scalar_one()
 
         enrolled = await db.execute(
-            select(Enrollment.student_id).where(Enrollment.course_id == sched.course_id)
+            select(User.id)
+            .join(Enrollment, Enrollment.student_id == User.id)
+            .where(
+                Enrollment.course_id == sched.course_id,
+                User.is_active == True,
+            )
         )
         enrolled_ids = {row[0] for row in enrolled.fetchall()}
 
@@ -177,6 +182,27 @@ class AttendanceSessionService:
 
 
 class AttendanceRecordService:
+    @staticmethod
+    async def _get_active_enrolled_student_ids_for_session(
+        db: AsyncSession,
+        session_id: int,
+    ) -> set[int]:
+        session = await AttendanceSessionService.get_session(db, session_id)
+        schedule_result = await db.execute(
+            select(Schedule).where(Schedule.id == session.schedule_id)
+        )
+        schedule = schedule_result.scalar_one()
+
+        enrolled = await db.execute(
+            select(User.id)
+            .join(Enrollment, Enrollment.student_id == User.id)
+            .where(
+                Enrollment.course_id == schedule.course_id,
+                User.is_active == True,
+            )
+        )
+        return {row[0] for row in enrolled.fetchall()}
+
     @staticmethod
     async def record_recognition(
         db: AsyncSession,
@@ -369,6 +395,22 @@ class AttendanceRecordService:
         entries: list[dict],
     ) -> list[AttendanceRecord]:
         """Create or update attendance records manually (professor roll call)."""
+        valid_student_ids = await AttendanceRecordService._get_active_enrolled_student_ids_for_session(
+            db, session_id
+        )
+        invalid_ids = sorted(
+            {
+                entry["student_id"]
+                for entry in entries
+                if entry["student_id"] not in valid_student_ids
+            }
+        )
+        if invalid_ids:
+            raise BadRequestError(
+                "Manual attendance is only allowed for active enrolled students. "
+                f"Invalid student ids: {', '.join(str(student_id) for student_id in invalid_ids)}"
+            )
+
         records = []
         for entry in entries:
             student_id = entry["student_id"]

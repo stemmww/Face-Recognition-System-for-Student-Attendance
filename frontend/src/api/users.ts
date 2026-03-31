@@ -6,8 +6,10 @@ export async function getMe(): Promise<User> {
   return data;
 }
 
-export async function listUsers(role?: string): Promise<User[]> {
-  const params = role ? { role } : {};
+export async function listUsers(role?: string, activeOnly?: boolean): Promise<User[]> {
+  const params: Record<string, string | boolean> = {};
+  if (role) params.role = role;
+  if (activeOnly !== undefined) params.active_only = activeOnly;
   const { data } = await apiClient.get<User[]>("/users", { params });
   return data;
 }

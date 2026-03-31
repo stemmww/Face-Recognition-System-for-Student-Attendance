@@ -11,10 +11,16 @@ from app.schemas.user import UserCreate, UserUpdate
 
 class UserService:
     @staticmethod
-    async def list_users(db: AsyncSession, role: Role | None = None) -> list[User]:
+    async def list_users(
+        db: AsyncSession,
+        role: Role | None = None,
+        active_only: bool | None = None,
+    ) -> list[User]:
         query = select(User)
         if role:
             query = query.where(User.role == role)
+        if active_only:
+            query = query.where(User.is_active == True)
         result = await db.execute(query.order_by(User.created_at.desc()))
         return result.scalars().all()
 
@@ -107,6 +113,12 @@ class UserService:
 
             # Enroll in courses
             if course_codes_raw:
+                if user is not None and not user.is_active:
+                    errors.append(
+                        f"Row {i}: existing user '{email}' is inactive and cannot be enrolled"
+                    )
+                    continue
+
                 codes = [c.strip() for c in course_codes_raw.replace(";", ",").split(",") if c.strip()]
                 for code in codes:
                     course_result = await db.execute(

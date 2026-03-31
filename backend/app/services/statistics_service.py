@@ -25,15 +25,18 @@ class StatisticsService:
         total_sessions = sessions_result.scalar() or 0
 
         enrolled_result = await db.execute(
-            select(Enrollment.student_id).where(Enrollment.course_id == course_id)
+            select(User)
+            .join(Enrollment, Enrollment.student_id == User.id)
+            .where(
+                Enrollment.course_id == course_id,
+                User.is_active == True,
+            )
         )
-        enrolled_ids = [row[0] for row in enrolled_result.fetchall()]
+        enrolled_users = enrolled_result.scalars().all()
 
         students_stats = []
-        for sid in enrolled_ids:
-            user_result = await db.execute(select(User).where(User.id == sid))
-            user = user_result.scalar_one()
-
+        for user in enrolled_users:
+            sid = user.id
             records_result = await db.execute(
                 select(AttendanceRecord)
                 .join(AttendanceSession, AttendanceRecord.session_id == AttendanceSession.id)
@@ -70,7 +73,7 @@ class StatisticsService:
             "course_code": course.code,
             "course_name": course.name,
             "total_sessions": total_sessions,
-            "total_enrolled": len(enrolled_ids),
+            "total_enrolled": len(enrolled_users),
             "avg_attendance_rate": avg_rate,
             "students": students_stats,
         }

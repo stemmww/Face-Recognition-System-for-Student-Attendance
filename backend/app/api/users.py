@@ -23,10 +23,11 @@ router = APIRouter()
 @router.get("", response_model=list[UserOut])
 async def list_users(
     role: Role | None = None,
+    active_only: bool | None = None,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN)),
 ):
-    return await UserService.list_users(db, role)
+    return await UserService.list_users(db, role, active_only)
 
 
 @router.post("", response_model=UserOut, status_code=201)

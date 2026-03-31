@@ -333,7 +333,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
           >
             <Avatar
               icon={<UserOutlined />}
-              src={user.photo_url}
+              src={user.photo_url ? `/uploads/${user.photo_url}` : undefined}
               size={isMobile ? "small" : "default"}
               style={{ backgroundColor: user.photo_url ? undefined : "#6366f1" }}
             />

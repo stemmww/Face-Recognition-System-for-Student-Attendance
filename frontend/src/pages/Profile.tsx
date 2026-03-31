@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Avatar, Button, Card, Descriptions, Form, Input, Tag, Typography, message } from "antd";
-import { LockOutlined, UserOutlined } from "@ant-design/icons";
+import { useRef, useState } from "react";
+import { Avatar, Button, Card, Descriptions, Form, Input, Tag, Typography, message, Spin } from "antd";
+import { CameraOutlined, DeleteOutlined, LockOutlined, UserOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
-import { changePassword } from "@/api/users";
+import { changePassword, uploadProfilePhoto, deleteProfilePhoto } from "@/api/users";
 import { formatDateTime } from "@/utils/formatters";
 
 const { Title } = Typography;
@@ -15,12 +15,56 @@ const roleColors: Record<string, string> = {
 };
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, fetchUser } = useAuth();
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
+
+  const photoSrc = user.photo_url ? `/uploads/${user.photo_url}` : undefined;
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      message.error(t("profilePage.photoInvalidType"));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      message.error(t("profilePage.photoTooLarge"));
+      return;
+    }
+
+    setPhotoLoading(true);
+    try {
+      await uploadProfilePhoto(file);
+      await fetchUser();
+      message.success(t("profilePage.photoUploaded"));
+    } catch {
+      message.error(t("profilePage.photoUploadFailed"));
+    } finally {
+      setPhotoLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    setPhotoLoading(true);
+    try {
+      await deleteProfilePhoto();
+      await fetchUser();
+      message.success(t("profilePage.photoRemoved"));
+    } catch {
+      message.error(t("profilePage.photoRemoveFailed"));
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
 
   const onChangePassword = async (values: { oldPassword: string; newPassword: string }) => {
     setLoading(true);
@@ -40,7 +84,39 @@ export default function Profile() {
       <Title level={4}>{t("profilePage.title")}</Title>
       <Card>
         <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 24 }}>
-          <Avatar size={80} icon={<UserOutlined />} src={user.photo_url} />
+          <div style={{ position: "relative", display: "inline-block" }}>
+            <Spin spinning={photoLoading}>
+              <Avatar size={80} icon={<UserOutlined />} src={photoSrc} />
+            </Spin>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+              onChange={handlePhotoUpload}
+            />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              title={t("profilePage.changePhoto")}
+              style={{
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "#6366f1",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                border: "2px solid #fff",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+              }}
+            >
+              <CameraOutlined style={{ color: "#fff", fontSize: 14 }} />
+            </div>
+          </div>
           <div>
             <Title level={4} style={{ margin: 0 }}>
               {user.first_name} {user.last_name}
@@ -48,6 +124,18 @@ export default function Profile() {
             <Tag color={roleColors[user.role]} style={{ marginTop: 8 }}>
               {t(`roles.${user.role}`)}
             </Tag>
+            {user.photo_url && (
+              <Button
+                type="link"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                onClick={handlePhotoDelete}
+                style={{ marginTop: 4, padding: 0 }}
+              >
+                {t("profilePage.removePhoto")}
+              </Button>
+            )}
           </div>
         </div>
         <Descriptions bordered column={1} size="middle">
@@ -66,11 +154,6 @@ export default function Profile() {
             {formatDateTime(user.created_at)}
           </Descriptions.Item>
         </Descriptions>
-        {user.role === "student" && (
-          <div style={{ marginTop: 16, color: "#888", fontSize: 13 }}>
-            {t("profilePage.contactAdmin")}
-          </div>
-        )}
       </Card>
 
       <Card style={{ marginTop: 16 }}>

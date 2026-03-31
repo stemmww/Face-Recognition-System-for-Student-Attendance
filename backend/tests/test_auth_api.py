@@ -8,12 +8,12 @@ from app.models.user import User
 
 
 class TestLogin:
-    async def test_login_success(self, client: AsyncClient, admin_user: User):
-        r = await client.post("/api/auth/login", json={
+    async def test_login_success(self, client: AsyncClient, admin_user: User): #Группа тестов, связанных с логином пользователя.
+        r = await client.post("/api/auth/login", json={ #Асинхронный тест:
             "email": "admin@test.com",
             "password": "admin123",
         })
-        assert r.status_code == 200
+        assert r.status_code == 200 #Закрываем JSON запрос и Проверяем успешный ответ
         data = r.json()
         assert "access_token" in data
         assert "refresh_token" in data

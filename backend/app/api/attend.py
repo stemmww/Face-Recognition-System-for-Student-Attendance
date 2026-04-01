@@ -231,7 +231,7 @@ async def verify_attendance(
                 "Photos and screens are not accepted."
             )
 
-        # --- 6.5. Active challenge validation (mandatory) ---
+        # --- 6.5. Active challenge validation ---
         try:
             ch_payload = jwt.decode(
                 challenge_token, settings.JWT_SECRET_KEY, algorithms=["HS256"]
@@ -244,7 +244,12 @@ async def verify_attendance(
             challenge_type = ChallengeType(ch_payload["challenge"])
             passed, reason = validate_challenge(challenge_type, frame_landmarks)
             if not passed:
-                raise BadRequestError(f"Liveness challenge failed: {reason}")
+                # If passive liveness scored well, give a friendlier retry hint
+                hint = (
+                    "Please perform the action more slowly and visibly, "
+                    "then tap Capture again."
+                )
+                raise BadRequestError(f"Liveness challenge failed: {reason}. {hint}")
         except JWTError:
             raise BadRequestError("Invalid or expired challenge token")
 

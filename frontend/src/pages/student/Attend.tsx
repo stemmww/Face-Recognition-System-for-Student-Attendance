@@ -26,8 +26,8 @@ import ChallengeGuide from "@/components/ChallengeGuide";
 const { Title, Text } = Typography;
 
 const SCANNER_ELEMENT_ID = "qr-reader";
-const FRAME_COUNT = 5;
-const FRAME_DELAY_MS = 400;
+const FRAME_COUNT = 7;
+const FRAME_DELAY_MS = 300;
 
 type Step = "scan" | "face" | "verifying" | "done";
 

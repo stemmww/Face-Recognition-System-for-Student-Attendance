@@ -108,7 +108,7 @@ def validate_blink(
     """
     if threshold is None:
         threshold = settings.LIVENESS_BLINK_THRESHOLD
-    if len(landmark_sets) < 4:
+    if len(landmark_sets) < 3:
         return False
 
     ratios: list[float] = []
@@ -120,18 +120,18 @@ def validate_blink(
         vert_dist = float(lm[2][1] - eye_mid_y) / iod
         ratios.append(vert_dist)
 
-    if len(ratios) < 4:
+    if len(ratios) < 3:
         return False
 
     # Look for dip-and-recovery pattern
     diffs = [ratios[i + 1] - ratios[i] for i in range(len(ratios) - 1)]
-    half_thresh = threshold * 0.5
+    half_thresh = threshold * 0.4
     for i in range(len(diffs) - 1):
         if diffs[i] < -half_thresh and diffs[i + 1] > half_thresh:
             return True
 
-    # Fallback: sufficient variance in the ratios
-    return float(np.var(ratios)) > threshold * 0.01
+    # Fallback: sufficient variance in the ratios (any eye movement)
+    return float(np.var(ratios)) > threshold * 0.005
 
 
 def validate_head_turn(
@@ -142,7 +142,7 @@ def validate_head_turn(
     """Detect head turn by tracking nose horizontal position relative to eyes."""
     if threshold is None:
         threshold = settings.LIVENESS_HEAD_TURN_THRESHOLD
-    if len(landmark_sets) < 3:
+    if len(landmark_sets) < 2:
         return False
 
     nose_offsets: list[float] = []
@@ -154,14 +154,14 @@ def validate_head_turn(
         offset = (lm[2][0] - eye_mid_x) / iod
         nose_offsets.append(offset)
 
-    if len(nose_offsets) < 3:
+    if len(nose_offsets) < 2:
         return False
 
     displacement = max(nose_offsets) - min(nose_offsets)
     if displacement < threshold:
         return False
 
-    half = threshold * 0.5
+    half = threshold * 0.4
     if direction == "left":
         return bool(max(nose_offsets) > nose_offsets[0] + half)
     else:
@@ -174,7 +174,7 @@ def validate_nod(
     """Detect nod by tracking nose vertical position relative to eyes."""
     if threshold is None:
         threshold = settings.LIVENESS_NOD_THRESHOLD
-    if len(landmark_sets) < 3:
+    if len(landmark_sets) < 2:
         return False
 
     nose_vert: list[float] = []
@@ -186,7 +186,7 @@ def validate_nod(
         offset = (lm[2][1] - eye_mid_y) / iod
         nose_vert.append(offset)
 
-    if len(nose_vert) < 3:
+    if len(nose_vert) < 2:
         return False
 
     return bool((max(nose_vert) - min(nose_vert)) > threshold)

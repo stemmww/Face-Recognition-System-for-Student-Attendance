@@ -18,7 +18,7 @@ from app.config import settings
 from app.core.exceptions import BadRequestError, ForbiddenError
 from app.database import get_db
 from app.models.attendance import AttendanceRecord
-from app.models.attendance_session import AttendanceSession, SessionStatus
+from app.models.attendance_session import SessionStatus
 from app.models.enrollment import Enrollment
 from app.models.user import Role, User
 from app.schemas.attendance import LivenessChallengeOut, VerifyAttendanceResponse

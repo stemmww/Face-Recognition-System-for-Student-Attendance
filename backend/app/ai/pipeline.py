@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from app.ai.detector import FaceDetector
-from app.ai.recognizer import FaceRecognizer, EMBEDDING_DIM, align_face
+from app.ai.recognizer import FaceRecognizer, align_face
 
 logger = logging.getLogger(__name__)
 

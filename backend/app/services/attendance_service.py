@@ -8,7 +8,7 @@ Time-based status rules (relative to when the professor started the session):
 
 import logging
 import secrets
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

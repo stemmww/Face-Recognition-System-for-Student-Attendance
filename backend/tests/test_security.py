@@ -1,7 +1,6 @@
 """Unit tests for app.core.security — JWT tokens and password hashing."""
 
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch
 
 from jose import jwt
 

@@ -37,7 +37,7 @@ def main():
         return
 
     print(f"Missing models: {', '.join(missing)}")
-    print(f"Downloading buffalo_l model pack from InsightFace...")
+    print("Downloading buffalo_l model pack from InsightFace...")
 
     zip_path = MODELS_DIR / "buffalo_l.zip"
     urlretrieve(BUFFALO_URL, zip_path, progress_hook)

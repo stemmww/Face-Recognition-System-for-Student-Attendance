@@ -1,6 +1,5 @@
 """API integration tests for user endpoints: CRUD, RBAC, password change."""
 
-import pytest
 from httpx import AsyncClient
 
 from app.models.user import User

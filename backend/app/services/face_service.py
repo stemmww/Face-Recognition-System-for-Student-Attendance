@@ -1,7 +1,6 @@
 """Face enrollment, embedding management, and matching logic."""
 
 import logging
-import os
 import uuid
 from pathlib import Path
 
@@ -10,7 +9,7 @@ from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.core.exceptions import BadRequestError, NotFoundError
+from app.core.exceptions import NotFoundError
 from app.models.face_embedding import FaceEmbedding
 from app.models.user import User
 

@@ -1,6 +1,5 @@
 """API integration tests for auth endpoints: login, refresh, forgot/reset password."""
 
-import pytest
 from httpx import AsyncClient
 
 from app.core.security import create_reset_token

@@ -91,12 +91,12 @@ class AppealService:
 
             db.add(Notification(
                 user_id=appeal.student_id,
-                message=f"Your attendance appeal has been approved.",
+                message="Your attendance appeal has been approved.",
             ))
         elif status == AppealStatus.REJECTED:
             db.add(Notification(
                 user_id=appeal.student_id,
-                message=f"Your attendance appeal has been rejected.",
+                message="Your attendance appeal has been rejected.",
             ))
 
         await db.commit()

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 import cv2
 import numpy as np
@@ -8,6 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.pipeline import get_pipeline
 from app.core.exceptions import BadRequestError
 from app.core.rbac import require_role
+
+if TYPE_CHECKING:
+    from app.ai.detector import Detection
 from app.database import get_db
 from app.models.user import Role, User
 from app.schemas.face import (
@@ -56,7 +62,6 @@ def _check_face_quality(
     det: "Detection",
 ) -> list[str]:
     """Run quality checks on a detected face. Returns list of warning/rejection messages."""
-    from app.ai.detector import Detection  # noqa: F811
 
     issues: list[str] = []
     img_h, img_w = image.shape[:2]

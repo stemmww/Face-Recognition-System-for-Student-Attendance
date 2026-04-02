@@ -1,6 +1,5 @@
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import BadRequestError, DuplicateError, NotFoundError
 from app.models.course import Course, CourseProf

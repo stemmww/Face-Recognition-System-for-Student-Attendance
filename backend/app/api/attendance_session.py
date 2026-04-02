@@ -2,7 +2,7 @@ import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +15,6 @@ from app.models.user import Role, User
 from app.schemas.attendance import (
     QRTokenOut,
     SessionCreate,
-    SessionDetailOut,
     SessionOut,
 )
 from app.services.attendance_service import AttendanceSessionService

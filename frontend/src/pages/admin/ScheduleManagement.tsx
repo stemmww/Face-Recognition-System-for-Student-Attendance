@@ -113,7 +113,7 @@ export default function ScheduleManagement() {
         end_time: values.end_time.format("HH:mm:ss"),
       };
       if (editing) {
-        const { course_id: _courseId, ...updatePayload } = payload;
+        const { course_id: _ignored, ...updatePayload } = payload;
         await updateSchedule(editing.id, updatePayload);
         message.success(t("schedulesPage.scheduleUpdated"));
       } else {

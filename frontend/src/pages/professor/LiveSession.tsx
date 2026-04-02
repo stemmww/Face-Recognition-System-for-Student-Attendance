@@ -209,8 +209,8 @@ export default function LiveSession() {
       // Refresh session records
       const records = await getSessionAttendance(activeSession.id);
       setSessionRecords(records);
-    } catch (err: any) {
-      message.error(err?.response?.data?.detail || t("session.rollCallFailed"));
+    } catch (err: unknown) {
+      message.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("session.rollCallFailed"));
     } finally {
       setSavingManual(false);
     }
@@ -246,8 +246,8 @@ export default function LiveSession() {
       setActiveSession(session);
       setStartModalOpen(false);
       message.success(t("session.sessionStarted"));
-    } catch (err: any) {
-      message.error(err?.response?.data?.detail || t("session.startFailed"));
+    } catch (err: unknown) {
+      message.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("session.startFailed"));
     }
   };
 
@@ -260,8 +260,8 @@ export default function LiveSession() {
       setSessionRecords([]);
       setQrToken(null);
       fetchSessions();
-    } catch (err: any) {
-      message.error(err?.response?.data?.detail || t("session.stopFailed"));
+    } catch (err: unknown) {
+      message.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("session.stopFailed"));
     }
   };
 

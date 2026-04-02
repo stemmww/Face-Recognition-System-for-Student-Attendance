@@ -136,9 +136,9 @@ export default function Attend() {
         .then((ch) => {
           if (!cancelled) setChallenge(ch);
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           if (cancelled) return;
-          const detail = err?.response?.data?.detail || "";
+          const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "";
           if (detail.includes("already recorded")) {
             // Skip camera — go straight to success
             setResult({ success: true, status: "present", message: detail });
@@ -236,8 +236,8 @@ export default function Attend() {
       });
       setResult(res);
       setStep("done");
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail || t("attend.verifyFailed");
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("attend.verifyFailed");
       setError(detail);
       setStep("done");
     }

@@ -111,8 +111,8 @@ export default function FaceRegistry() {
       }
       message.success(result.message);
       fetchEmbeddings(selectedStudent);
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail;
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       message.error(detail || t("faces.enrollFailed"));
     } finally {
       setEnrolling(false);
@@ -150,8 +150,8 @@ export default function FaceRegistry() {
       if (result.faces_detected === 0) {
         message.warning(t("faces.noFaceDetected"));
       }
-    } catch (err: any) {
-      message.error(err?.response?.data?.detail || t("faces.verifyFailed"));
+    } catch (err: unknown) {
+      message.error((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t("faces.verifyFailed"));
     } finally {
       setVerifying(false);
     }

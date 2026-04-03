@@ -29,7 +29,7 @@ class StatisticsService:
             .join(Enrollment, Enrollment.student_id == User.id)
             .where(
                 Enrollment.course_id == course_id,
-                User.is_active == True,
+                User.is_active.is_(True),
             )
         )
         enrolled_users = enrolled_result.scalars().all()

@@ -20,7 +20,7 @@ class UserService:
         if role:
             query = query.where(User.role == role)
         if active_only:
-            query = query.where(User.is_active == True)
+            query = query.where(User.is_active.is_(True))
         result = await db.execute(query.order_by(User.created_at.desc()))
         return result.scalars().all()
 

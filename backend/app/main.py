@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
         try:
             await conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS vector"))
         except Exception:
-            pass
+            logger.debug("pgvector extension not available (expected for SQLite tests)")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await seed_admin()

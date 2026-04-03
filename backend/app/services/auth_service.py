@@ -9,7 +9,7 @@ from app.models.user import User
 class AuthService:
     @staticmethod
     async def login(db: AsyncSession, email: str, password: str) -> dict:
-        result = await db.execute(select(User).where(User.email == email, User.is_active == True))
+        result = await db.execute(select(User).where(User.email == email, User.is_active.is_(True)))
         user = result.scalar_one_or_none()
 
         if user is None or not verify_password(password, user.hashed_password):
@@ -34,7 +34,7 @@ class AuthService:
             )
 
         user_id = int(payload["sub"])
-        result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
+        result = await db.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
         user = result.scalar_one_or_none()
 
         if user is None:

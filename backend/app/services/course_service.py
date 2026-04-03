@@ -141,7 +141,7 @@ class CourseService:
         result = await db.execute(
             select(User)
             .join(CourseProf, CourseProf.professor_id == User.id)
-            .where(CourseProf.course_id == course_id, User.is_active == True)
+            .where(CourseProf.course_id == course_id, User.is_active.is_(True))
             .order_by(User.last_name)
         )
         return result.scalars().all()
@@ -181,7 +181,7 @@ class CourseService:
         result = await db.execute(
             select(User)
             .join(Enrollment)
-            .where(Enrollment.course_id == course_id, User.is_active == True)
+            .where(Enrollment.course_id == course_id, User.is_active.is_(True))
             .order_by(User.last_name)
         )
         return result.scalars().all()

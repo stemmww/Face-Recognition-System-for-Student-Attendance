@@ -37,7 +37,7 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
 @router.post("/forgot-password")
 async def forgot_password(body: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(User).where(User.email == body.email, User.is_active == True)
+        select(User).where(User.email == body.email, User.is_active.is_(True))
     )
     user = result.scalar_one_or_none()
 
@@ -67,7 +67,7 @@ async def reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(
         raise BadRequestError("Invalid or expired reset token")
 
     user_id = int(payload["sub"])
-    result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
+    result = await db.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
     user = result.scalar_one_or_none()
 
     if user is None:

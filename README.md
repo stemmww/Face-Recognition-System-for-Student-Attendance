@@ -23,7 +23,7 @@ AI-powered attendance tracking system using face recognition. Built as a diploma
 
 ```bash
 git clone <repo-url>
-cd Face-Recognition-System-For-Attendance-Tracking
+cd Face-Recognition-System-for-Student-Attendance
 cp .env.example .env
 # Edit .env with your own secrets
 ```

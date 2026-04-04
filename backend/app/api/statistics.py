@@ -5,6 +5,7 @@ from app.core.rbac import require_role
 from app.database import get_db
 from app.models.user import Role, User
 from app.schemas.statistics import CourseStatistics, SessionTrendPoint, StudentTrendPoint
+from app.services.access_service import AccessService
 from app.services.statistics_service import StatisticsService
 
 router = APIRouter()
@@ -14,8 +15,9 @@ router = APIRouter()
 async def get_course_statistics(
     course_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_course_access(db, current_user, course_id)
     return await StatisticsService.get_course_statistics(db, course_id)
 
 
@@ -23,8 +25,9 @@ async def get_course_statistics(
 async def get_course_trends(
     course_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_course_access(db, current_user, course_id)
     return await StatisticsService.get_course_trends(db, course_id)
 
 

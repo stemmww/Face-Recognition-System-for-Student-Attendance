@@ -115,12 +115,20 @@ class AttendanceSessionService:
         course_id: int | None = None,
         schedule_id: int | None = None,
         status: SessionStatus | None = None,
+        allowed_course_ids: list[int] | None = None,
     ) -> list[AttendanceSession]:
         query = select(AttendanceSession)
+        join_schedule = course_id is not None or allowed_course_ids is not None
+        if join_schedule:
+            query = query.join(Schedule)
         if schedule_id is not None:
             query = query.where(AttendanceSession.schedule_id == schedule_id)
         if course_id is not None:
-            query = query.join(Schedule).where(Schedule.course_id == course_id)
+            query = query.where(Schedule.course_id == course_id)
+        if allowed_course_ids is not None:
+            if not allowed_course_ids:
+                return []
+            query = query.where(Schedule.course_id.in_(allowed_course_ids))
         if status is not None:
             query = query.where(AttendanceSession.status == status)
         query = query.order_by(AttendanceSession.date.desc(), AttendanceSession.started_at.desc())

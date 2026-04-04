@@ -85,13 +85,8 @@ export default function Login() {
   const onForgotSubmit = async (values: { email: string }) => {
     setForgotLoading(true);
     try {
-      const res = await forgotPassword(values.email);
-      if ("dev_token" in res) {
-        const token = (res as Record<string, string>).dev_token;
-        message.info(`SMTP not configured — reset link: ${window.location.origin}/reset-password?token=${token}`, 10);
-      } else {
-        message.success(t("login.forgotSent"));
-      }
+      await forgotPassword(values.email);
+      message.success(t("login.forgotSent"));
       setForgotOpen(false);
       forgotForm.resetFields();
     } catch {

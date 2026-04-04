@@ -2,6 +2,7 @@
 
 from httpx import AsyncClient
 
+from app.api import auth as auth_api
 from app.core.security import create_reset_token
 from app.models.user import User
 
@@ -85,8 +86,7 @@ class TestForgotPassword:
         assert r.status_code == 200
         data = r.json()
         assert "message" in data
-        # Either email sends (SMTP configured) or dev_token fallback
-        assert "message" in data or "dev_token" in data
+        assert "dev_token" not in data
 
     async def test_forgot_nonexistent_email_no_enumeration(self, client: AsyncClient):
         """Should return 200 even for non-existent emails (prevent enumeration)."""
@@ -97,6 +97,25 @@ class TestForgotPassword:
         data = r.json()
         assert "message" in data
         assert "dev_token" not in data  # no token for non-existent user
+
+    async def test_forgot_existing_email_never_returns_reset_token_when_email_fails(
+        self,
+        client: AsyncClient,
+        admin_user: User,
+        monkeypatch,
+    ):
+        async def _fail_send(*args, **kwargs):
+            raise RuntimeError("smtp down")
+
+        monkeypatch.setattr(auth_api, "send_reset_email", _fail_send)
+
+        r = await client.post("/api/auth/forgot-password", json={
+            "email": "admin@test.com",
+        })
+        assert r.status_code == 200
+        data = r.json()
+        assert "message" in data
+        assert "dev_token" not in data
 
 
 class TestResetPassword:

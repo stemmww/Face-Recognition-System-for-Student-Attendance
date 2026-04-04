@@ -9,6 +9,8 @@ from app.core.exceptions import BadRequestError, NotFoundError
 from app.models.appeal import Appeal, AppealStatus
 from app.models.attendance import AttendanceRecord, AttendanceStatus, MarkedBy
 from app.models.notification import Notification
+from app.models.schedule import Schedule
+from app.models.attendance_session import AttendanceSession
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +60,21 @@ class AppealService:
 
     @staticmethod
     async def list_appeals(
-        db: AsyncSession, status: AppealStatus | None = None
+        db: AsyncSession,
+        status: AppealStatus | None = None,
+        allowed_course_ids: list[int] | None = None,
     ) -> list[Appeal]:
         query = select(Appeal).order_by(Appeal.created_at.desc())
+        if allowed_course_ids is not None:
+            if not allowed_course_ids:
+                return []
+            query = (
+                query
+                .join(AttendanceRecord, Appeal.attendance_id == AttendanceRecord.id)
+                .join(AttendanceSession, AttendanceRecord.session_id == AttendanceSession.id)
+                .join(Schedule, AttendanceSession.schedule_id == Schedule.id)
+                .where(Schedule.course_id.in_(allowed_course_ids))
+            )
         if status is not None:
             query = query.where(Appeal.status == status)
         result = await db.execute(query)

@@ -18,6 +18,7 @@ from app.schemas.attendance import (
     ManualAttendanceBatchCreate,
     StudentCourseRecordOut,
 )
+from app.services.access_service import AccessService
 from app.services.attendance_service import AttendanceRecordService, AttendanceSessionService
 
 router = APIRouter()
@@ -27,8 +28,9 @@ router = APIRouter()
 async def get_session_attendance(
     session_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_session_access(db, current_user, session_id)
     return await AttendanceRecordService.get_session_records(db, session_id)
 
 
@@ -36,8 +38,9 @@ async def get_session_attendance(
 async def get_course_attendance(
     course_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_course_access(db, current_user, course_id)
     return await AttendanceRecordService.get_course_records(db, course_id)
 
 
@@ -71,8 +74,9 @@ async def update_attendance_status(
     record_id: int,
     body: AttendanceStatusUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_attendance_record_access(db, current_user, record_id)
     record = await AttendanceRecordService.update_status(db, record_id, body.status)
     return {
         "id": record.id,
@@ -91,9 +95,10 @@ async def update_attendance_status(
 async def get_enrolled_students_for_session(
     session_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
     """Get all enrolled students for the course associated with this session."""
+    await AccessService.ensure_session_access(db, current_user, session_id)
     session = await AttendanceSessionService.get_session(db, session_id)
     sched = await db.execute(select(Schedule).where(Schedule.id == session.schedule_id))
     schedule = sched.scalar_one()
@@ -124,6 +129,7 @@ async def manual_batch_attendance(
     current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
     """Manually record attendance for multiple students (roll call fallback)."""
+    await AccessService.ensure_session_access(db, current_user, session_id)
     records = await AttendanceRecordService.batch_manual_record(
         db, session_id, [e.model_dump() for e in body.entries]
     )
@@ -149,9 +155,10 @@ async def manual_batch_attendance(
 async def export_session_attendance(
     session_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
     """Export session attendance as CSV."""
+    await AccessService.ensure_session_access(db, current_user, session_id)
     records = await AttendanceRecordService.get_session_records(db, session_id)
     session = await AttendanceSessionService.get_session(db, session_id)
 
@@ -180,9 +187,10 @@ async def export_session_attendance(
 async def export_course_attendance(
     course_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
     """Export all attendance records for a course as CSV."""
+    await AccessService.ensure_course_access(db, current_user, course_id)
     records = await AttendanceRecordService.get_course_records(db, course_id)
 
     from app.models.course import Course

@@ -16,10 +16,18 @@ class ScheduleService:
         return schedule
 
     @staticmethod
-    async def list_schedules(db: AsyncSession, course_id: int | None = None) -> list[Schedule]:
+    async def list_schedules(
+        db: AsyncSession,
+        course_id: int | None = None,
+        allowed_course_ids: list[int] | None = None,
+    ) -> list[Schedule]:
         query = select(Schedule)
         if course_id is not None:
             query = query.where(Schedule.course_id == course_id)
+        if allowed_course_ids is not None:
+            if not allowed_course_ids:
+                return []
+            query = query.where(Schedule.course_id.in_(allowed_course_ids))
         query = query.order_by(Schedule.day_of_week, Schedule.start_time)
         result = await db.execute(query)
         return result.scalars().all()

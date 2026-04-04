@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models.user import Role, User
 from app.schemas.course import CourseCreate, CourseOut, CourseUpdate, EnrollmentRequest, ProfessorAssignRequest
 from app.schemas.user import UserOut
+from app.services.access_service import AccessService
 from app.services.course_service import CourseService
 
 router = APIRouter()
@@ -33,8 +34,9 @@ async def list_courses(
 async def get_course(
     course_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
+    await AccessService.ensure_course_access(db, current_user, course_id)
     return await CourseService.get_course(db, course_id)
 
 
@@ -63,8 +65,9 @@ async def delete_course(
 async def list_professors(
     course_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_course_access(db, current_user, course_id)
     return await CourseService.get_professors(db, course_id)
 
 
@@ -94,8 +97,9 @@ async def remove_professor(
 async def list_enrolled_students(
     course_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_course_access(db, current_user, course_id)
     return await CourseService.get_enrolled_students(db, course_id)
 
 

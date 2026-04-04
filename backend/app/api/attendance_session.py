@@ -17,6 +17,7 @@ from app.schemas.attendance import (
     SessionCreate,
     SessionOut,
 )
+from app.services.access_service import AccessService
 from app.services.attendance_service import AttendanceSessionService
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ async def start_session(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_schedule_access(db, current_user, body.schedule_id)
     return await AttendanceSessionService.start_session(
         db, body.schedule_id, body.date, current_user.id,
         latitude=body.latitude, longitude=body.longitude,
@@ -40,8 +42,9 @@ async def start_session(
 async def stop_session(
     session_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_session_access(db, current_user, session_id)
     return await AttendanceSessionService.stop_session(db, session_id)
 
 
@@ -51,17 +54,33 @@ async def list_sessions(
     schedule_id: int | None = None,
     status: SessionStatus | None = None,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
-    return await AttendanceSessionService.list_sessions(db, course_id, schedule_id, status)
+    if course_id is not None:
+        await AccessService.ensure_course_access(db, current_user, course_id)
+    if schedule_id is not None:
+        await AccessService.ensure_schedule_access(db, current_user, schedule_id)
+
+    allowed_course_ids = None
+    if current_user.role == Role.PROFESSOR:
+        allowed_course_ids = await AccessService.get_professor_course_ids(db, current_user.id)
+
+    return await AttendanceSessionService.list_sessions(
+        db,
+        course_id,
+        schedule_id,
+        status,
+        allowed_course_ids=allowed_course_ids,
+    )
 
 
 @router.get("/{session_id}", response_model=SessionOut)
 async def get_session(
     session_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
+    await AccessService.ensure_session_access(db, current_user, session_id)
     return await AttendanceSessionService.get_session(db, session_id)
 
 
@@ -69,9 +88,10 @@ async def get_session(
 async def get_qr_token(
     session_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
+    current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
     """Generate a short-lived QR token for the active session."""
+    await AccessService.ensure_session_access(db, current_user, session_id)
     session = await AttendanceSessionService.get_session(db, session_id)
     if session.status != SessionStatus.ACTIVE:
         raise BadRequestError("Session is not active")

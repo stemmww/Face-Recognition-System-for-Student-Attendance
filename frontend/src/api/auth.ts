@@ -16,8 +16,8 @@ export async function refreshToken(refresh_token: string): Promise<TokenResponse
   return data;
 }
 
-export async function forgotPassword(email: string): Promise<{ message: string; dev_token?: string }> {
-  const { data } = await apiClient.post<{ message: string; dev_token?: string }>("/auth/forgot-password", { email });
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>("/auth/forgot-password", { email });
   return data;
 }
 

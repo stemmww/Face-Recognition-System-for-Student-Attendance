@@ -51,11 +51,11 @@ async def forgot_password(body: ForgotPasswordRequest, db: AsyncSession = Depend
     try:
         await send_reset_email(user.email, reset_url)
     except Exception:
-        logger.warning("Email sending failed for %s — returning token in response for dev", user.email)
-        return {
-            "message": "Email service unavailable. Use the token below (dev only).",
-            "dev_token": token,
-        }
+        logger.warning(
+            "Email sending failed for %s — returning generic forgot-password response",
+            user.email,
+        )
+        return {"message": "If this email is registered, a reset link has been sent."}
 
     return {"message": "If this email is registered, a reset link has been sent."}
 

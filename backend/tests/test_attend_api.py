@@ -199,3 +199,93 @@ class TestAttendApi:
 
         await _challenge_and_verify(student_one)
         await _challenge_and_verify(student_two)
+
+    async def test_failed_attempt_is_rate_limited_on_immediate_retry(
+        self,
+        client: AsyncClient,
+        db: AsyncSession,
+        admin_user: User,
+        monkeypatch,
+    ):
+        attend_api._used_nonces.clear()
+        attend_api._nonce_timestamps.clear()
+        attend_api._rate_limit.clear()
+
+        course = await _create_course(db, code="QR201")
+        schedule = await _create_schedule(db, course.id)
+        student = await _create_user(
+            db,
+            email="student-rate@test.com",
+            password="student123",
+            role=Role.STUDENT,
+            first_name="Student",
+            last_name="Rate",
+        )
+        db.add(Enrollment(course_id=course.id, student_id=student.id))
+        await db.commit()
+
+        monkeypatch.setattr(attend_api, "get_pipeline", lambda: _FakePipeline())
+        monkeypatch.setattr(attend_api, "is_live", lambda *args, **kwargs: (False, 0.0))
+        monkeypatch.setattr(attend_api, "validate_challenge", lambda *args, **kwargs: (True, "ok"))
+        monkeypatch.setattr(attend_api, "detect_screen_spoof", lambda *args, **kwargs: (True, 0.0))
+        monkeypatch.setattr(attend_api, "detect_video_replay", lambda *args, **kwargs: (True, 0.0))
+        monkeypatch.setattr(
+            attend_api.cv2,
+            "imdecode",
+            lambda *args, **kwargs: np.zeros((8, 8, 3), dtype=np.uint8),
+        )
+
+        admin_token = await _login(client, admin_user.email, "admin123")
+        session_response = await client.post(
+            "/api/sessions",
+            headers=auth_header(admin_token),
+            json={"schedule_id": schedule.id, "date": date.today().isoformat()},
+        )
+        assert session_response.status_code == 201, session_response.text
+        session_id = session_response.json()["id"]
+
+        qr_response = await client.get(
+            f"/api/sessions/{session_id}/qr-token",
+            headers=auth_header(admin_token),
+        )
+        assert qr_response.status_code == 200, qr_response.text
+        qr_token = qr_response.json()["token"]
+
+        student_token = await _login(client, student.email, "student123")
+        challenge_response = await client.post(
+            "/api/attend/challenge",
+            headers=auth_header(student_token),
+            files={"token": (None, qr_token)},
+        )
+        assert challenge_response.status_code == 200, challenge_response.text
+        challenge_token = challenge_response.json()["token"]
+
+        first_attempt = await client.post(
+            "/api/attend/verify",
+            headers=auth_header(student_token),
+            data={
+                "token": qr_token,
+                "challenge_token": challenge_token,
+            },
+            files=[
+                ("frames", ("frame-1.jpg", b"frame-1", "image/jpeg")),
+                ("frames", ("frame-2.jpg", b"frame-2", "image/jpeg")),
+            ],
+        )
+        assert first_attempt.status_code == 400, first_attempt.text
+        assert "Liveness check failed" in first_attempt.json()["detail"]
+
+        second_attempt = await client.post(
+            "/api/attend/verify",
+            headers=auth_header(student_token),
+            data={
+                "token": qr_token,
+                "challenge_token": challenge_token,
+            },
+            files=[
+                ("frames", ("frame-1.jpg", b"frame-1", "image/jpeg")),
+                ("frames", ("frame-2.jpg", b"frame-2", "image/jpeg")),
+            ],
+        )
+        assert second_attempt.status_code == 400, second_attempt.text
+        assert "Please wait" in second_attempt.json()["detail"]

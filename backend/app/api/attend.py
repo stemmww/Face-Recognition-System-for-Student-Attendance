@@ -176,13 +176,17 @@ async def verify_attendance(
             message="Your attendance was already recorded for this session.",
         )
 
-    # --- 3.6. Rate limiting (checked here, set after successful verification) ---
+    # --- 3.6. Rate limiting ---
+    # Once a real verification attempt begins, throttle follow-up tries even if
+    # this attempt fails. This protects the expensive face/liveness pipeline
+    # from rapid retries with bad frames or repeated challenge failures.
     rate_key = (current_user.id, session.id)
     now_ts = time.time()
     last_attempt = _rate_limit.get(rate_key, 0)
     if now_ts - last_attempt < _RATE_LIMIT_SECONDS:
         remaining = int(_RATE_LIMIT_SECONDS - (now_ts - last_attempt))
         raise BadRequestError(f"Please wait {remaining} seconds before trying again.")
+    _rate_limit[rate_key] = now_ts
 
     # --- 4. Validate GPS ---
     has_session_gps = session.latitude is not None and session.longitude is not None
@@ -342,11 +346,10 @@ async def verify_attendance(
         db, session.id, current_user.id, similarity
     )
 
-    # --- 9. Consume nonce + set rate limit only after success ---
+    # --- 9. Consume nonce only after success ---
     if nonce:
         _used_nonces[nonce_key].add(nonce)
         _nonce_timestamps[nonce_key] = time.time()
-    _rate_limit[rate_key] = time.time()
 
     if not is_new:
         return VerifyAttendanceResponse(

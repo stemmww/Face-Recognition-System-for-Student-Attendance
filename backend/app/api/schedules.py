@@ -33,6 +33,8 @@ async def list_schedules(
     allowed_course_ids = None
     if current_user.role == Role.PROFESSOR:
         allowed_course_ids = await AccessService.get_professor_course_ids(db, current_user.id)
+    elif current_user.role == Role.STUDENT:
+        allowed_course_ids = await AccessService.get_student_course_ids(db, current_user.id)
 
     return await ScheduleService.list_schedules(
         db,

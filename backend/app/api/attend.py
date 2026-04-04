@@ -38,9 +38,13 @@ from app.utils.liveness import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# --- In-memory nonce tracking (one-time-use QR tokens) ---
-_used_nonces: dict[int, set[str]] = defaultdict(set)
-_nonce_timestamps: dict[int, float] = {}
+# --- In-memory nonce tracking (one-time-use QR tokens per student) ---
+# Classroom QR tokens are shared across many students, so consuming a nonce
+# globally for the whole session would incorrectly block everyone after the
+# first successful verification. We instead scope nonce usage to the
+# (session_id, student_id) pair.
+_used_nonces: dict[tuple[int, int], set[str]] = defaultdict(set)
+_nonce_timestamps: dict[tuple[int, int], float] = {}
 _NONCE_CACHE_TTL = 3600 * 4  # 4 hours
 
 # --- Rate limiting per (student_id, session_id) ---
@@ -50,10 +54,10 @@ _RATE_LIMIT_SECONDS = 15
 
 def _cleanup_expired_nonces() -> None:
     now = time.time()
-    expired = [sid for sid, ts in _nonce_timestamps.items() if now - ts > _NONCE_CACHE_TTL]
-    for sid in expired:
-        _used_nonces.pop(sid, None)
-        _nonce_timestamps.pop(sid, None)
+    expired = [key for key, ts in _nonce_timestamps.items() if now - ts > _NONCE_CACHE_TTL]
+    for key in expired:
+        _used_nonces.pop(key, None)
+        _nonce_timestamps.pop(key, None)
 
 
 @router.post("/challenge", response_model=LivenessChallengeOut)
@@ -135,7 +139,8 @@ async def verify_attendance(
     # --- 2.5. One-time nonce check (consume only after successful verification) ---
     _cleanup_expired_nonces()
     nonce = payload.get("nonce")
-    if nonce and nonce in _used_nonces[session.id]:
+    nonce_key = (session.id, current_user.id)
+    if nonce and nonce in _used_nonces[nonce_key]:
         raise BadRequestError(
             "This QR code has already been used. Please scan the current QR code."
         )
@@ -339,8 +344,8 @@ async def verify_attendance(
 
     # --- 9. Consume nonce + set rate limit only after success ---
     if nonce:
-        _used_nonces[session.id].add(nonce)
-        _nonce_timestamps[session.id] = time.time()
+        _used_nonces[nonce_key].add(nonce)
+        _nonce_timestamps[nonce_key] = time.time()
     _rate_limit[rate_key] = time.time()
 
     if not is_new:

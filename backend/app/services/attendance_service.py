@@ -148,7 +148,7 @@ class AttendanceSessionService:
             .join(Enrollment, Enrollment.student_id == User.id)
             .where(
                 Enrollment.course_id == sched.course_id,
-                User.is_active == True,
+                User.is_active.is_(True),
             )
         )
         enrolled_ids = {row[0] for row in enrolled.fetchall()}
@@ -206,7 +206,7 @@ class AttendanceRecordService:
             .join(Enrollment, Enrollment.student_id == User.id)
             .where(
                 Enrollment.course_id == schedule.course_id,
-                User.is_active == True,
+                User.is_active.is_(True),
             )
         )
         return {row[0] for row in enrolled.fetchall()}

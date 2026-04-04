@@ -106,7 +106,7 @@ async def get_enrolled_students_for_session(
     enrolled = await db.execute(
         select(User)
         .join(Enrollment, Enrollment.student_id == User.id)
-        .where(Enrollment.course_id == schedule.course_id, User.is_active == True)
+        .where(Enrollment.course_id == schedule.course_id, User.is_active.is_(True))
         .order_by(User.last_name, User.first_name)
     )
     students = enrolled.scalars().all()

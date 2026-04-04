@@ -87,8 +87,8 @@ export default function Login() {
     try {
       const res = await forgotPassword(values.email);
       if ("dev_token" in res) {
-        message.info("SMTP not configured — check browser console for reset link", 6);
-        console.log(`Reset link: ${window.location.origin}/reset-password?token=${(res as Record<string, string>).dev_token}`);
+        const token = (res as Record<string, string>).dev_token;
+        message.info(`SMTP not configured — reset link: ${window.location.origin}/reset-password?token=${token}`, 10);
       } else {
         message.success(t("login.forgotSent"));
       }

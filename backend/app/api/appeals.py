@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +10,8 @@ from app.models.user import Role, User
 from app.schemas.appeal import AppealCreate, AppealOut, AppealReview
 from app.services.access_service import AccessService
 from app.services.appeal_service import AppealService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -42,7 +46,7 @@ async def list_appeals(
         try:
             parsed_status = AppealStatus(status)
         except ValueError:
-            pass
+            logger.debug("Invalid appeal status filter: %s", status)
 
     allowed_course_ids = None
     if current_user.role == Role.PROFESSOR:

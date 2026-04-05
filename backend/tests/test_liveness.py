@@ -7,10 +7,13 @@ from app.utils.liveness import (
     ChallengeType,
     compute_liveness_score,
     generate_challenge,
+    generate_challenge_sequence,
     get_challenge_instruction,
+    get_challenge_sequence_instruction,
     is_live,
     validate_blink,
     validate_challenge,
+    validate_challenge_sequence,
     validate_head_turn,
     validate_nod,
 )
@@ -82,11 +85,23 @@ class TestChallengeGeneration:
             c = generate_challenge()
             assert isinstance(c, ChallengeType)
 
+    def test_generate_sequence_returns_distinct_types(self):
+        sequence = generate_challenge_sequence(2)
+        assert len(sequence) == 2
+        assert len(set(sequence)) == 2
+
     def test_all_types_have_instructions(self):
         for ct in ChallengeType:
             instr = get_challenge_instruction(ct)
             assert isinstance(instr, str)
             assert len(instr) > 5
+
+    def test_sequence_instruction_mentions_steps(self):
+        instr = get_challenge_sequence_instruction(
+            [ChallengeType.TURN_LEFT, ChallengeType.NOD]
+        )
+        assert "Step 1" in instr
+        assert "Step 2" in instr
 
 
 # ---------------------------------------------------------------------------
@@ -191,3 +206,24 @@ class TestValidateChallenge:
         ok, msg = validate_challenge(ChallengeType.NOD, frames)
         assert bool(ok) == ok
         assert isinstance(msg, str)
+
+
+class TestValidateChallengeSequence:
+    def test_sequence_passes_when_both_steps_are_present(self):
+        turn_frames = [_make_landmarks(nose=(nx, 60)) for nx in [50, 54, 58, 61, 63]]
+        nod_frames = [_make_landmarks(nose=(50, ny)) for ny in [60, 64, 68, 64, 60]]
+        ok, msg = validate_challenge_sequence(
+            [ChallengeType.TURN_LEFT, ChallengeType.NOD],
+            turn_frames + nod_frames,
+        )
+        assert ok
+        assert "completed" in msg.lower()
+
+    def test_sequence_fails_when_second_step_is_missing(self):
+        turn_frames = [_make_landmarks(nose=(nx, 60)) for nx in [50, 54, 58, 61, 63]]
+        ok, msg = validate_challenge_sequence(
+            [ChallengeType.TURN_LEFT, ChallengeType.NOD],
+            turn_frames + turn_frames,
+        )
+        assert not ok
+        assert "Step 2" in msg

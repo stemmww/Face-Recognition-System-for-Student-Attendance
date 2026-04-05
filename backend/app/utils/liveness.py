@@ -44,8 +44,28 @@ def generate_challenge() -> ChallengeType:
     return random.choice(list(ChallengeType))
 
 
+def generate_challenge_sequence(step_count: int = 2) -> list[ChallengeType]:
+    choices = list(ChallengeType)
+    if step_count <= 1:
+        return [generate_challenge()]
+    return random.sample(choices, k=min(step_count, len(choices)))
+
+
 def get_challenge_instruction(challenge: ChallengeType) -> str:
     return _CHALLENGE_INSTRUCTIONS[challenge]
+
+
+def get_challenge_sequence_instruction(challenges: list[ChallengeType]) -> str:
+    if not challenges:
+        return "Please follow the liveness instructions shown on screen"
+    if len(challenges) == 1:
+        return get_challenge_instruction(challenges[0])
+
+    parts = [
+        f"Step {index + 1}: {_CHALLENGE_INSTRUCTIONS[challenge]}"
+        for index, challenge in enumerate(challenges)
+    ]
+    return "Complete these actions in order. " + " Then ".join(parts)
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +230,28 @@ def validate_challenge(
         ok = validate_nod(landmark_sets)
         return ok, "Nod detected" if ok else "Nod not detected — please try again"
     return False, "Unknown challenge type"
+
+
+def validate_challenge_sequence(
+    challenges: list[ChallengeType],
+    landmark_sets: list[np.ndarray],
+) -> tuple[bool, str]:
+    """Validate a short ordered sequence of liveness challenges."""
+    if not challenges:
+        return False, "No liveness challenge provided"
+    if len(challenges) == 1:
+        return validate_challenge(challenges[0], landmark_sets)
+
+    segment_size = max(3, len(landmark_sets) // len(challenges))
+    for index, challenge in enumerate(challenges):
+        start = max(0, index * segment_size - (1 if index > 0 else 0))
+        end = len(landmark_sets) if index == len(challenges) - 1 else min(
+            len(landmark_sets), (index + 1) * segment_size + 1,
+        )
+        ok, reason = validate_challenge(challenge, landmark_sets[start:end])
+        if not ok:
+            return False, f"Step {index + 1} failed: {reason}"
+    return True, "Challenge sequence completed"
 
 
 # ---------------------------------------------------------------------------

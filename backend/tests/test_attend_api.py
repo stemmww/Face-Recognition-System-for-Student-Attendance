@@ -91,6 +91,66 @@ class _FakePipeline:
 
 
 class TestAttendApi:
+    async def test_challenge_endpoint_returns_multi_step_sequence(
+        self,
+        client: AsyncClient,
+        db: AsyncSession,
+        admin_user: User,
+        monkeypatch,
+    ):
+        attend_api._used_nonces.clear()
+        attend_api._nonce_timestamps.clear()
+        attend_api._rate_limit.clear()
+
+        course = await _create_course(db, code="QR050")
+        schedule = await _create_schedule(db, course.id)
+        student = await _create_user(
+            db,
+            email="student-sequence@test.com",
+            password="student123",
+            role=Role.STUDENT,
+            first_name="Sequence",
+            last_name="Student",
+        )
+        db.add(Enrollment(course_id=course.id, student_id=student.id))
+        await db.commit()
+
+        monkeypatch.setattr(
+            attend_api,
+            "generate_challenge_sequence",
+            lambda step_count: [
+                attend_api.ChallengeType.TURN_LEFT,
+                attend_api.ChallengeType.NOD,
+            ],
+        )
+
+        admin_token = await _login(client, admin_user.email, "admin123")
+        session_response = await client.post(
+            "/api/sessions",
+            headers=auth_header(admin_token),
+            json={"schedule_id": schedule.id, "date": date.today().isoformat()},
+        )
+        assert session_response.status_code == 201, session_response.text
+        session_id = session_response.json()["id"]
+
+        qr_response = await client.get(
+            f"/api/sessions/{session_id}/qr-token",
+            headers=auth_header(admin_token),
+        )
+        assert qr_response.status_code == 200, qr_response.text
+        qr_token = qr_response.json()["token"]
+
+        student_token = await _login(client, student.email, "student123")
+        challenge_response = await client.post(
+            "/api/attend/challenge",
+            headers=auth_header(student_token),
+            files={"token": (None, qr_token)},
+        )
+        assert challenge_response.status_code == 200, challenge_response.text
+        payload = challenge_response.json()
+        assert payload["challenge_type"] == "turn_left"
+        assert payload["challenge_types"] == ["turn_left", "nod"]
+
     async def test_shared_qr_token_can_be_used_by_multiple_students(
         self,
         client: AsyncClient,
@@ -131,7 +191,7 @@ class TestAttendApi:
 
         monkeypatch.setattr(attend_api, "get_pipeline", lambda: _FakePipeline())
         monkeypatch.setattr(attend_api, "is_live", lambda *args, **kwargs: (True, 1.0))
-        monkeypatch.setattr(attend_api, "validate_challenge", lambda *args, **kwargs: (True, "ok"))
+        monkeypatch.setattr(attend_api, "validate_challenge_sequence", lambda *args, **kwargs: (True, "ok"))
         monkeypatch.setattr(attend_api, "detect_screen_spoof", lambda *args, **kwargs: (True, 0.0))
         monkeypatch.setattr(attend_api, "detect_video_replay", lambda *args, **kwargs: (True, 0.0))
         monkeypatch.setattr(
@@ -226,7 +286,7 @@ class TestAttendApi:
 
         monkeypatch.setattr(attend_api, "get_pipeline", lambda: _FakePipeline())
         monkeypatch.setattr(attend_api, "is_live", lambda *args, **kwargs: (False, 0.0))
-        monkeypatch.setattr(attend_api, "validate_challenge", lambda *args, **kwargs: (True, "ok"))
+        monkeypatch.setattr(attend_api, "validate_challenge_sequence", lambda *args, **kwargs: (True, "ok"))
         monkeypatch.setattr(attend_api, "detect_screen_spoof", lambda *args, **kwargs: (True, 0.0))
         monkeypatch.setattr(attend_api, "detect_video_replay", lambda *args, **kwargs: (True, 0.0))
         monkeypatch.setattr(

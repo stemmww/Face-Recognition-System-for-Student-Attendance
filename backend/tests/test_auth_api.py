@@ -90,7 +90,7 @@ class TestRefresh:
         token = create_reset_token(admin_user.id)
         reset = await client.post("/api/auth/reset-password", json={
             "token": token,
-            "new_password": "new_secure_password",
+            "new_password": "NewSecure123",
         })
         assert reset.status_code == 200
 
@@ -114,7 +114,7 @@ class TestRefresh:
             headers=auth_header(access_token),
             json={
                 "old_password": "student123",
-                "new_password": "changed123",
+                "new_password": "Changed123A",
             },
         )
         assert change.status_code == 200
@@ -215,7 +215,7 @@ class TestResetPassword:
         token = create_reset_token(admin_user.id)
         reset = await client.post("/api/auth/reset-password", json={
             "token": token,
-            "new_password": "new_secure_password",
+            "new_password": "NewSecure123",
         })
         assert reset.status_code == 200
 

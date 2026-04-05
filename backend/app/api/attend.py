@@ -29,10 +29,10 @@ from app.utils.liveness import (
     ChallengeType,
     detect_screen_spoof,
     detect_video_replay,
-    generate_challenge,
-    get_challenge_instruction,
+    generate_challenge_sequence,
+    get_challenge_sequence_instruction,
     is_live,
-    validate_challenge,
+    validate_challenge_sequence,
 )
 
 logger = logging.getLogger(__name__)
@@ -89,12 +89,12 @@ async def get_liveness_challenge(
     if existing.scalar_one_or_none() is not None:
         raise BadRequestError("ATTENDANCE_ALREADY_RECORDED")
 
-    challenge = generate_challenge()
-    instruction = get_challenge_instruction(challenge)
+    challenge_sequence = generate_challenge_sequence(settings.LIVENESS_CHALLENGE_STEPS)
+    instruction = get_challenge_sequence_instruction(challenge_sequence)
 
     challenge_token = jwt.encode(
         {
-            "challenge": challenge.value,
+            "challenge": [challenge.value for challenge in challenge_sequence],
             "student_id": current_user.id,
             "session_id": session_id,
             "exp": int((datetime.now(timezone.utc) + timedelta(seconds=120)).timestamp()),
@@ -104,7 +104,8 @@ async def get_liveness_challenge(
     )
 
     return LivenessChallengeOut(
-        challenge_type=challenge.value,
+        challenge_type=challenge_sequence[0].value,
+        challenge_types=[challenge.value for challenge in challenge_sequence],
         instruction=instruction,
         token=challenge_token,
     )
@@ -254,8 +255,10 @@ async def verify_attendance(
             if ch_payload.get("session_id") != session_id:
                 raise BadRequestError("Challenge token does not match session")
 
-            challenge_type = ChallengeType(ch_payload["challenge"])
-            passed, reason = validate_challenge(challenge_type, frame_landmarks)
+            raw_challenge = ch_payload.get("challenge")
+            challenge_values = raw_challenge if isinstance(raw_challenge, list) else [raw_challenge]
+            challenge_types = [ChallengeType(value) for value in challenge_values]
+            passed, reason = validate_challenge_sequence(challenge_types, frame_landmarks)
             if not passed:
                 # If passive liveness scored well, give a friendlier retry hint
                 hint = (

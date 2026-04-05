@@ -95,6 +95,7 @@ class QRTokenOut(BaseModel):
 
 class LivenessChallengeOut(BaseModel):
     challenge_type: str
+    challenge_types: list[str]
     instruction: str
     token: str
 

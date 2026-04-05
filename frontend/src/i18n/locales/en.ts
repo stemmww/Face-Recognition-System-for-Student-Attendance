@@ -305,6 +305,7 @@ const en = {
     faceHint: "Make sure your face is clearly visible and well-lit",
     verifying: "Verifying your identity...",
     verifyingChecks: "Checking QR code, GPS location, liveness, and face recognition",
+    alreadyRecorded: "Your attendance was already recorded for this session.",
     attendanceRecorded: "Attendance Recorded!",
     verificationFailed: "Verification Failed",
     somethingWentWrong: "Something went wrong.",

@@ -170,21 +170,21 @@ class TestResetPassword:
         token = create_reset_token(admin_user.id)
         r = await client.post("/api/auth/reset-password", json={
             "token": token,
-            "new_password": "new_secure_password",
+            "new_password": "NewSecure1pass",
         })
         assert r.status_code == 200
 
         # Verify can login with new password
         login = await client.post("/api/auth/login", json={
             "email": "admin@test.com",
-            "password": "new_secure_password",
+            "password": "NewSecure1pass",
         })
         assert login.status_code == 200
 
     async def test_reset_password_invalid_token(self, client: AsyncClient):
         r = await client.post("/api/auth/reset-password", json={
             "token": "invalid.token",
-            "new_password": "anything",
+            "new_password": "Anything1test",
         })
         assert r.status_code == 400
 
@@ -194,7 +194,7 @@ class TestResetPassword:
         token = create_reset_token(student_user.id)
         await client.post("/api/auth/reset-password", json={
             "token": token,
-            "new_password": "changed123",
+            "new_password": "Changed123",
         })
 
         # Old password should fail

@@ -139,9 +139,9 @@ export default function Attend() {
         .catch((err: unknown) => {
           if (cancelled) return;
           const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "";
-          if (detail.includes("already recorded")) {
+          if (detail === "ATTENDANCE_ALREADY_RECORDED") {
             // Skip camera — go straight to success
-            setResult({ success: true, status: "present", message: detail });
+            setResult({ success: true, status: "present", message: t("attend.alreadyRecorded") });
             setStep("done");
           } else {
             setError(detail || t("attend.challengeLoadFailed"));

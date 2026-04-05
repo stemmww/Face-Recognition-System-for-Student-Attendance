@@ -5,9 +5,20 @@ const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+function isAuthRequest(url?: string): boolean {
+  if (!url) return false;
+
+  try {
+    const pathname = new URL(url, window.location.origin).pathname;
+    return pathname.startsWith("/api/auth/") || pathname.startsWith("/auth/");
+  } catch {
+    return url.startsWith("/api/auth/") || url.startsWith("/auth/");
+  }
+}
+
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
-  if (token) {
+  if (token && !isAuthRequest(config.url)) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -18,7 +29,12 @@ apiClient.interceptors.response.use(
   async (error) => {
     const original = error.config;
 
-    if (error.response?.status === 401 && !original._retry) {
+    if (
+      error.response?.status === 401 &&
+      original &&
+      !original._retry &&
+      !isAuthRequest(original.url)
+    ) {
       original._retry = true;
       const refreshToken = localStorage.getItem("refresh_token");
 

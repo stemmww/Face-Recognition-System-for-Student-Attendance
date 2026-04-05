@@ -52,12 +52,16 @@ _rate_limit: dict[tuple[int, int], float] = {}
 _RATE_LIMIT_SECONDS = 15
 
 
-def _cleanup_expired_nonces() -> None:
+def _cleanup_expired_caches() -> None:
     now = time.time()
     expired = [key for key, ts in _nonce_timestamps.items() if now - ts > _NONCE_CACHE_TTL]
     for key in expired:
         _used_nonces.pop(key, None)
         _nonce_timestamps.pop(key, None)
+    # Also clean up stale rate-limit entries
+    stale = [key for key, ts in _rate_limit.items() if now - ts > _NONCE_CACHE_TTL]
+    for key in stale:
+        _rate_limit.pop(key, None)
 
 
 @router.post("/challenge", response_model=LivenessChallengeOut)
@@ -83,7 +87,7 @@ async def get_liveness_challenge(
         )
     )
     if existing.scalar_one_or_none() is not None:
-        raise BadRequestError("Your attendance was already recorded for this session.")
+        raise BadRequestError("ATTENDANCE_ALREADY_RECORDED")
 
     challenge = generate_challenge()
     instruction = get_challenge_instruction(challenge)
@@ -137,7 +141,7 @@ async def verify_attendance(
         raise BadRequestError("Invalid or expired QR token")
 
     # --- 2.5. One-time nonce check (consume only after successful verification) ---
-    _cleanup_expired_nonces()
+    _cleanup_expired_caches()
     nonce = payload.get("nonce")
     nonce_key = (session.id, current_user.id)
     if nonce and nonce in _used_nonces[nonce_key]:

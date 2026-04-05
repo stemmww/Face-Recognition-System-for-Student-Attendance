@@ -302,6 +302,7 @@ const ru = {
     faceHint: "Убедитесь, что ваше лицо хорошо видно и освещено",
     verifying: "Проверка вашей личности...",
     verifyingChecks: "Проверка QR-кода, GPS, живости и распознавания лица",
+    alreadyRecorded: "Ваше посещение уже было зафиксировано для этого занятия.",
     attendanceRecorded: "Посещение зафиксировано!",
     verificationFailed: "Верификация не удалась",
     somethingWentWrong: "Что-то пошло не так.",

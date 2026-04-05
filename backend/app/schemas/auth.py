@@ -1,4 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
+
+from app.schemas.user import _validate_password
 
 
 class LoginRequest(BaseModel):
@@ -23,3 +25,8 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def check_password(cls, v: str) -> str:
+        return _validate_password(v)

@@ -11,6 +11,7 @@ import secrets
 from datetime import date, datetime, timezone
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestError, NotFoundError
@@ -244,7 +245,18 @@ class AttendanceRecordService:
             marked_by=MarkedBy.SYSTEM,
         )
         db.add(record)
-        await db.commit()
+        try:
+            await db.commit()
+        except IntegrityError:
+            # Race condition: another request inserted first — return existing record
+            await db.rollback()
+            existing = await db.execute(
+                select(AttendanceRecord).where(
+                    AttendanceRecord.session_id == session_id,
+                    AttendanceRecord.student_id == student_id,
+                )
+            )
+            return existing.scalar_one(), False
         await db.refresh(record)
         return record, True
 

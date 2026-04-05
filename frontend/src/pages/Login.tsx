@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button, Dropdown, Form, Input, Modal, Tooltip, Typography, message } from "antd";
 import {
@@ -65,8 +65,7 @@ export default function Login() {
   };
 
   if (isAuthenticated) {
-    navigate("/dashboard", { replace: true });
-    return null;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const onFinish = async (values: { email: string; password: string }) => {

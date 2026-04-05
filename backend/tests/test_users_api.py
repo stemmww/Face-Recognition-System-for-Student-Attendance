@@ -48,7 +48,7 @@ class TestCreateUser:
         token = await _login(client, "admin@test.com", "admin123")
         r = await client.post("/api/users", headers=auth_header(token), json={
             "email": "newstudent@test.com",
-            "password": "pass123",
+            "password": "Pass123test",
             "first_name": "New",
             "last_name": "Student",
             "role": "student",
@@ -63,7 +63,7 @@ class TestCreateUser:
         token = await _login(client, "student@test.com", "student123")
         r = await client.post("/api/users", headers=auth_header(token), json={
             "email": "hacker@test.com",
-            "password": "pass123",
+            "password": "Pass123test",
             "first_name": "Hack",
             "last_name": "Er",
             "role": "admin",
@@ -74,7 +74,7 @@ class TestCreateUser:
         token = await _login(client, "prof@test.com", "prof123")
         r = await client.post("/api/users", headers=auth_header(token), json={
             "email": "another@test.com",
-            "password": "pass123",
+            "password": "Pass123test",
             "first_name": "Some",
             "last_name": "One",
             "role": "student",
@@ -110,14 +110,14 @@ class TestChangePassword:
         token = await _login(client, "student@test.com", "student123")
         r = await client.put("/api/users/me/password", headers=auth_header(token), json={
             "old_password": "student123",
-            "new_password": "new_password",
+            "new_password": "NewPass1test",
         })
         assert r.status_code == 200
 
         # Login with new password works
         r2 = await client.post("/api/auth/login", json={
             "email": "student@test.com",
-            "password": "new_password",
+            "password": "NewPass1test",
         })
         assert r2.status_code == 200
 
@@ -125,7 +125,7 @@ class TestChangePassword:
         token = await _login(client, "prof@test.com", "prof123")
         r = await client.put("/api/users/me/password", headers=auth_header(token), json={
             "old_password": "wrong_old_password",
-            "new_password": "anything",
+            "new_password": "Anything1test",
         })
         assert r.status_code == 400
 

@@ -19,8 +19,8 @@ class AuthService:
             )
 
         return {
-            "access_token": create_access_token(user.id, user.role.value),
-            "refresh_token": create_refresh_token(user.id),
+            "access_token": create_access_token(user.id, user.role.value, user.token_version),
+            "refresh_token": create_refresh_token(user.id, user.token_version),
             "token_type": "bearer",
         }
 
@@ -39,9 +39,12 @@ class AuthService:
 
         if user is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        token_version = int(payload.get("tv", 0))
+        if token_version != user.token_version:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
         return {
-            "access_token": create_access_token(user.id, user.role.value),
-            "refresh_token": create_refresh_token(user.id),
+            "access_token": create_access_token(user.id, user.role.value, user.token_version),
+            "refresh_token": create_refresh_token(user.id, user.token_version),
             "token_type": "bearer",
         }

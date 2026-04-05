@@ -53,6 +53,7 @@ async def change_password(
     if not verify_password(body.old_password, current_user.hashed_password):
         raise BadRequestError("Current password is incorrect")
     current_user.hashed_password = hash_password(body.new_password)
+    current_user.token_version += 1
     await db.commit()
     return {"message": "Password changed successfully"}
 

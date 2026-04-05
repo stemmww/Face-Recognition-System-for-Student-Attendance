@@ -3,8 +3,9 @@
 from httpx import AsyncClient
 
 from app.api import auth as auth_api
-from app.core.security import create_reset_token
+from app.core.security import create_access_token, create_reset_token
 from app.models.user import User
+from tests.conftest import auth_header
 
 
 class TestLogin:
@@ -76,6 +77,52 @@ class TestRefresh:
             "refresh_token": access_token,  # wrong token type
         })
         assert r.status_code == 401
+
+    async def test_refresh_token_invalid_after_password_reset(
+        self, client: AsyncClient, admin_user: User
+    ):
+        login = await client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "admin123",
+        })
+        old_refresh_token = login.json()["refresh_token"]
+
+        token = create_reset_token(admin_user.id)
+        reset = await client.post("/api/auth/reset-password", json={
+            "token": token,
+            "new_password": "new_secure_password",
+        })
+        assert reset.status_code == 200
+
+        refresh = await client.post("/api/auth/refresh", json={
+            "refresh_token": old_refresh_token,
+        })
+        assert refresh.status_code == 401
+
+    async def test_refresh_token_invalid_after_change_password(
+        self, client: AsyncClient, student_user: User
+    ):
+        login = await client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "student123",
+        })
+        old_refresh_token = login.json()["refresh_token"]
+        access_token = login.json()["access_token"]
+
+        change = await client.put(
+            "/api/users/me/password",
+            headers=auth_header(access_token),
+            json={
+                "old_password": "student123",
+                "new_password": "changed123",
+            },
+        )
+        assert change.status_code == 200
+
+        refresh = await client.post("/api/auth/refresh", json={
+            "refresh_token": old_refresh_token,
+        })
+        assert refresh.status_code == 401
 
 
 class TestForgotPassword:
@@ -156,3 +203,21 @@ class TestResetPassword:
             "password": "student123",
         })
         assert r.status_code == 401
+
+    async def test_old_access_token_invalid_after_password_reset(
+        self, client: AsyncClient, admin_user: User
+    ):
+        access_token = create_access_token(
+            subject=admin_user.id,
+            role=admin_user.role.value,
+            token_version=admin_user.token_version,
+        )
+        token = create_reset_token(admin_user.id)
+        reset = await client.post("/api/auth/reset-password", json={
+            "token": token,
+            "new_password": "new_secure_password",
+        })
+        assert reset.status_code == 200
+
+        me = await client.get("/api/users/me", headers=auth_header(access_token))
+        assert me.status_code == 401

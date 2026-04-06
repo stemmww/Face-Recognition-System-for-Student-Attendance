@@ -204,6 +204,9 @@ const en = {
     currentStreak: "{{count}} class streak",
     longestStreak: "Best: {{count}}",
     streakWithCourse: "{{count}} class streak in {{course}}",
+    activeSessionPresent: "{{course}} is live in {{room}} — {{time}} left to be marked Present",
+    activeSessionLate: "{{course}} is live in {{room}} — {{time}} left before Absent (will be Late)",
+    activeSessionAbsent: "{{course}} session in {{room}} is still open but you will be marked Absent",
   },
 
   // Attendance

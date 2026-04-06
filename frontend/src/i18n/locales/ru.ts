@@ -201,6 +201,9 @@ const ru = {
     currentStreak: "{{count}} занятий подряд",
     longestStreak: "Рекорд: {{count}}",
     streakWithCourse: "{{count}} занятий подряд в {{course}}",
+    activeSessionPresent: "{{course}} идёт в {{room}} — {{time}} чтобы быть отмеченным Присутствующим",
+    activeSessionLate: "{{course}} идёт в {{room}} — {{time}} до отметки Отсутствует (будет Опоздание)",
+    activeSessionAbsent: "Сессия {{course}} в {{room}} ещё открыта, но вы будете отмечены как Отсутствующий",
   },
 
   // Attendance

@@ -1,4 +1,4 @@
-import type { AttendanceSession, QRToken } from "@/types";
+import type { ActiveSession, AttendanceSession, QRToken } from "@/types";
 import apiClient from "./client";
 
 export async function startSession(payload: {
@@ -33,5 +33,10 @@ export async function getSession(sessionId: number): Promise<AttendanceSession> 
 
 export async function getQRToken(sessionId: number): Promise<QRToken> {
   const { data } = await apiClient.get<QRToken>(`/sessions/${sessionId}/qr-token`);
+  return data;
+}
+
+export async function getStudentActiveSessions(): Promise<ActiveSession[]> {
+  const { data } = await apiClient.get<ActiveSession[]>("/sessions/student/active");
   return data;
 }

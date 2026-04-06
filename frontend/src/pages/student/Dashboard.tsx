@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
+  Alert,
   Card,
   Col,
   Empty,
@@ -30,20 +32,32 @@ import {
   Legend,
 } from "recharts";
 import { useAuth } from "@/hooks/useAuth";
-import type { CourseAttendanceSummary, StudentTrendPoint } from "@/types";
+import type { ActiveSession, CourseAttendanceSummary, StudentTrendPoint } from "@/types";
 import { getMyAttendanceSummary } from "@/api/attendance";
 import { getUnreadCount } from "@/api/notifications";
 import { getMyTrends } from "@/api/statistics";
+import { getStudentActiveSessions } from "@/api/sessions";
 
 const { Title, Text } = Typography;
+
+function formatCountdown(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 export default function StudentDashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<CourseAttendanceSummary[]>([]);
   const [unread, setUnread] = useState(0);
   const [trends, setTrends] = useState<StudentTrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
+  const [tick, setTick] = useState(0);
+  const sessionsRef = useRef(activeSessions);
+  sessionsRef.current = activeSessions;
 
   const fetchData = useCallback(async () => {
     try {
@@ -66,6 +80,23 @@ export default function StudentDashboard() {
     fetchData();
   }, [fetchData]);
 
+  // Poll active sessions every 30 seconds
+  useEffect(() => {
+    const fetchActive = () => {
+      getStudentActiveSessions().then(setActiveSessions).catch(() => {});
+    };
+    fetchActive();
+    const interval = setInterval(fetchActive, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Tick every second for countdown
+  useEffect(() => {
+    if (activeSessions.length === 0) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [activeSessions.length]);
+
   const totalSessions = summary.reduce((s, c) => s + c.total_sessions, 0);
   const totalPresent = summary.reduce((s, c) => s + c.present_count, 0);
   const totalLate = summary.reduce((s, c) => s + c.late_count, 0);
@@ -87,6 +118,42 @@ export default function StudentDashboard() {
           </Text>
         )}
       </div>
+
+      {/* Active session banners */}
+      {activeSessions.map((s) => {
+        // Use tick to force re-render every second
+        void tick;
+        const elapsed = s.seconds_since_start + tick;
+        const presentLeft = s.present_deadline_seconds - elapsed;
+        const lateLeft = s.late_deadline_seconds - elapsed;
+        const isPresent = presentLeft > 0;
+        const isLate = !isPresent && lateLeft > 0;
+
+        let type: "success" | "warning" | "error";
+        let msg: string;
+        if (isPresent) {
+          type = "success";
+          msg = t("dashboard.activeSessionPresent", { course: s.course_code, room: s.room, time: formatCountdown(presentLeft) });
+        } else if (isLate) {
+          type = "warning";
+          msg = t("dashboard.activeSessionLate", { course: s.course_code, room: s.room, time: formatCountdown(lateLeft) });
+        } else {
+          type = "error";
+          msg = t("dashboard.activeSessionAbsent", { course: s.course_code, room: s.room });
+        }
+
+        return (
+          <Alert
+            key={s.session_id}
+            type={type}
+            showIcon
+            banner
+            message={msg}
+            style={{ marginBottom: 12, cursor: "pointer", borderRadius: 8 }}
+            onClick={() => navigate("/attend")}
+          />
+        );
+      })}
 
       {/* Overview cards */}
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>

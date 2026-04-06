@@ -47,6 +47,7 @@ export interface AttendanceRecord {
   updated_at: string;
   student_name: string | null;
   student_email: string | null;
+  override_reason: string | null;
 }
 
 export interface AttendanceSession {
@@ -186,6 +187,7 @@ export interface StudentCourseRecord {
   marked_by: string;
   updated_at: string;
   session_date: string | null;
+  override_reason: string | null;
 }
 
 export interface EnrolledStudent {

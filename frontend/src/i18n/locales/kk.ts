@@ -228,6 +228,8 @@ const kk = {
     statusUpdated: "Күйі жаңартылды",
     updateFailed: "Күйін жаңарту сәтсіз",
     loadFailed: "Қатысуды жүктеу сәтсіз",
+    reasonTitle: "Өзгерту себебі",
+    reasonPlaceholder: "Міндетті емес: неге күйі өзгертіліп жатыр?",
     attendanceRate: "Қатысу деңгейі",
     attendanceHistory: "Қатысу тарихы",
     noRecordsForCourse: "Бұл курс бойынша қатысу әлі тіркелмеген",

@@ -185,16 +185,23 @@ export default function LiveSession() {
       .catch(() => {});
   }, [activeSession]);
 
-  // Initialize manual statuses from existing records
+  // Initialize manual statuses from existing records (only when enrolled students load)
+  const manualInitialized = useRef(false);
   useEffect(() => {
-    if (enrolledStudents.length === 0) return;
+    if (enrolledStudents.length === 0 || manualInitialized.current) return;
     const statuses: Record<number, string> = {};
     for (const student of enrolledStudents) {
       const existing = sessionRecords.find((r) => r.student_id === student.id);
       statuses[student.id] = existing?.status ?? "absent";
     }
     setManualStatuses(statuses);
+    manualInitialized.current = true;
   }, [enrolledStudents, sessionRecords]);
+
+  // Reset the flag when the session changes
+  useEffect(() => {
+    manualInitialized.current = false;
+  }, [activeSession?.id]);
 
   const handleSaveManual = async () => {
     if (!activeSession) return;

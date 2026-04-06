@@ -34,9 +34,10 @@ export async function getMyCourseAttendance(courseId: number): Promise<StudentCo
 
 export async function updateAttendanceStatus(
   recordId: number,
-  status: string
+  status: string,
+  reason?: string,
 ): Promise<AttendanceRecord> {
-  const { data } = await apiClient.patch<AttendanceRecord>(`/attendance/${recordId}`, { status });
+  const { data } = await apiClient.patch<AttendanceRecord>(`/attendance/${recordId}`, { status, reason });
   return data;
 }
 

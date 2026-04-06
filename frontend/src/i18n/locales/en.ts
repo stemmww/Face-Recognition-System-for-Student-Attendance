@@ -231,6 +231,8 @@ const en = {
     statusUpdated: "Status updated",
     updateFailed: "Failed to update status",
     loadFailed: "Failed to load attendance",
+    reasonTitle: "Reason for change",
+    reasonPlaceholder: "Optional: why is the status being changed?",
     attendanceRate: "Attendance Rate",
     attendanceHistory: "Attendance History",
     noRecordsForCourse: "No attendance recorded for this course yet",

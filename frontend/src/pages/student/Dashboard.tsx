@@ -240,14 +240,18 @@ export default function StudentDashboard() {
                       <BookOutlined />
                       <span>{course.course_code}</span>
                     </Space>
-                    {course.current_streak > 0 && (
+                    {(course.current_streak > 0 || course.longest_streak > 0) && (
                       <Space size={12}>
-                        <Text style={{ color: "#fa541c", fontSize: 13, fontWeight: "normal" }}>
-                          <FireOutlined /> {t("dashboard.currentStreak", { count: course.current_streak })}
-                        </Text>
-                        <Text style={{ color: "#faad14", fontSize: 13, fontWeight: "normal" }}>
-                          <TrophyOutlined /> {t("dashboard.longestStreak", { count: course.longest_streak })}
-                        </Text>
+                        {course.current_streak > 0 && (
+                          <Text style={{ color: "#fa541c", fontSize: 13, fontWeight: "normal" }}>
+                            <FireOutlined /> {t("dashboard.currentStreak", { count: course.current_streak })}
+                          </Text>
+                        )}
+                        {course.longest_streak > 0 && (
+                          <Text style={{ color: "#faad14", fontSize: 13, fontWeight: "normal" }}>
+                            <TrophyOutlined /> {t("dashboard.longestStreak", { count: course.longest_streak })}
+                          </Text>
+                        )}
                       </Space>
                     )}
                   </div>

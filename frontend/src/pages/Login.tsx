@@ -20,8 +20,8 @@ const { Title, Text, Paragraph } = Typography;
 
 const LANGS = [
   { key: "en", label: "English" },
-  { key: "kk", label: "Қазақша" },
-  { key: "ru", label: "Русский" },
+  { key: "kk", label: "ТљР°Р·Р°Т›С€Р°" },
+  { key: "ru", label: "Р СѓСЃСЃРєРёР№" },
 ] as const;
 
 export default function Login() {
@@ -108,7 +108,7 @@ export default function Login() {
   return (
     <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", minHeight: "100vh", position: "relative" }}>
       <style>{compactFormCss}</style>
-      {/* Floating toolbar: language + theme */}
+
       <div
         style={{
           position: "fixed",
@@ -148,7 +148,6 @@ export default function Login() {
         </Tooltip>
       </div>
 
-      {/* Left branding panel — full on desktop, compact banner on mobile */}
       <div
         style={{
           ...(isMobile
@@ -169,7 +168,6 @@ export default function Login() {
           overflow: "hidden",
         }}
       >
-        {/* Decorative circles */}
         <div
           style={{
             position: "absolute",
@@ -194,7 +192,6 @@ export default function Login() {
         />
 
         <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-          {/* Logo icon */}
           <div
             style={{
               width: isMobile ? 56 : 80,
@@ -219,7 +216,6 @@ export default function Login() {
             {t("login.subtitle")}
           </Text>
 
-          {/* Description box — desktop only */}
           {!isMobile && (
             <div
               style={{
@@ -237,7 +233,6 @@ export default function Login() {
             </div>
           )}
 
-          {/* Feature badges — desktop only */}
           {!isMobile && (
             <div style={{ marginTop: 48, display: "flex", justifyContent: "center", gap: 32 }}>
               {[
@@ -259,7 +254,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right form panel */}
       <div
         style={{
           flex: 1,

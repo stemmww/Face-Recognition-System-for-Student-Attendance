@@ -20,8 +20,8 @@ const { Title, Text, Paragraph } = Typography;
 
 const LANGS = [
   { key: "en", label: "English" },
-  { key: "kk", label: "ТљР°Р·Р°Т›С€Р°" },
-  { key: "ru", label: "Р СѓСЃСЃРєРёР№" },
+  { key: "kk", label: "Қазақша" },
+  { key: "ru", label: "Русский" },
 ] as const;
 
 export default function Login() {

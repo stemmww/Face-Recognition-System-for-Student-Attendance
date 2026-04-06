@@ -7,6 +7,7 @@ from app.models.attendance import AttendanceRecord
 from app.models.face_embedding import FaceEmbedding
 from app.models.appeal import Appeal
 from app.models.notification import Notification
+from app.models.audit_log import AuditLog
 
 __all__ = [
     "User",
@@ -19,4 +20,5 @@ __all__ = [
     "FaceEmbedding",
     "Appeal",
     "Notification",
+    "AuditLog",
 ]

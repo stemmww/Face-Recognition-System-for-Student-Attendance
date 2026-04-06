@@ -144,6 +144,7 @@ export interface PipelineStatus {
 
 export interface LivenessChallenge {
   challenge_type: string;
+  challenge_types: string[];
   instruction: string;
   token: string;
 }

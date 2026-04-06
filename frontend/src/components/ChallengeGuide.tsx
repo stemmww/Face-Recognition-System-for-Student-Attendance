@@ -5,29 +5,36 @@ import { useTranslation } from "react-i18next";
 const { Text } = Typography;
 
 interface ChallengeGuideProps {
-  challengeType: string;
+  challengeTypes: string[];
   instruction: string;
 }
 
 const ICONS: Record<string, string> = {
-  blink: "👁",
-  turn_left: "👤",
-  turn_right: "👤",
-  nod: "👤",
+  blink: "EYE",
+  turn_left: "FACE",
+  turn_right: "FACE",
+  nod: "FACE",
 };
 
-export default function ChallengeGuide({ challengeType, instruction }: ChallengeGuideProps) {
+const LABELS: Record<string, string> = {
+  blink: "Blink",
+  turn_left: "Turn left",
+  turn_right: "Turn right",
+  nod: "Nod",
+};
+
+export default function ChallengeGuide({ challengeTypes, instruction }: ChallengeGuideProps) {
   const { t } = useTranslation();
   const [animStep, setAnimStep] = useState(0);
+  const primaryChallenge = challengeTypes[0] || "blink";
 
-  // Cycle animation steps
   useEffect(() => {
     const id = setInterval(() => setAnimStep((s) => (s + 1) % 2), 800);
     return () => clearInterval(id);
   }, []);
 
-  const animationStyle = getAnimationStyle(challengeType, animStep);
-  const icon = ICONS[challengeType] || "👤";
+  const animationStyle = getAnimationStyle(primaryChallenge, animStep);
+  const icon = ICONS[primaryChallenge] || "FACE";
 
   return (
     <div style={{
@@ -38,18 +45,18 @@ export default function ChallengeGuide({ challengeType, instruction }: Challenge
       marginBottom: 16,
       textAlign: "center",
     }}>
-      {/* Animated icon */}
       <div style={{
-        fontSize: 56,
+        fontSize: 28,
         lineHeight: 1,
         marginBottom: 12,
         transition: "transform 0.4s ease-in-out",
+        fontWeight: 700,
+        letterSpacing: 1,
         ...animationStyle,
       }}>
         {icon}
       </div>
 
-      {/* Main instruction */}
       <Text style={{
         fontSize: 20,
         fontWeight: 700,
@@ -60,9 +67,28 @@ export default function ChallengeGuide({ challengeType, instruction }: Challenge
         {instruction}
       </Text>
 
-      {/* Helper text */}
+      {challengeTypes.length > 1 && (
+        <div style={{ marginBottom: 8 }}>
+          {challengeTypes.map((type, index) => (
+            <Text
+              key={`${type}-${index}`}
+              style={{
+                display: "block",
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#1f1f1f",
+              }}
+            >
+              {index + 1}. {LABELS[type] || type}
+            </Text>
+          ))}
+        </div>
+      )}
+
       <Text type="secondary" style={{ fontSize: 14 }}>
-        {t(`attend.challengeHelp_${challengeType}`, { defaultValue: t("attend.challengeHint") })}
+        {challengeTypes.length > 1
+          ? t("attend.challengeHint")
+          : t(`attend.challengeHelp_${primaryChallenge}`, { defaultValue: t("attend.challengeHint") })}
       </Text>
     </div>
   );

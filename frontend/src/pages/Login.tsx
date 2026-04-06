@@ -35,6 +35,16 @@ export default function Login() {
   const { isDark, toggle: toggleTheme } = useThemeStore();
   const { t, i18n } = useTranslation();
   const colors = themeColors(isDark);
+  const compactFormCss = `
+    .login-form-compact .ant-form-item .ant-form-item-label {
+      padding-bottom: 1px;
+    }
+
+    .login-form-compact .ant-form-item .ant-form-item-label > label {
+      min-height: 0;
+      line-height: 1.1;
+    }
+  `;
 
   const changeLanguage = (lang: string) => {
     i18n.changeLanguage(lang);
@@ -97,6 +107,7 @@ export default function Login() {
 
   return (
     <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", minHeight: "100vh", position: "relative" }}>
+      <style>{compactFormCss}</style>
       {/* Floating toolbar: language + theme */}
       <div
         style={{
@@ -263,14 +274,20 @@ export default function Login() {
         <div style={authPageStyles.formCard}>
           <div style={{ marginBottom: isMobile ? 20 : 24 }}>
             <Title level={3} style={{ marginBottom: 4, color: colors.heading }}>
-              {t("login.welcomeBack")}
+              {t("login.signIn")}
             </Title>
             <Text style={{ color: colors.subtitle, fontSize: 14 }}>
               {t("login.signInSubtitle")}
             </Text>
           </div>
 
-          <Form onFinish={onFinish} layout="vertical" size="large" requiredMark={false}>
+          <Form
+            className="login-form-compact"
+            onFinish={onFinish}
+            layout="vertical"
+            size="large"
+            requiredMark={false}
+          >
             <Form.Item
               name="email"
               label={<span style={authPageStyles.formLabel(isDark)}>{t("login.emailLabel")}</span>}
@@ -278,7 +295,7 @@ export default function Login() {
                 { required: true, message: t("login.emailRequired") },
                 { type: "email", message: t("login.emailInvalid") },
               ]}
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: 10 }}
             >
               <Input
                 prefix={<MailOutlined style={{ color: colors.inputIcon }} />}
@@ -291,7 +308,7 @@ export default function Login() {
               name="password"
               label={<span style={authPageStyles.formLabel(isDark)}>{t("login.passwordLabel")}</span>}
               rules={[{ required: true, message: t("login.passwordRequired") }]}
-              style={{ marginBottom: 8 }}
+              style={{ marginBottom: 2 }}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: colors.inputIcon }} />}

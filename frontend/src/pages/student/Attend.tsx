@@ -26,8 +26,8 @@ import ChallengeGuide from "@/components/ChallengeGuide";
 const { Title, Text } = Typography;
 
 const SCANNER_ELEMENT_ID = "qr-reader";
-const FRAME_COUNT = 7;
-const FRAME_DELAY_MS = 300;
+const FRAME_COUNT = 12;
+const FRAME_DELAY_MS = 250;
 
 type Step = "scan" | "face" | "verifying" | "done";
 
@@ -332,7 +332,7 @@ export default function Attend() {
             )}
             {challenge && !loadingChallenge && (
               <ChallengeGuide
-                challengeType={challenge.challenge_type}
+                challengeTypes={challenge.challenge_types ?? [challenge.challenge_type]}
                 instruction={challenge.instruction}
               />
             )}

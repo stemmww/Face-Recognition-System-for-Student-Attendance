@@ -3,15 +3,19 @@ import { useTranslation } from "react-i18next";
 import {
   Button,
   Card,
+  Input,
+  Popover,
   Segmented,
   Select,
   Space,
   Table,
   Tag,
   Timeline,
+  Tooltip,
   Typography,
   message,
 } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -84,10 +88,23 @@ export default function ProfessorAttendance() {
     }
   }, [selectedSession, t]);
 
-  const handleStatusChange = async (recordId: number, newStatus: string) => {
+  const [editingRecord, setEditingRecord] = useState<number | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<string>("");
+  const [pendingReason, setPendingReason] = useState<string>("");
+
+  const handleStatusSelect = (recordId: number, newStatus: string) => {
+    setEditingRecord(recordId);
+    setPendingStatus(newStatus);
+    setPendingReason("");
+  };
+
+  const handleStatusConfirm = async () => {
+    if (!editingRecord) return;
     try {
-      await updateAttendanceStatus(recordId, newStatus);
+      await updateAttendanceStatus(editingRecord, pendingStatus, pendingReason || undefined);
       message.success(t("attendance.statusUpdated"));
+      setEditingRecord(null);
+      setPendingReason("");
       if (selectedSession) {
         setRecords(await getSessionAttendance(selectedSession));
       }
@@ -117,18 +134,48 @@ export default function ProfessorAttendance() {
     {
       title: t("common.status"),
       key: "status",
-      width: 140,
+      width: 200,
       render: (_: unknown, r: AttendanceRecord) => (
-        <Select
-          value={r.status}
-          onChange={(v) => handleStatusChange(r.id, v)}
-          style={{ width: 120 }}
-          options={[
-            { value: "present", label: <Tag color="green">{t("common.present")}</Tag> },
-            { value: "late", label: <Tag color="orange">{t("common.late")}</Tag> },
-            { value: "absent", label: <Tag color="red">{t("common.absent")}</Tag> },
-          ]}
-        />
+        <Space>
+          <Popover
+            open={editingRecord === r.id}
+            onOpenChange={(open) => { if (!open) setEditingRecord(null); }}
+            trigger="click"
+            content={
+              <div style={{ width: 240 }}>
+                <Input.TextArea
+                  placeholder={t("attendance.reasonPlaceholder")}
+                  value={pendingReason}
+                  onChange={(e) => setPendingReason(e.target.value)}
+                  rows={2}
+                  maxLength={500}
+                  style={{ marginBottom: 8 }}
+                />
+                <Space>
+                  <Button size="small" onClick={() => setEditingRecord(null)}>{t("common.cancel")}</Button>
+                  <Button size="small" type="primary" onClick={handleStatusConfirm}>{t("common.save")}</Button>
+                </Space>
+              </div>
+            }
+            title={t("attendance.reasonTitle")}
+          >
+            <Select
+              value={r.status}
+              onChange={(v) => handleStatusSelect(r.id, v)}
+              style={{ width: 120 }}
+              options={[
+                { value: "present", label: <Tag color="green">{t("common.present")}</Tag> },
+                { value: "late", label: <Tag color="orange">{t("common.late")}</Tag> },
+                { value: "absent", label: <Tag color="red">{t("common.absent")}</Tag> },
+              ]}
+            />
+          </Popover>
+          {r.override_reason && (
+            <Tooltip title={r.override_reason}>
+              <InfoCircleOutlined style={{ color: "#1677ff", cursor: "pointer" }} />
+            </Tooltip>
+          )}
+        </Space>
       ),
     },
     {

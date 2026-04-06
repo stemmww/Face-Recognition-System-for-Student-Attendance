@@ -7,9 +7,11 @@ import {
   Empty,
   Progress,
   Row,
+  Space,
   Statistic,
   Table,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from "antd";
@@ -18,6 +20,7 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   CloseCircleOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
@@ -80,10 +83,19 @@ export default function AttendanceHistory() {
     {
       title: t("common.status"),
       key: "status",
-      width: 100,
+      width: 130,
       render: (_: unknown, r: StudentCourseRecord) => {
         const cfg = statusConfig[r.status] || { color: "default", label: r.status };
-        return <Tag color={cfg.color}>{cfg.label}</Tag>;
+        return (
+          <Space size={4}>
+            <Tag color={cfg.color}>{cfg.label}</Tag>
+            {r.override_reason && (
+              <Tooltip title={r.override_reason}>
+                <InfoCircleOutlined style={{ color: "#1677ff", cursor: "pointer" }} />
+              </Tooltip>
+            )}
+          </Space>
+        );
       },
       filters: [
         { text: t("common.present"), value: "present" },

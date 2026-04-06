@@ -228,6 +228,8 @@ const ru = {
     statusUpdated: "Статус обновлён",
     updateFailed: "Не удалось обновить статус",
     loadFailed: "Не удалось загрузить посещаемость",
+    reasonTitle: "Причина изменения",
+    reasonPlaceholder: "Необязательно: почему меняется статус?",
     attendanceRate: "Уровень посещаемости",
     attendanceHistory: "История посещаемости",
     noRecordsForCourse: "Посещаемость по этому курсу ещё не зафиксирована",

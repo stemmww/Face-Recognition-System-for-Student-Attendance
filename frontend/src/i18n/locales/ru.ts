@@ -197,6 +197,9 @@ const ru = {
     courseAttendance: "Посещаемость по курсам",
     notEnrolled: "Вы ещё не записаны ни на один курс, или посещаемость не была зафиксирована.",
     sessionsRecorded: "{{count}} сессий зафиксировано",
+    bestStreak: "Лучшая серия",
+    currentStreak: "{{count}} занятий подряд",
+    longestStreak: "Рекорд: {{count}}",
   },
 
   // Attendance

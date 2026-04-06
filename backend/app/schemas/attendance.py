@@ -69,6 +69,8 @@ class CourseAttendanceSummary(BaseModel):
     late_count: int
     absent_count: int
     attendance_rate: float
+    current_streak: int
+    longest_streak: int
 
 
 class SessionDetailOut(BaseModel):

@@ -16,6 +16,8 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   CloseCircleOutlined,
+  FireOutlined,
+  TrophyOutlined,
 } from "@ant-design/icons";
 import {
   AreaChart,
@@ -70,43 +72,44 @@ export default function StudentDashboard() {
   const overallRate = totalSessions > 0
     ? Math.round(((totalPresent + totalLate) / totalSessions) * 100)
     : 100;
+  const bestCurrentStreak = summary.reduce((max, c) => Math.max(max, c.current_streak), 0);
 
   return (
     <>
       <Title level={4}>{t("dashboard.welcomeUser", { name: user?.first_name })}</Title>
 
       {/* Overview cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={6}>
-          <Card loading={loading}>
-            <Statistic title={t("nav.courses")} value={summary.length} prefix={<BookOutlined />} />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t("dashboard.overallRate")}
-              value={overallRate}
-              suffix="%"
-              valueStyle={{ color: overallRate >= 75 ? "#52c41a" : overallRate >= 50 ? "#fa8c16" : "#ff4d4f" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card loading={loading}>
-            <Statistic title={t("dashboard.totalSessions")} value={totalSessions} />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t("dashboard.unreadAlerts")}
-              value={unread}
-              valueStyle={{ color: unread > 0 ? "#ff4d4f" : undefined }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
+        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
+          <Statistic title={t("nav.courses")} value={summary.length} prefix={<BookOutlined />} />
+        </Card>
+        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
+          <Statistic
+            title={t("dashboard.overallRate")}
+            value={overallRate}
+            suffix="%"
+            valueStyle={{ color: overallRate >= 75 ? "#52c41a" : overallRate >= 50 ? "#fa8c16" : "#ff4d4f" }}
+          />
+        </Card>
+        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
+          <Statistic title={t("dashboard.totalSessions")} value={totalSessions} />
+        </Card>
+        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
+          <Statistic
+            title={t("dashboard.unreadAlerts")}
+            value={unread}
+            valueStyle={{ color: unread > 0 ? "#ff4d4f" : undefined }}
+          />
+        </Card>
+        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
+          <Statistic
+            title={t("dashboard.bestStreak")}
+            value={bestCurrentStreak}
+            prefix={<FireOutlined />}
+            valueStyle={{ color: bestCurrentStreak > 0 ? "#fa541c" : undefined }}
+          />
+        </Card>
+      </div>
 
       {/* Attendance trend chart */}
       {trends.length > 0 && (
@@ -202,6 +205,17 @@ export default function StudentDashboard() {
                     />
                   </Col>
                 </Row>
+
+                {course.current_streak > 0 && (
+                  <div style={{ marginTop: 12, display: "flex", gap: 16, alignItems: "center" }}>
+                    <Text style={{ color: "#fa541c" }}>
+                      <FireOutlined /> {t("dashboard.currentStreak", { count: course.current_streak })}
+                    </Text>
+                    <Text type="secondary">
+                      <TrophyOutlined /> {t("dashboard.longestStreak", { count: course.longest_streak })}
+                    </Text>
+                  </div>
+                )}
 
                 <div style={{ marginTop: 12 }}>
                   <Text type="secondary">{t("dashboard.sessionsRecorded", { count: course.total_sessions })}</Text>

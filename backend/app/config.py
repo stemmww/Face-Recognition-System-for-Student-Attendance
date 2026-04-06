@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     LIVENESS_BLINK_THRESHOLD: float = 0.05
     LIVENESS_HEAD_TURN_THRESHOLD: float = 0.07
     LIVENESS_NOD_THRESHOLD: float = 0.05
-    LIVENESS_CHALLENGE_STEPS: int = 2
-    SCREEN_SPOOF_THRESHOLD: float = 0.75
+    LIVENESS_CHALLENGE_STEPS: int = 1
+    SCREEN_SPOOF_THRESHOLD: float = 1.0
     VIDEO_REPLAY_THRESHOLD: float = 0.96
 
     ADMIN_EMAIL: str = "admin@attendance.edu"

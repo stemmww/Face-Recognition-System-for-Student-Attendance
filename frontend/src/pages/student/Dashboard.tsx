@@ -166,10 +166,22 @@ export default function StudentDashboard() {
               <Card
                 loading={loading}
                 title={
-                  <Space>
-                    <BookOutlined />
-                    <span>{course.course_code}</span>
-                  </Space>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Space>
+                      <BookOutlined />
+                      <span>{course.course_code}</span>
+                    </Space>
+                    {course.current_streak > 0 && (
+                      <Space size={12}>
+                        <Text style={{ color: "#fa541c", fontSize: 13, fontWeight: "normal" }}>
+                          <FireOutlined /> {t("dashboard.currentStreak", { count: course.current_streak })}
+                        </Text>
+                        <Text style={{ color: "#faad14", fontSize: 13, fontWeight: "normal" }}>
+                          <TrophyOutlined /> {t("dashboard.longestStreak", { count: course.longest_streak })}
+                        </Text>
+                      </Space>
+                    )}
+                  </div>
                 }
                 style={{ borderRadius: 8 }}
               >
@@ -205,17 +217,6 @@ export default function StudentDashboard() {
                     />
                   </Col>
                 </Row>
-
-                {course.current_streak > 0 && (
-                  <div style={{ marginTop: 12, display: "flex", gap: 16, alignItems: "center" }}>
-                    <Text style={{ color: "#fa541c" }}>
-                      <FireOutlined /> {t("dashboard.currentStreak", { count: course.current_streak })}
-                    </Text>
-                    <Text type="secondary">
-                      <TrophyOutlined /> {t("dashboard.longestStreak", { count: course.longest_streak })}
-                    </Text>
-                  </div>
-                )}
 
                 <div style={{ marginTop: 12 }}>
                   <Text type="secondary">{t("dashboard.sessionsRecorded", { count: course.total_sessions })}</Text>

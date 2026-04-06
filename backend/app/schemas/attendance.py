@@ -37,6 +37,7 @@ class AttendanceRecordOut(BaseModel):
     updated_at: datetime
     student_name: str | None = None
     student_email: str | None = None
+    override_reason: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -52,12 +53,14 @@ class StudentCourseRecordOut(BaseModel):
     student_name: str | None = None
     student_email: str | None = None
     session_date: str | None = None
+    override_reason: str | None = None
 
     model_config = {"from_attributes": True}
 
 
 class AttendanceStatusUpdate(BaseModel):
     status: AttendanceStatus
+    reason: str | None = None
 
 
 class CourseAttendanceSummary(BaseModel):

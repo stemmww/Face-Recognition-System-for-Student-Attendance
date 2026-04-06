@@ -1,5 +1,4 @@
 """End-to-end tests for Phase 5: Student Dashboard & Notifications."""
-from datetime import date
 import requests
 
 BASE = "http://localhost:8000/api"

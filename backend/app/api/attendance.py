@@ -77,7 +77,7 @@ async def update_attendance_status(
     current_user: User = Depends(require_role(Role.ADMIN, Role.PROFESSOR)),
 ):
     await AccessService.ensure_attendance_record_access(db, current_user, record_id)
-    record = await AttendanceRecordService.update_status(db, record_id, body.status)
+    record = await AttendanceRecordService.update_status(db, record_id, body.status, body.reason)
     return {
         "id": record.id,
         "student_id": record.student_id,
@@ -88,6 +88,7 @@ async def update_attendance_status(
         "updated_at": record.updated_at,
         "student_name": None,
         "student_email": None,
+        "override_reason": record.override_reason,
     }
 
 

@@ -281,6 +281,7 @@ class AttendanceRecordService:
                 "updated_at": record.updated_at,
                 "student_name": f"{user.first_name} {user.last_name}",
                 "student_email": user.email,
+                "override_reason": record.override_reason,
             })
         return records
 
@@ -307,6 +308,7 @@ class AttendanceRecordService:
                 "updated_at": record.updated_at,
                 "student_name": f"{user.first_name} {user.last_name}",
                 "student_email": user.email,
+                "override_reason": record.override_reason,
             })
         return records
 
@@ -329,6 +331,7 @@ class AttendanceRecordService:
                 "updated_at": r.updated_at,
                 "student_name": None,
                 "student_email": None,
+                "override_reason": r.override_reason,
             }
             for r in rows
         ]
@@ -361,6 +364,7 @@ class AttendanceRecordService:
                 "student_name": None,
                 "student_email": None,
                 "session_date": str(session.date),
+                "override_reason": record.override_reason,
             }
             for record, session in rows
         ]
@@ -479,7 +483,7 @@ class AttendanceRecordService:
 
     @staticmethod
     async def update_status(
-        db: AsyncSession, record_id: int, status: AttendanceStatus
+        db: AsyncSession, record_id: int, status: AttendanceStatus, reason: str | None = None,
     ) -> AttendanceRecord:
         result = await db.execute(
             select(AttendanceRecord).where(AttendanceRecord.id == record_id)
@@ -490,6 +494,7 @@ class AttendanceRecordService:
 
         record.status = status
         record.marked_by = MarkedBy.PROFESSOR
+        record.override_reason = reason
         await db.commit()
         await db.refresh(record)
         return record

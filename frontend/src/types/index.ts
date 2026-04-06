@@ -162,6 +162,8 @@ export interface CourseAttendanceSummary {
   late_count: number;
   absent_count: number;
   attendance_rate: number;
+  current_streak: number;
+  longest_streak: number;
 }
 
 export interface StudentCourseRecord {

@@ -78,6 +78,17 @@ export interface Appeal {
   created_at: string;
 }
 
+export interface ActiveSession {
+  session_id: number;
+  course_code: string;
+  course_name: string;
+  room: string;
+  started_at: string;
+  seconds_since_start: number;
+  present_deadline_seconds: number;
+  late_deadline_seconds: number;
+}
+
 // ---------------------------------------------------------------------------
 // Auth
 // ---------------------------------------------------------------------------

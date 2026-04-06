@@ -201,6 +201,9 @@ const kk = {
     currentStreak: "{{count}} сабақ қатарынан",
     longestStreak: "Рекорд: {{count}}",
     streakWithCourse: "{{count}} сабақ қатарынан {{course}} пәнінде",
+    activeSessionPresent: "{{course}} {{room}} кабинетінде жүріп жатыр — Қатысқан болу үшін {{time}} қалды",
+    activeSessionLate: "{{course}} {{room}} кабинетінде жүріп жатыр — Қатыспаған белгісіне дейін {{time}} (Кешіккен болады)",
+    activeSessionAbsent: "{{course}} сессиясы {{room}} кабинетінде әлі ашық, бірақ сіз Қатыспаған деп белгіленесіз",
   },
 
   // Attendance

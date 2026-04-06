@@ -73,6 +73,17 @@ class CourseAttendanceSummary(BaseModel):
     longest_streak: int
 
 
+class ActiveSessionOut(BaseModel):
+    session_id: int
+    course_code: str
+    course_name: str
+    room: str
+    started_at: datetime
+    seconds_since_start: int
+    present_deadline_seconds: int
+    late_deadline_seconds: int
+
+
 class SessionDetailOut(BaseModel):
     id: int
     schedule_id: int

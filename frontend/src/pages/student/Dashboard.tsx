@@ -72,11 +72,21 @@ export default function StudentDashboard() {
   const overallRate = totalSessions > 0
     ? Math.round(((totalPresent + totalLate) / totalSessions) * 100)
     : 100;
-  const bestCurrentStreak = summary.reduce((max, c) => Math.max(max, c.current_streak), 0);
+  const bestStreakCourse = summary.reduce<CourseAttendanceSummary | null>(
+    (best, c) => (!best || c.current_streak > best.current_streak) ? c : best,
+    null,
+  );
 
   return (
     <>
-      <Title level={4}>{t("dashboard.welcomeUser", { name: user?.first_name })}</Title>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginBottom: 4 }}>
+        <Title level={4} style={{ marginBottom: 0 }}>{t("dashboard.welcomeUser", { name: user?.first_name })}</Title>
+        {bestStreakCourse && bestStreakCourse.current_streak > 0 && (
+          <Text style={{ color: "#fa541c", fontSize: 15 }}>
+            <FireOutlined /> {t("dashboard.streakWithCourse", { count: bestStreakCourse.current_streak, course: bestStreakCourse.course_code })}
+          </Text>
+        )}
+      </div>
 
       {/* Overview cards */}
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
@@ -99,14 +109,6 @@ export default function StudentDashboard() {
             title={t("dashboard.unreadAlerts")}
             value={unread}
             valueStyle={{ color: unread > 0 ? "#ff4d4f" : undefined }}
-          />
-        </Card>
-        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
-          <Statistic
-            title={t("dashboard.bestStreak")}
-            value={bestCurrentStreak}
-            prefix={<FireOutlined />}
-            valueStyle={{ color: bestCurrentStreak > 0 ? "#fa541c" : undefined }}
           />
         </Card>
       </div>

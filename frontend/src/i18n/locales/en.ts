@@ -203,6 +203,7 @@ const en = {
     bestStreak: "Best Streak",
     currentStreak: "{{count}} class streak",
     longestStreak: "Best: {{count}}",
+    streakWithCourse: "{{count}} class streak in {{course}}",
   },
 
   // Attendance

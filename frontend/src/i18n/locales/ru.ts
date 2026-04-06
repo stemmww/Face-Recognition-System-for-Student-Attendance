@@ -200,6 +200,7 @@ const ru = {
     bestStreak: "Лучшая серия",
     currentStreak: "{{count}} занятий подряд",
     longestStreak: "Рекорд: {{count}}",
+    streakWithCourse: "{{count}} занятий подряд в {{course}}",
   },
 
   // Attendance

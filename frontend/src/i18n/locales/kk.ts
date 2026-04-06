@@ -200,6 +200,7 @@ const kk = {
     bestStreak: "Үздік серия",
     currentStreak: "{{count}} сабақ қатарынан",
     longestStreak: "Рекорд: {{count}}",
+    streakWithCourse: "{{count}} сабақ қатарынан {{course}} пәнінде",
   },
 
   // Attendance

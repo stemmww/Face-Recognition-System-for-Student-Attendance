@@ -65,7 +65,7 @@ def _nms(dets: np.ndarray, thresh: float) -> list[int]:
 class FaceDetector:
     """SCRFD face detector via ONNX Runtime."""
 
-    def __init__(self, model_path: str | None = None, confidence: float = 0.5):
+    def __init__(self, model_path: str | None = None, confidence: float = 0.3):
         self._session = None
         self._confidence = confidence
         self._model_path = model_path

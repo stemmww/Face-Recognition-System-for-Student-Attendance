@@ -197,6 +197,9 @@ const kk = {
     courseAttendance: "Курс бойынша қатысу",
     notEnrolled: "Сіз әлі ешбір курсқа тіркелмегенсіз немесе қатысу тіркелмеген.",
     sessionsRecorded: "{{count}} сессия тіркелді",
+    bestStreak: "Үздік серия",
+    currentStreak: "{{count}} сабақ қатарынан",
+    longestStreak: "Рекорд: {{count}}",
   },
 
   // Attendance

@@ -200,6 +200,9 @@ const en = {
     courseAttendance: "Course Attendance",
     notEnrolled: "You are not enrolled in any courses yet, or no attendance has been recorded.",
     sessionsRecorded: "{{count}} session(s) recorded",
+    bestStreak: "Best Streak",
+    currentStreak: "{{count}} class streak",
+    longestStreak: "Best: {{count}}",
   },
 
   // Attendance

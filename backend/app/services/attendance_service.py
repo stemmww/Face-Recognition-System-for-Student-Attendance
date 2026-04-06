@@ -388,6 +388,7 @@ class AttendanceRecordService:
                     Schedule.course_id == cid,
                     AttendanceRecord.student_id == student_id,
                 )
+                .order_by(AttendanceSession.date.asc())
             )
             rows = records.scalars().all()
             total = len(rows)
@@ -395,6 +396,18 @@ class AttendanceRecordService:
             late = sum(1 for r in rows if r.status == AttendanceStatus.LATE)
             absent = sum(1 for r in rows if r.status == AttendanceStatus.ABSENT)
             rate = ((present + late) / total * 100) if total > 0 else 100.0
+
+            # Calculate attendance streaks (PRESENT and LATE count as attended)
+            current_streak = 0
+            longest_streak = 0
+            streak = 0
+            for r in rows:
+                if r.status in (AttendanceStatus.PRESENT, AttendanceStatus.LATE):
+                    streak += 1
+                    longest_streak = max(longest_streak, streak)
+                else:
+                    streak = 0
+            current_streak = streak
 
             summaries.append({
                 "course_id": cid,
@@ -405,6 +418,8 @@ class AttendanceRecordService:
                 "late_count": late,
                 "absent_count": absent,
                 "attendance_rate": round(rate, 1),
+                "current_streak": current_streak,
+                "longest_streak": longest_streak,
             })
         return summaries
 

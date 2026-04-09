@@ -28,7 +28,7 @@ export function themeColors(isDark: boolean) {
     /** Muted icon inside inputs */
     inputIcon: "#94a3b8",
     /** Primary accent */
-    primary: "#6366f1",
+    primary: "#2323CE",
     /** Divider / separator border */
     divider: isDark ? "#334155" : "#e2e8f0",
   } as const;
@@ -67,7 +67,7 @@ export const authPageStyles = {
     borderRadius: 10,
     fontWeight: 600,
     fontSize: 15,
-    boxShadow: "0 4px 14px rgba(99,102,241,0.35)",
+    boxShadow: "0 4px 14px rgba(35,35,206,0.35)",
   } as CSSProperties,
 
   /** Form label span */

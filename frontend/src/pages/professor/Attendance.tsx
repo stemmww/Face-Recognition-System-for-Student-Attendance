@@ -311,7 +311,7 @@ export default function ProfessorAttendance() {
 
                 if (sessionStart) {
                   items.push({
-                    color: "#6366f1" as string,
+                    color: "#2323CE" as string,
                     children: (
                       <div>
                         <Text strong>{t("attendance.sessionStarted")}</Text>
@@ -349,7 +349,7 @@ export default function ProfessorAttendance() {
 
                 if (sessionDetail?.ended_at) {
                   items.push({
-                    color: "#6366f1" as string,
+                    color: "#2323CE" as string,
                     children: (
                       <div>
                         <Text strong>{t("attendance.sessionEnded")}</Text>

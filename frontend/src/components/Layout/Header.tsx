@@ -122,7 +122,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
       label: l.label,
       onClick: () => changeLanguage(l.key),
       style: i18n.language === l.key
-        ? { fontWeight: 600, color: "#6366f1" }
+        ? { fontWeight: 600, color: "#2323CE" }
         : undefined,
     })),
   };
@@ -167,7 +167,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
                   onClick={handleMarkAllRead}
                   className="mark-all-read-btn"
                   style={{
-                    color: isDark ? "#818cf8" : "#6366f1",
+                    color: isDark ? "#6b6bef" : "#2323CE",
                     fontWeight: 500,
                   }}
                 >
@@ -193,7 +193,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
                   style={{
                     background: n.is_read
                       ? "transparent"
-                      : isDark ? "rgba(99,102,241,0.12)" : "#f0f0ff",
+                      : isDark ? "rgba(35,35,206,0.12)" : "#f0f0ff",
                     cursor: "pointer",
                     padding: "10px 12px",
                     borderRadius: 8,
@@ -335,7 +335,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
               icon={<UserOutlined />}
               src={user.photo_url ? `/uploads/${user.photo_url}` : undefined}
               size={isMobile ? "small" : "default"}
-              style={{ backgroundColor: user.photo_url ? undefined : "#6366f1" }}
+              style={{ backgroundColor: user.photo_url ? undefined : "#2323CE" }}
             />
             {!isMobile && (
               <Text strong style={{ color: isDark ? "#e2e8f0" : "#1e293b", whiteSpace: "nowrap" }}>

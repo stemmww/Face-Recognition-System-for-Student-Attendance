@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Button, Dropdown, Form, Input, Modal, Tooltip, Typography, message } from "antd";
+import { Button, Checkbox, Dropdown, Form, Input, Modal, Tooltip, Typography, message } from "antd";
 import {
   GlobalOutlined,
   LockOutlined,
@@ -16,7 +16,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useThemeStore } from "@/stores/themeStore";
 import { authPageStyles, themeColors } from "@/styles/theme";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const LANGS = [
   { key: "en", label: "English" },
@@ -35,16 +35,6 @@ export default function Login() {
   const { isDark, toggle: toggleTheme } = useThemeStore();
   const { t, i18n } = useTranslation();
   const colors = themeColors(isDark);
-  const compactFormCss = `
-    .login-form-compact .ant-form-item .ant-form-item-label {
-      padding-bottom: 1px;
-    }
-
-    .login-form-compact .ant-form-item .ant-form-item-label > label {
-      min-height: 0;
-      line-height: 1.1;
-    }
-  `;
 
   const changeLanguage = (lang: string) => {
     i18n.changeLanguage(lang);
@@ -60,18 +50,6 @@ export default function Login() {
         ? { fontWeight: 600, color: colors.primary }
         : undefined,
     })),
-  };
-
-  const toolbarBtnStyle: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    fontSize: 16,
-    color: isDark ? "#c7d2fe" : "#64748b",
-    transition: "all 0.2s",
   };
 
   if (isAuthenticated) {
@@ -105,10 +83,24 @@ export default function Login() {
     }
   };
 
-  return (
-    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", minHeight: "100vh", position: "relative" }}>
-      <style>{compactFormCss}</style>
+  /* ── colour helpers ── */
+  const panelBg = isDark ? "#111827" : "#ffffff";
+  const formBg = isDark ? "#1f2937" : "#f8fafc";
+  const cardBg = isDark ? "#1f2937" : "#ffffff";
+  const borderCol = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+  const toolbarBg = isDark ? "rgba(31,41,55,0.85)" : "rgba(255,255,255,0.85)";
+  const toolbarIcon = isDark ? "#c7d2fe" : "#64748b";
 
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: isMobile ? "column" : "row",
+        minHeight: "100vh",
+        position: "relative",
+      }}
+    >
+      {/* ═══ Floating toolbar (lang + theme toggle) ═══ */}
       <div
         style={{
           position: "fixed",
@@ -118,19 +110,31 @@ export default function Login() {
           display: "flex",
           alignItems: "center",
           gap: 4,
-          background: isDark ? "rgba(31,41,55,0.85)" : "rgba(255,255,255,0.85)",
+          background: toolbarBg,
           backdropFilter: "blur(12px)",
           borderRadius: 12,
           padding: "4px 6px",
           boxShadow: isDark
             ? "0 2px 12px rgba(0,0,0,0.3)"
             : "0 2px 12px rgba(0,0,0,0.08)",
-          border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+          border: `1px solid ${borderCol}`,
           transition: "all 0.3s ease",
         }}
       >
         <Dropdown menu={langItems} placement="bottomRight" trigger={["click"]}>
-          <Button type="text" style={toolbarBtnStyle}>
+          <Button
+            type="text"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              fontSize: 16,
+              color: toolbarIcon,
+            }}
+          >
             <GlobalOutlined />
           </Button>
         </Dropdown>
@@ -139,7 +143,13 @@ export default function Login() {
             type="text"
             onClick={toggleTheme}
             style={{
-              ...toolbarBtnStyle,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              fontSize: 16,
               color: isDark ? "#facc15" : "#64748b",
             }}
           >
@@ -148,214 +158,392 @@ export default function Login() {
         </Tooltip>
       </div>
 
-      <div
-        style={{
-          ...(isMobile
-            ? { padding: "32px 24px 24px" }
-            : {
-                flex: "0 0 480px",
-                padding: "48px 40px",
-              }),
-          background: isDark
-            ? "linear-gradient(160deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%)"
-            : "linear-gradient(160deg, #312e81 0%, #4f46e5 50%, #6366f1 100%)",
-          transition: "background 0.4s ease",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
+      {/* ═══ LEFT PANEL — Branding / Illustration ═══ */}
+      {!isMobile && (
         <div
           style={{
-            position: "absolute",
-            top: -80,
-            left: -80,
-            width: 300,
-            height: 300,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.05)",
+            flex: "0 0 50%",
+            background: panelBg,
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            transition: "background 0.4s ease",
           }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: -120,
-            right: -100,
-            width: 400,
-            height: 400,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.04)",
-          }}
-        />
-
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-          <div
-            style={{
-              width: isMobile ? 56 : 80,
-              height: isMobile ? 56 : 80,
-              borderRadius: isMobile ? 14 : 20,
-              background: "rgba(255,255,255,0.15)",
-              backdropFilter: "blur(10px)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: `0 auto ${isMobile ? 16 : 32}px`,
-              border: "1px solid rgba(255,255,255,0.2)",
-            }}
-          >
-            <ScanOutlined style={{ fontSize: isMobile ? 26 : 36, color: "#e0e7ff" }} />
+        >
+          {/* Logo / brand area */}
+          <div style={{ padding: "36px 40px", position: "relative", zIndex: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  background: colors.primary,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ScanOutlined style={{ fontSize: 20, color: "#fff" }} />
+              </div>
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 18,
+                  color: colors.heading,
+                }}
+              >
+                {t("login.title")}
+              </span>
+            </div>
           </div>
 
-          <Title level={isMobile ? 4 : 2} style={{ color: "#fff", marginBottom: 4, fontWeight: 700 }}>
-            {t("login.title")}
-          </Title>
-          <Text style={{ color: "#c7d2fe", fontSize: isMobile ? 13 : 16 }}>
-            {t("login.subtitle")}
-          </Text>
+          {/* Decorative geometric triangle (bottom-left) */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: -60,
+              left: -60,
+              width: 420,
+              height: 420,
+              background: `linear-gradient(135deg, ${colors.primary}22 0%, ${colors.primary}08 100%)`,
+              clipPath: "polygon(0 100%, 0 20%, 80% 100%)",
+              zIndex: 0,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: -30,
+              left: -30,
+              width: 320,
+              height: 320,
+              background: `linear-gradient(135deg, ${colors.primary}18 0%, ${colors.primary}05 100%)`,
+              clipPath: "polygon(0 100%, 0 30%, 70% 100%)",
+              zIndex: 0,
+            }}
+          />
 
-          {!isMobile && (
+          {/* Small decorative dots pattern (top-right area) */}
+          <div
+            style={{
+              position: "absolute",
+              top: 100,
+              right: 60,
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 8px)",
+              gap: 12,
+              opacity: isDark ? 0.15 : 0.2,
+              zIndex: 0,
+            }}
+          >
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: colors.primary,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Centre illustration area */}
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+              zIndex: 1,
+              padding: "0 40px",
+            }}
+          >
+            {/* Icon circle */}
             <div
               style={{
-                background: "rgba(255,255,255,0.1)",
-                borderRadius: 16,
-                padding: "28px 24px",
-                marginTop: 32,
-                backdropFilter: "blur(10px)",
-                border: "1px solid rgba(255,255,255,0.12)",
+                width: 96,
+                height: 96,
+                borderRadius: "50%",
+                background: `${colors.primary}14`,
+                border: `2px solid ${colors.primary}30`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 32,
               }}
             >
-              <Paragraph style={{ color: "#e0e7ff", fontSize: 14, lineHeight: 1.8, margin: 0 }}>
-                {t("login.description")}
-              </Paragraph>
+              <ScanOutlined style={{ fontSize: 42, color: colors.primary }} />
             </div>
-          )}
 
-          {!isMobile && (
-            <div style={{ marginTop: 48, display: "flex", justifyContent: "center", gap: 32 }}>
+            <Title
+              level={3}
+              style={{
+                color: colors.heading,
+                marginBottom: 8,
+                fontWeight: 700,
+                textAlign: "center",
+              }}
+            >
+              {t("login.subtitle")}
+            </Title>
+            <Text
+              style={{
+                color: colors.subtitle,
+                fontSize: 15,
+                textAlign: "center",
+                maxWidth: 340,
+                lineHeight: 1.6,
+              }}
+            >
+              {t("login.description")}
+            </Text>
+
+            {/* Feature badges */}
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                marginTop: 36,
+              }}
+            >
               {[
                 { value: "AI", label: t("login.featureAI") },
                 { value: "QR", label: t("login.featureQR") },
                 { value: "GPS", label: t("login.featureGPS") },
               ].map((item) => (
-                <div key={item.value} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 4 }}>
-                    {item.value}
-                  </div>
-                  <div style={{ color: "#a5b4fc", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>
-                    {item.label}
-                  </div>
+                <div
+                  key={item.value}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: 20,
+                    background: `${colors.primary}0D`,
+                    border: `1px solid ${colors.primary}20`,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: colors.primary,
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  {item.value} · {item.label}
                 </div>
               ))}
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
+      {/* ═══ RIGHT PANEL — Login Form ═══ */}
       <div
         style={{
           flex: 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: colors.pageBg,
+          background: formBg,
           transition: "background 0.4s ease",
-          padding: isMobile ? "32px 20px" : "48px 24px",
+          padding: isMobile ? "80px 24px 32px" : "48px 24px",
         }}
       >
-        <div style={authPageStyles.formCard}>
-          <div style={{ marginBottom: isMobile ? 20 : 24 }}>
-            <Title level={3} style={{ marginBottom: 4, color: colors.heading }}>
-              {t("login.signIn")}
-            </Title>
-            <Text style={{ color: colors.subtitle, fontSize: 14 }}>
-              {t("login.signInSubtitle")}
-            </Text>
-          </div>
-
-          <Form
-            className="login-form-compact"
-            onFinish={onFinish}
-            layout="vertical"
-            size="large"
-            requiredMark={false}
-          >
-            <Form.Item
-              name="email"
-              label={<span style={authPageStyles.formLabel(isDark)}>{t("login.emailLabel")}</span>}
-              rules={[
-                { required: true, message: t("login.emailRequired") },
-                { type: "email", message: t("login.emailInvalid") },
-              ]}
-              style={{ marginBottom: 10 }}
+        <div style={{ width: "100%", maxWidth: 420 }}>
+          {/* Mobile logo */}
+          {isMobile && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 32,
+              }}
             >
-              <Input
-                prefix={<MailOutlined style={{ color: colors.inputIcon }} />}
-                placeholder={t("login.emailPlaceholder")}
-                style={{ ...authPageStyles.input, borderColor: colors.inputBorder }}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="password"
-              label={<span style={authPageStyles.formLabel(isDark)}>{t("login.passwordLabel")}</span>}
-              rules={[{ required: true, message: t("login.passwordRequired") }]}
-              style={{ marginBottom: 2 }}
-            >
-              <Input.Password
-                prefix={<LockOutlined style={{ color: colors.inputIcon }} />}
-                placeholder={t("login.passwordPlaceholder")}
-                style={{ ...authPageStyles.input, borderColor: colors.inputBorder }}
-              />
-            </Form.Item>
-
-            <div style={{ textAlign: "right", marginBottom: 16 }}>
-              <Button type="link" style={{ padding: 0, fontSize: 13, color: colors.primary }} onClick={() => setForgotOpen(true)}>
-                {t("login.forgotPassword")}
-              </Button>
-            </div>
-
-            <Form.Item style={{ marginBottom: 0 }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                block
-                style={authPageStyles.primaryButton}
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 9,
+                  background: colors.primary,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                {t("login.signIn")}
-              </Button>
-            </Form.Item>
-          </Form>
+                <ScanOutlined style={{ fontSize: 18, color: "#fff" }} />
+              </div>
+              <span style={{ fontWeight: 700, fontSize: 16, color: colors.heading }}>
+                {t("login.title")}
+              </span>
+            </div>
+          )}
 
+          {/* Card wrapper */}
           <div
             style={{
-              textAlign: "center",
-              marginTop: 24,
-              padding: "12px 0",
-              borderTop: `1px solid ${colors.divider}`,
+              background: cardBg,
+              borderRadius: 16,
+              padding: isMobile ? "28px 24px" : "40px 36px",
+              boxShadow: isDark
+                ? "0 4px 24px rgba(0,0,0,0.3)"
+                : "0 4px 24px rgba(0,0,0,0.06)",
+              border: `1px solid ${borderCol}`,
+              transition: "all 0.4s ease",
             }}
           >
-            <Text style={{ color: colors.inputIcon, fontSize: 13 }}>
-              {t("login.contactAdmin")}
-            </Text>
+            <div style={{ marginBottom: 28 }}>
+              <Title
+                level={3}
+                style={{
+                  marginBottom: 4,
+                  color: colors.heading,
+                  fontWeight: 700,
+                }}
+              >
+                {t("login.signIn")}
+              </Title>
+              <Text style={{ color: colors.subtitle, fontSize: 14 }}>
+                {t("login.signInSubtitle")}
+              </Text>
+            </div>
+
+            <Form
+              onFinish={onFinish}
+              layout="vertical"
+              size="large"
+              requiredMark={false}
+            >
+              <Form.Item
+                name="email"
+                label={
+                  <span style={authPageStyles.formLabel(isDark)}>
+                    {t("login.emailLabel")}
+                  </span>
+                }
+                rules={[
+                  { required: true, message: t("login.emailRequired") },
+                  { type: "email", message: t("login.emailInvalid") },
+                ]}
+                style={{ marginBottom: 16 }}
+              >
+                <Input
+                  prefix={<MailOutlined style={{ color: colors.inputIcon }} />}
+                  placeholder={t("login.emailPlaceholder")}
+                  style={{
+                    ...authPageStyles.input,
+                    borderColor: colors.inputBorder,
+                  }}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="password"
+                label={
+                  <span style={authPageStyles.formLabel(isDark)}>
+                    {t("login.passwordLabel")}
+                  </span>
+                }
+                rules={[{ required: true, message: t("login.passwordRequired") }]}
+                style={{ marginBottom: 12 }}
+              >
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: colors.inputIcon }} />}
+                  placeholder={t("login.passwordPlaceholder")}
+                  style={{
+                    ...authPageStyles.input,
+                    borderColor: colors.inputBorder,
+                  }}
+                />
+              </Form.Item>
+
+              {/* Remember me + Forgot password row */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 24,
+                }}
+              >
+                <Checkbox>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: colors.subtitle,
+                    }}
+                  >
+                    {t("login.rememberMe")}
+                  </span>
+                </Checkbox>
+                <Button
+                  type="link"
+                  style={{
+                    padding: 0,
+                    fontSize: 13,
+                    color: colors.primary,
+                    fontWeight: 500,
+                  }}
+                  onClick={() => setForgotOpen(true)}
+                >
+                  {t("login.forgotPassword")}
+                </Button>
+              </div>
+
+              <Form.Item style={{ marginBottom: 0 }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  style={{
+                    ...authPageStyles.primaryButton,
+                    background: colors.primary,
+                    borderColor: colors.primary,
+                  }}
+                >
+                  {t("login.signIn")}
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: 24,
+                paddingTop: 20,
+                borderTop: `1px solid ${colors.divider}`,
+              }}
+            >
+              <Text style={{ color: colors.inputIcon, fontSize: 13 }}>
+                {t("login.contactAdmin")}
+              </Text>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* ═══ Forgot Password Modal ═══ */}
       <Modal
         open={forgotOpen}
         title={t("login.forgotPasswordTitle")}
-        onCancel={() => { setForgotOpen(false); forgotForm.resetFields(); }}
+        onCancel={() => {
+          setForgotOpen(false);
+          forgotForm.resetFields();
+        }}
         footer={null}
         destroyOnClose
       >
         <Text style={{ display: "block", marginBottom: 16, color: colors.subtitle }}>
           {t("login.forgotDescription")}
         </Text>
-        <Form form={forgotForm} onFinish={onForgotSubmit} layout="vertical" requiredMark={false}>
+        <Form
+          form={forgotForm}
+          onFinish={onForgotSubmit}
+          layout="vertical"
+          requiredMark={false}
+        >
           <Form.Item
             name="email"
             label={t("login.emailLabel")}
@@ -371,7 +559,17 @@ export default function Login() {
             />
           </Form.Item>
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" loading={forgotLoading} block style={authPageStyles.input}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={forgotLoading}
+              block
+              style={{
+                ...authPageStyles.primaryButton,
+                background: colors.primary,
+                borderColor: colors.primary,
+              }}
+            >
               {t("login.sendResetLink")}
             </Button>
           </Form.Item>

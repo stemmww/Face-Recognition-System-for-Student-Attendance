@@ -206,8 +206,8 @@ export default function App() {
       theme={{
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
-          colorPrimary: "#6366f1",
-          colorInfo: "#6366f1",
+          colorPrimary: "#2323CE",
+          colorInfo: "#2323CE",
           colorSuccess: "#10b981",
           colorWarning: "#f59e0b",
           colorError: "#ef4444",
@@ -229,13 +229,13 @@ export default function App() {
         },
         components: {
           Button: {
-            colorPrimary: "#6366f1",
+            colorPrimary: "#2323CE",
             algorithm: true,
           },
           Menu: {
             darkItemBg: "transparent",
-            darkItemSelectedBg: "rgba(99,102,241,0.25)",
-            darkItemHoverBg: "rgba(99,102,241,0.15)",
+            darkItemSelectedBg: "rgba(35,35,206,0.25)",
+            darkItemHoverBg: "rgba(35,35,206,0.15)",
             darkItemSelectedColor: "#c7d2fe",
           },
           Card: {

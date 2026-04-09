@@ -71,7 +71,7 @@ export default function NotificationsPage() {
             style={{
               background: n.is_read
                 ? (isDark ? "transparent" : "#fff")
-                : (isDark ? "rgba(99,102,241,0.15)" : "#f0f5ff"),
+                : (isDark ? "rgba(35,35,206,0.15)" : "#f0f5ff"),
               padding: "12px 16px",
               borderRadius: 6,
               marginBottom: 4,

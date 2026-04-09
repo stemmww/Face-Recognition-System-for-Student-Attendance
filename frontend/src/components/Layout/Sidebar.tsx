@@ -89,7 +89,7 @@ function LogoArea({ collapsed }: { collapsed: boolean }) {
           width: 32,
           height: 32,
           borderRadius: 8,
-          background: "rgba(99,102,241,0.4)",
+          background: "rgba(35,35,206,0.4)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -115,7 +115,7 @@ function LogoArea({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-const sidebarBg = "linear-gradient(180deg, #1e1b4b 0%, #312e81 100%)";
+const sidebarBg = "linear-gradient(180deg, #0e0e5c 0%, #1a1a9e 100%)";
 
 export default function Sidebar({
   role,
@@ -154,7 +154,7 @@ export default function Sidebar({
         onClose={onMobileClose}
         width={260}
         styles={{
-          body: { padding: 0, background: "#1e1b4b" },
+          body: { padding: 0, background: "#0e0e5c" },
           header: { display: "none" },
         }}
       >

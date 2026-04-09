@@ -386,6 +386,8 @@ const en = {
     description: "Description",
     semester: "Semester",
     academicYear: "Academic Year",
+    academicYearRequired: "Please select an academic year",
+    selectAcademicYear: "Select academic year",
     created: "Created",
     members: "Members",
     code: "Code",

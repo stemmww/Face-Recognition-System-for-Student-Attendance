@@ -105,7 +105,7 @@ export default function Profile() {
                 width: 28,
                 height: 28,
                 borderRadius: "50%",
-                background: "#6366f1",
+                background: "#2323CE",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

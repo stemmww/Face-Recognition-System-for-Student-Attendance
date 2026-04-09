@@ -216,7 +216,7 @@ export default function StudentDashboard() {
               <YAxis domain={[0, 100]} fontSize={12} tickFormatter={(v) => `${v}%`} />
               <Tooltip formatter={(value: number, name: string) => name === "rate" ? `${value}%` : value} />
               <Legend />
-              <Area type="monotone" dataKey="rate" name={t("dashboard.attendanceRate")} stroke="#6366f1" fill="#6366f1" fillOpacity={0.15} strokeWidth={2} />
+              <Area type="monotone" dataKey="rate" name={t("dashboard.attendanceRate")} stroke="#2323CE" fill="#2323CE" fillOpacity={0.15} strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>

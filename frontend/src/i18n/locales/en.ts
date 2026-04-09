@@ -110,6 +110,7 @@ const en = {
     sendResetLink: "Send Reset Link",
     forgotSent: "If this email is registered, a reset link has been sent.",
     forgotFailed: "Failed to send reset link. Please try again.",
+    rememberMe: "Remember me",
   },
 
   resetPassword: {

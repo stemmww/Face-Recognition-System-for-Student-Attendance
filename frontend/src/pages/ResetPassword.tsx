@@ -62,7 +62,7 @@ export default function ResetPassword() {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{
             width: 56, height: 56, borderRadius: 14,
-            background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+            background: "linear-gradient(135deg, #2323CE, #1a1a9e)",
             display: "inline-flex", alignItems: "center", justifyContent: "center",
             marginBottom: 16,
           }}>

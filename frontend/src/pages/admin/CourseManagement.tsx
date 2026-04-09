@@ -61,6 +61,17 @@ interface CourseFormValues {
   academic_year: string;
 }
 
+function buildAcademicYearOptions() {
+  const currentYear = new Date().getFullYear();
+  const startYear = currentYear - 2;
+
+  return Array.from({ length: 8 }, (_, index) => {
+    const year = startYear + index;
+    const value = `${year}-${year + 1}`;
+    return { value, label: value };
+  });
+}
+
 export default function CourseManagement() {
   const { t } = useTranslation();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -68,6 +79,19 @@ export default function CourseManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [form] = Form.useForm<CourseFormValues>();
+  const academicYearOptions = (() => {
+    const options = buildAcademicYearOptions();
+    if (
+      editingCourse?.academic_year &&
+      !options.some((option) => option.value === editingCourse.academic_year)
+    ) {
+      return [
+        { value: editingCourse.academic_year, label: editingCourse.academic_year },
+        ...options,
+      ];
+    }
+    return options;
+  })();
 
   // Drawer state for managing professors/students
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -233,7 +257,7 @@ export default function CourseManagement() {
     { title: t("coursesPage.code"), dataIndex: "code", key: "code", width: 100 },
     { title: t("common.name"), dataIndex: "name", key: "name" },
     { title: t("coursesPage.semester"), dataIndex: "semester", key: "semester", width: 120 },
-    { title: t("coursesPage.year"), dataIndex: "academic_year", key: "academic_year", width: 100 },
+    { title: t("coursesPage.academicYear"), dataIndex: "academic_year", key: "academic_year", width: 140 },
     {
       title: t("coursesPage.created"),
       dataIndex: "created_at",
@@ -291,7 +315,7 @@ export default function CourseManagement() {
           <Form.Item name="description" label={t("coursesPage.description")}>
             <Input.TextArea rows={3} placeholder={t("coursesPage.optionalDescription")} />
           </Form.Item>
-          <Space>
+          <Space wrap>
             <Form.Item name="semester" label={t("coursesPage.semester")} rules={[{ required: true }]}>
               <Select style={{ width: 160 }} placeholder={t("coursesPage.semester")}
                 options={[
@@ -300,8 +324,18 @@ export default function CourseManagement() {
                   { value: "Summer", label: t("coursesPage.summer") },
                 ]} />
             </Form.Item>
-            <Form.Item name="academic_year" label={t("coursesPage.academicYear")} rules={[{ required: true }]}>
-              <Input placeholder="2025-2026" style={{ width: 140 }} />
+            <Form.Item
+              name="academic_year"
+              label={t("coursesPage.academicYear")}
+              rules={[{ required: true, message: t("coursesPage.academicYearRequired") }]}
+            >
+              <Select
+                style={{ width: 160 }}
+                placeholder={t("coursesPage.selectAcademicYear")}
+                options={academicYearOptions}
+                showSearch
+                optionFilterProp="label"
+              />
             </Form.Item>
           </Space>
         </Form>

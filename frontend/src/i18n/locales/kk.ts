@@ -382,6 +382,8 @@ const kk = {
     description: "Сипаттама",
     semester: "Семестр",
     academicYear: "Оқу жылы",
+    academicYearRequired: "Оқу жылын таңдаңыз",
+    selectAcademicYear: "Оқу жылын таңдаңыз",
     created: "Құрылған",
     members: "Мүшелер",
     code: "Код",

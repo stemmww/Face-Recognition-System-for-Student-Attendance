@@ -382,6 +382,8 @@ const ru = {
     description: "Описание",
     semester: "Семестр",
     academicYear: "Учебный год",
+    academicYearRequired: "Выберите учебный год",
+    selectAcademicYear: "Выберите учебный год",
     created: "Создан",
     members: "Участники",
     code: "Код",

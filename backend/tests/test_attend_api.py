@@ -4,13 +4,19 @@ import numpy as np
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.quality import QualityReport
 from app.api import attend as attend_api
 from app.core.security import hash_password
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.schedule import ClassType, DayOfWeek, Schedule
 from app.models.user import Role, User
+from app.services.face_service import FrameAssessment
 from tests.conftest import auth_header
+
+
+def _make_passing_quality_report() -> QualityReport:
+    return QualityReport(passed=True, issues=[], metrics={"sharpness": 200.0})
 
 
 async def _login(client: AsyncClient, email: str, password: str) -> str:
@@ -71,11 +77,13 @@ async def _create_schedule(db: AsyncSession, course_id: int) -> Schedule:
 
 
 class _FakeDetection:
-    bbox = (0, 0, 8, 8)
+    # Realistic bbox / landmarks so quality-gate metrics are well-defined.
+    bbox = (50, 50, 250, 290)
     landmarks = np.array(
-        [[1.0, 1.0], [7.0, 1.0], [4.0, 4.0], [2.0, 7.0], [6.0, 7.0]],
+        [[100.0, 130.0], [200.0, 130.0], [150.0, 180.0], [115.0, 240.0], [185.0, 240.0]],
         dtype=float,
     )
+    confidence = 0.95
 
 
 class _FakeDetector:
@@ -83,8 +91,14 @@ class _FakeDetector:
         return [_FakeDetection()]
 
 
+class _FakeRecognizer:
+    def get_embedding(self, aligned):
+        return np.array([1.0, 0.0, 0.0], dtype=float)
+
+
 class _FakePipeline:
     detector = _FakeDetector()
+    recognizer = _FakeRecognizer()
 
     def extract_embedding(self, image):
         return np.array([1.0, 0.0, 0.0], dtype=float), 1
@@ -194,6 +208,28 @@ class TestAttendApi:
         monkeypatch.setattr(attend_api, "validate_challenge_sequence", lambda *args, **kwargs: (True, "ok"))
         monkeypatch.setattr(attend_api, "detect_screen_spoof", lambda *args, **kwargs: (True, 0.0))
         monkeypatch.setattr(attend_api, "detect_video_replay", lambda *args, **kwargs: (True, 0.0))
+        # Replace the AI-heavy service call with a stub returning a single
+        # passing frame, so the test exercises routing/auth/db, not the pipeline.
+        def _fake_process_frames(pipeline, images):
+            det = _FakeDetection()
+            emb = np.array([1.0, 0.0, 0.0], dtype=float)
+            assessment = FrameAssessment(
+                image=images[0],
+                detection=det,
+                quality=_make_passing_quality_report(),
+                embedding=emb,
+            )
+            return [assessment], 0, None
+
+        async def _skip_auto_enroll_call(*args, **kwargs):
+            return False
+
+        monkeypatch.setattr(
+            attend_api.FaceService, "process_verification_frames", staticmethod(_fake_process_frames),
+        )
+        monkeypatch.setattr(
+            attend_api.FaceService, "auto_enroll_if_strict", staticmethod(_skip_auto_enroll_call),
+        )
         monkeypatch.setattr(
             attend_api.cv2,
             "imdecode",
@@ -210,11 +246,7 @@ class TestAttendApi:
                 "similarity": 0.99,
             }]
 
-        async def _skip_auto_enroll(*args, **kwargs):
-            return [object()] * 20
-
         monkeypatch.setattr(attend_api.FaceService, "find_matches", _fake_find_matches)
-        monkeypatch.setattr(attend_api.FaceService, "list_embeddings", _skip_auto_enroll)
 
         admin_token = await _login(client, admin_user.email, "admin123")
         session_response = await client.post(

@@ -84,7 +84,14 @@ AI-powered attendance system where professors start QR-based sessions, students 
 
 ### Phase 7 — Polish & Testing
 
-- **Test suite (68 tests):** pytest + pytest-asyncio with in-memory SQLite
+- **Face quality gate (`app/ai/quality.py`):** every frame is scored for size,
+  sharpness (Laplacian variance), brightness, contrast, and pose (yaw/pitch
+  from 5-point landmarks) before reaching ArcFace. Hard failures are rejected
+  with a user-facing reason; soft failures emit warnings only. Strict mode
+  promotes soft → hard for admin enrollment and verification auto-enroll, so
+  the stored centroid cannot drift toward low-quality embeddings. All
+  thresholds are tunable via `QUALITY_*` env vars.
+- **Test suite (116 tests):** pytest + pytest-asyncio with in-memory SQLite
   - Unit tests: JWT tokens, password hashing, haversine GPS distance, liveness detection (passive + active challenges)
   - API integration tests: auth endpoints (login, refresh, forgot/reset), user CRUD, RBAC enforcement
 - Error boundary at layout level (page crash keeps sidebar/header visible)
@@ -163,7 +170,8 @@ Tests use an in-memory SQLite database — no Docker or PostgreSQL required.
 
 | Risk | Mitigation |
 |------|-----------|
-| Face recognition accuracy too low | Multiple reference photos per student (3–5); tunable cosine threshold (default 0.5); professor manual override + manual roll-call tab |
+| Face recognition accuracy too low | Multiple reference photos per student (3–5); tunable cosine threshold (default 0.5); quality gate rejects blurry/dark/off-angle frames before they reach ArcFace; professor manual override + manual roll-call tab |
+| Auto-enrollment poisoning the stored centroid | Strict quality gate on auto-enroll: only frames passing every hard *and* soft threshold are persisted, with a 20-embedding cap per student |
 | Spoofing with photo/video | Active liveness challenges (blink, head turn, nod) + passive landmark variance check |
 | QR code sharing between students | One-time-use nonce per QR token; rate limiting per student per session; GPS enforcement when configured |
 | Camera quality / lighting issues | 5-frame capture with 400ms intervals; SCRFD handles varied conditions; face alignment before embedding |

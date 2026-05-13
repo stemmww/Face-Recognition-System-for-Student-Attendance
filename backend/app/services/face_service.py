@@ -2,18 +2,38 @@
 
 import logging
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 
+import cv2
 import numpy as np
 from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.detector import Detection
+from app.ai.pipeline import FacePipeline
+from app.ai.quality import QualityReport, assess_face_quality
+from app.ai.recognizer import align_face
 from app.config import settings
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import BadRequestError, NotFoundError
 from app.models.face_embedding import FaceEmbedding
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class FrameAssessment:
+    """One frame's contribution to a verification batch.
+
+    Bundles everything the verification flow needs about a single frame so
+    callers don't have to re-run detection or quality checks downstream.
+    """
+
+    image: np.ndarray
+    detection: Detection
+    quality: QualityReport
+    embedding: np.ndarray
 
 
 class FaceService:
@@ -91,6 +111,128 @@ class FaceService:
         )
         await db.commit()
         return result.rowcount
+
+    @staticmethod
+    def assess_and_embed(
+        pipeline: FacePipeline,
+        image: np.ndarray,
+        *,
+        strict: bool,
+    ) -> tuple[Detection, QualityReport, np.ndarray]:
+        """Detect, quality-check, align, and embed the largest face in one image.
+
+        Raises BadRequestError with a user-facing message on any failure. Used
+        by admin enrollment where a single high-quality photo is required.
+        """
+        detections = pipeline.detector.detect(image)
+        if not detections:
+            raise BadRequestError("No face detected in the uploaded image")
+
+        det = max(
+            detections,
+            key=lambda d: (d.bbox[2] - d.bbox[0]) * (d.bbox[3] - d.bbox[1]),
+        )
+        if det.landmarks is None:
+            raise BadRequestError("Could not detect facial landmarks — try a clearer photo")
+
+        report = assess_face_quality(image, det, strict=strict)
+        if not report.passed:
+            raise BadRequestError("Photo quality too low: " + report.hard_messages[0])
+
+        aligned = align_face(image, det.landmarks)
+        embedding = pipeline.recognizer.get_embedding(aligned)
+        if embedding is None:
+            raise BadRequestError("Failed to extract face embedding — try a different photo")
+
+        return det, report, embedding
+
+    @staticmethod
+    def process_verification_frames(
+        pipeline: FacePipeline,
+        images: list[np.ndarray],
+    ) -> tuple[list[FrameAssessment], int | None, str | None]:
+        """Run detect + quality + embed on every frame; keep only those that pass.
+
+        Returns (assessments, best_idx, last_reject_reason). `best_idx` points
+        into `assessments` at the sharpest accepted frame (or None if empty).
+        """
+        assessments: list[FrameAssessment] = []
+        best_idx: int | None = None
+        best_sharpness = -1.0
+        last_reject: str | None = None
+
+        for img in images:
+            dets = pipeline.detector.detect(img)
+            if not dets:
+                continue
+            det = max(dets, key=lambda d: (d.bbox[2] - d.bbox[0]) * (d.bbox[3] - d.bbox[1]))
+            if det.landmarks is None:
+                continue
+
+            report = assess_face_quality(img, det, strict=False)
+            if not report.passed:
+                last_reject = report.hard_messages[0]
+                continue
+
+            aligned = align_face(img, det.landmarks)
+            emb = pipeline.recognizer.get_embedding(aligned)
+            if emb is None:
+                continue
+
+            assessments.append(FrameAssessment(image=img, detection=det, quality=report, embedding=emb))
+            sharpness = report.metrics.get("sharpness", 0.0)
+            if sharpness > best_sharpness:
+                best_sharpness = sharpness
+                best_idx = len(assessments) - 1
+
+        return assessments, best_idx, last_reject
+
+    @staticmethod
+    async def auto_enroll_if_strict(
+        db: AsyncSession,
+        user_id: int,
+        assessment: FrameAssessment,
+        embedding: np.ndarray,
+        max_embeddings: int = 20,
+    ) -> bool:
+        """Persist `embedding` as a new reference for `user_id` only when the
+        frame survives a strict re-assessment. Returns True if stored.
+
+        Hard cap of `max_embeddings` per user prevents the stored centroid
+        from drifting unboundedly as more frames are auto-enrolled.
+        """
+        existing = await FaceService.list_embeddings(db, user_id)
+        if len(existing) >= max_embeddings:
+            return False
+
+        strict_report = assess_face_quality(assessment.image, assessment.detection, strict=True)
+        if not strict_report.passed:
+            logger.info(
+                "Skipping auto-enroll for user %d: best frame failed strict gate (%s)",
+                user_id,
+                strict_report.hard_messages[0] if strict_report.hard_messages else "?",
+            )
+            return False
+
+        try:
+            photo_data = cv2.imencode(".jpg", assessment.image)[1].tobytes()
+            photo_path = await FaceService.save_photo(photo_data, "auto.jpg")
+            await FaceService.enroll_face(db, user_id, embedding, photo_path)
+            logger.info(
+                "Auto-enrolled embedding for user %d (now %d total, sharpness=%.1f)",
+                user_id, len(existing) + 1,
+                assessment.quality.metrics.get("sharpness", 0.0),
+            )
+            return True
+        except Exception:
+            logger.warning("Auto-enrollment failed for user %d, skipping", user_id)
+            return False
+
+    @staticmethod
+    def average_embeddings(embeddings: list[np.ndarray]) -> np.ndarray:
+        """Average a list of unit-norm embeddings and re-normalise to the hypersphere."""
+        avg = np.mean(embeddings, axis=0)
+        return avg / (np.linalg.norm(avg) + 1e-8)
 
     @staticmethod
     async def find_matches(

@@ -21,6 +21,20 @@ class Settings(BaseSettings):
     RECOGNITION_THRESHOLD: float = 0.5
     SELF_RECOGNITION_THRESHOLD: float = 0.35
 
+    # --- Face quality gate ---
+    # Hard thresholds (reject the photo) and soft thresholds (warn only).
+    # Tuned for a typical 720p webcam at ~50 cm distance.
+    QUALITY_MIN_FACE_PX: int = 80          # hard: face shorter side in pixels
+    QUALITY_SOFT_FACE_PX: int = 120        # soft: ideal minimum size
+    QUALITY_MIN_SHARPNESS: float = 30.0    # hard: Laplacian variance below = blurry
+    QUALITY_SOFT_SHARPNESS: float = 80.0   # soft: below = mild blur
+    QUALITY_MIN_BRIGHTNESS: float = 40.0   # hard: too dark
+    QUALITY_MAX_BRIGHTNESS: float = 220.0  # hard: overexposed
+    QUALITY_MIN_CONTRAST: float = 20.0     # soft: standard deviation of pixels
+    QUALITY_MAX_YAW: float = 0.35          # hard: nose offset / IOD (≈ 30°+)
+    QUALITY_SOFT_YAW: float = 0.20         # soft: mild side angle
+    QUALITY_MAX_PITCH: float = 0.40        # hard: deviation from template pitch
+
     UPLOAD_DIR: str = "./uploads"
 
     QR_TOKEN_EXPIRE_SECONDS: int = 45

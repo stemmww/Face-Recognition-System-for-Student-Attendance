@@ -5,7 +5,7 @@ import { Button, Form, Input, Result, Typography, message } from "antd";
 import { LockOutlined } from "@ant-design/icons";
 import { resetPassword } from "@/api/auth";
 import { useThemeStore } from "@/stores/themeStore";
-import { authPageStyles, themeColors } from "@/styles/theme";
+import { BRAND_PRIMARY_DARK, authPageStyles, themeColors } from "@/styles/theme";
 
 const { Title, Text } = Typography;
 
@@ -62,7 +62,7 @@ export default function ResetPassword() {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{
             width: 56, height: 56, borderRadius: 14,
-            background: "linear-gradient(135deg, #2323CE, #1a1a9e)",
+            background: `linear-gradient(135deg, ${colors.primary}, ${BRAND_PRIMARY_DARK})`,
             display: "inline-flex", alignItems: "center", justifyContent: "center",
             marginBottom: 16,
           }}>

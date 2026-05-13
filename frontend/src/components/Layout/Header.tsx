@@ -25,6 +25,7 @@ import {
 import type { Notification, User } from "@/types";
 import { getUnreadCount, listNotifications, markRead, markAllRead } from "@/api/notifications";
 import { useThemeStore } from "@/stores/themeStore";
+import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -122,7 +123,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
       label: l.label,
       onClick: () => changeLanguage(l.key),
       style: i18n.language === l.key
-        ? { fontWeight: 600, color: "#2323CE" }
+        ? { fontWeight: 600, color: BRAND_PRIMARY }
         : undefined,
     })),
   };
@@ -167,7 +168,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
                   onClick={handleMarkAllRead}
                   className="mark-all-read-btn"
                   style={{
-                    color: isDark ? "#6b6bef" : "#2323CE",
+                    color: isDark ? "#91a3ff" : BRAND_PRIMARY,
                     fontWeight: 500,
                   }}
                 >
@@ -335,7 +336,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
               icon={<UserOutlined />}
               src={user.photo_url ? `/uploads/${user.photo_url}` : undefined}
               size={isMobile ? "small" : "default"}
-              style={{ backgroundColor: user.photo_url ? undefined : "#2323CE" }}
+              style={{ backgroundColor: user.photo_url ? undefined : BRAND_PRIMARY }}
             />
             {!isMobile && (
               <Text strong style={{ color: isDark ? "#e2e8f0" : "#1e293b", whiteSpace: "nowrap" }}>

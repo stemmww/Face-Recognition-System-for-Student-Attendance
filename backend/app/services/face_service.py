@@ -1,6 +1,7 @@
 """Face enrollment, embedding management, and matching logic."""
 
 import logging
+import math
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -251,27 +252,29 @@ class FaceService:
         assessments: list[FrameAssessment],
         user_id: int,
         threshold: float | None = None,
-        min_votes: int | None = None,
+        min_ratio: float | None = None,
+        min_floor: int | None = None,
     ) -> VoteResult:
         """Multi-frame majority voting against one user's stored embeddings.
 
         Each frame's embedding is compared against the user's centroid; a
         frame "votes yes" when its best similarity exceeds `threshold`.
-        Acceptance requires at least `min_votes` yes-votes — more robust than
-        averaging because a single blurry/off-angle frame is outvoted rather
-        than dragging the mean down.
-
-        Falls back gracefully when the user has fewer frames than min_votes:
-        in that case all available frames must agree.
+        Acceptance requires at least `ceil(min_ratio * n)` yes-votes (with
+        a floor to avoid collapsing to a single vote on tiny batches). Using
+        a ratio rather than an absolute count keeps the security budget
+        constant when the frontend changes how many frames it captures.
         """
         if threshold is None:
             threshold = settings.SELF_RECOGNITION_THRESHOLD
-        if min_votes is None:
-            min_votes = settings.VOTING_MIN_FRAMES
+        if min_ratio is None:
+            min_ratio = settings.VOTING_MIN_RATIO
+        if min_floor is None:
+            min_floor = settings.VOTING_MIN_FLOOR
 
-        # Cap required votes to the number of frames actually captured —
-        # demanding 3 votes from a 2-frame batch would always fail.
-        effective_min_votes = min(min_votes, len(assessments))
+        n = len(assessments)
+        # Required votes = ceil(ratio * n), bounded by [floor, n]
+        required = max(min_floor, math.ceil(min_ratio * n))
+        effective_min_votes = min(required, n)
 
         similarities: list[float] = []
         votes = 0
@@ -296,9 +299,9 @@ class FaceService:
         passed = votes >= effective_min_votes
         max_sim = max(similarities) if similarities else 0.0
         logger.info(
-            "Voting for user %d: %d/%d frames voted yes (threshold=%.3f, "
-            "min_votes=%d, max_sim=%.3f) → %s",
-            user_id, votes, len(assessments), threshold, effective_min_votes,
+            "Voting for user %d: %d/%d frames voted yes "
+            "(threshold=%.3f, required=%d, ratio=%.2f, max_sim=%.3f) → %s",
+            user_id, votes, n, threshold, effective_min_votes, min_ratio,
             max_sim, "PASS" if passed else "FAIL",
         )
         return VoteResult(

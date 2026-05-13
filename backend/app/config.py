@@ -25,8 +25,13 @@ class Settings(BaseSettings):
 
     # Multi-frame majority voting: a frame "votes yes" when its similarity
     # exceeds SELF_RECOGNITION_THRESHOLD; verification passes when at least
-    # this many frames agree. Outvotes single blurry/off-angle frames.
-    VOTING_MIN_FRAMES: int = 3
+    # this *fraction* of frames agree. A ratio (not absolute count) keeps the
+    # security budget constant regardless of how many frames the frontend
+    # captures (currently 12). 0.6 ≈ supermajority.
+    VOTING_MIN_RATIO: float = 0.6
+    # Lower floor on required votes — protects against the ratio collapsing
+    # to 1 when only one or two frames survive the quality gate.
+    VOTING_MIN_FLOOR: int = 2
 
     # --- Face quality gate ---
     # Hard thresholds (reject the photo) and soft thresholds (warn only).

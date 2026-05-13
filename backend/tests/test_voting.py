@@ -67,12 +67,13 @@ def _mock_db_returning(similarities: list[float]):
 
 class TestVoteFrames:
     @pytest.mark.asyncio
-    async def test_all_frames_pass(self):
+    async def test_unanimous_pass(self):
         # 5 frames, all above the 0.22 threshold → unanimous accept
         db = _mock_db_returning([0.7, 0.6, 0.65, 0.55, 0.72])
         assessments = [_make_assessment() for _ in range(5)]
         result = await FaceService.vote_frames(
-            db, assessments, user_id=1, threshold=0.22, min_votes=3,
+            db, assessments, user_id=1, threshold=0.22,
+            min_ratio=0.6, min_floor=2,
         )
         assert result.passed is True
         assert result.votes == 5
@@ -80,63 +81,96 @@ class TestVoteFrames:
         assert result.max_similarity == pytest.approx(0.72)
 
     @pytest.mark.asyncio
-    async def test_majority_passes(self):
-        # 3 of 5 above threshold — exactly meets min_votes=3
+    async def test_supermajority_passes_at_60_percent(self):
+        # 3 of 5 = 60% — ceil(0.6 * 5) = 3 → exactly meets threshold
         db = _mock_db_returning([0.5, 0.6, 0.1, 0.05, 0.4])
         assessments = [_make_assessment() for _ in range(5)]
         result = await FaceService.vote_frames(
-            db, assessments, user_id=1, threshold=0.22, min_votes=3,
+            db, assessments, user_id=1, threshold=0.22,
+            min_ratio=0.6, min_floor=2,
         )
         assert result.passed is True
         assert result.votes == 3
 
     @pytest.mark.asyncio
-    async def test_minority_fails(self):
-        # Only 2 of 5 — below min_votes=3, reject
+    async def test_below_ratio_fails(self):
+        # 2 of 5 = 40% < required 60% → reject
         db = _mock_db_returning([0.5, 0.6, 0.1, 0.05, 0.15])
         assessments = [_make_assessment() for _ in range(5)]
         result = await FaceService.vote_frames(
-            db, assessments, user_id=1, threshold=0.22, min_votes=3,
+            db, assessments, user_id=1, threshold=0.22,
+            min_ratio=0.6, min_floor=2,
         )
         assert result.passed is False
         assert result.votes == 2
-        # max_similarity still returned even on fail, for diagnostics
         assert result.max_similarity == pytest.approx(0.6)
 
     @pytest.mark.asyncio
-    async def test_one_bad_frame_outvoted(self):
-        """Core win: 4 good frames overrule 1 noisy frame.
+    async def test_twelve_frames_scales_with_ratio(self):
+        """Critical: with 12 frames (current frontend), 60 % = 8 required.
 
-        With old averaging, a single low-similarity frame would drag the mean
-        toward the threshold. Voting outvotes it directly.
+        Old absolute-count voting accepted 3/12 (25 %) which is unsafe.
+        The ratio formulation keeps the security budget constant.
+        """
+        # 7 yes / 5 no = below 8 required → reject
+        sims = [0.5] * 7 + [0.0] * 5
+        db = _mock_db_returning(sims)
+        assessments = [_make_assessment() for _ in range(12)]
+        result = await FaceService.vote_frames(
+            db, assessments, user_id=1, threshold=0.22,
+            min_ratio=0.6, min_floor=2,
+        )
+        assert result.passed is False
+        assert result.votes == 7
+
+        # 8 yes / 4 no = meets 60 % → accept
+        sims = [0.5] * 8 + [0.0] * 4
+        db = _mock_db_returning(sims)
+        assessments = [_make_assessment() for _ in range(12)]
+        result = await FaceService.vote_frames(
+            db, assessments, user_id=1, threshold=0.22,
+            min_ratio=0.6, min_floor=2,
+        )
+        assert result.passed is True
+        assert result.votes == 8
+
+    @pytest.mark.asyncio
+    async def test_one_bad_frame_outvoted(self):
+        """Core win of voting: one shaky frame loses to the rest.
+
+        With averaging, a single low-similarity frame drags the mean toward
+        the threshold. Voting outvotes it directly.
         """
         db = _mock_db_returning([0.6, 0.65, 0.05, 0.55, 0.7])
         assessments = [_make_assessment() for _ in range(5)]
         result = await FaceService.vote_frames(
-            db, assessments, user_id=1, threshold=0.22, min_votes=3,
+            db, assessments, user_id=1, threshold=0.22,
+            min_ratio=0.6, min_floor=2,
         )
         assert result.passed is True
         assert result.votes == 4
 
     @pytest.mark.asyncio
-    async def test_few_frames_min_votes_capped(self):
-        # User submitted only 2 frames; demanding 3 votes would be impossible.
-        # min_votes should cap at len(assessments).
-        db = _mock_db_returning([0.5, 0.6])
+    async def test_floor_protects_tiny_batches(self):
+        """Two frames: ceil(0.6 * 2) = 2, floor 2 — must be unanimous."""
+        db = _mock_db_returning([0.5, 0.05])
         assessments = [_make_assessment() for _ in range(2)]
         result = await FaceService.vote_frames(
-            db, assessments, user_id=1, threshold=0.22, min_votes=3,
+            db, assessments, user_id=1, threshold=0.22,
+            min_ratio=0.6, min_floor=2,
         )
-        assert result.passed is True  # both passed, cap=2, votes=2
-        assert result.votes == 2
+        # 1 of 2 passed but floor is 2 → reject
+        assert result.passed is False
+        assert result.votes == 1
 
     @pytest.mark.asyncio
     async def test_no_stored_embeddings(self):
         # User has no enrolled faces — every DB query returns None → similarity 0
-        db = _mock_db_returning([None, None, None, None, None])
+        db = _mock_db_returning([None] * 5)
         assessments = [_make_assessment() for _ in range(5)]
         result = await FaceService.vote_frames(
-            db, assessments, user_id=1, threshold=0.22, min_votes=3,
+            db, assessments, user_id=1, threshold=0.22,
+            min_ratio=0.6, min_floor=2,
         )
         assert result.passed is False
         assert result.votes == 0
@@ -149,20 +183,21 @@ class TestVoteFrames:
         db = _mock_db_returning([0.22, 0.22, 0.22])
         assessments = [_make_assessment() for _ in range(3)]
         result = await FaceService.vote_frames(
-            db, assessments, user_id=1, threshold=0.22, min_votes=2,
+            db, assessments, user_id=1, threshold=0.22,
+            min_ratio=0.6, min_floor=2,
         )
         assert result.passed is False
         assert result.votes == 0
 
     @pytest.mark.asyncio
     async def test_uses_settings_defaults(self):
-        # When threshold/min_votes not passed, falls back to app settings
-        db = _mock_db_returning([0.5, 0.5, 0.5])
-        assessments = [_make_assessment() for _ in range(3)]
+        # When threshold/ratio/floor not passed, falls back to app settings
+        db = _mock_db_returning([0.5] * 12)
+        assessments = [_make_assessment() for _ in range(12)]
         result = await FaceService.vote_frames(db, assessments, user_id=1)
-        # Default SELF_RECOGNITION_THRESHOLD = 0.22, all 0.5 should pass
+        # All 12 above 0.22, well above 60 % required → pass
         assert result.passed is True
-        assert result.votes == 3
+        assert result.votes == 12
 
 
 # ---------------------------------------------------------------------------

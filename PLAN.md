@@ -96,9 +96,11 @@ AI-powered attendance system where professors start QR-based sessions, students 
   previously hand-picked 0.35.
 - **Multi-frame majority voting (`FaceService.vote_frames`):** each captured
   frame is independently compared against the user's stored embeddings;
-  verification accepts when at least `VOTING_MIN_FRAMES` (default 3) frames
-  vote yes. Replaces averaging — one blurry frame is outvoted rather than
-  dragging the mean toward the threshold.
+  verification accepts when at least `ceil(VOTING_MIN_RATIO * n)` frames
+  vote yes (default ratio 0.6 with a floor of 2). Using a ratio keeps the
+  security budget constant regardless of how many frames the frontend
+  captures (currently 12). Replaces averaging — one blurry frame is
+  outvoted rather than dragging the mean toward the threshold.
 - **Test suite (125 tests):** pytest + pytest-asyncio with in-memory SQLite
   - Unit tests: JWT tokens, password hashing, haversine GPS distance, liveness detection (passive + active challenges)
   - API integration tests: auth endpoints (login, refresh, forgot/reset), user CRUD, RBAC enforcement

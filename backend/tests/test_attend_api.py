@@ -7,16 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.quality import QualityReport
 from app.api import attend as attend_api
 from app.core.security import hash_password
-from app.services.face_service import FrameAssessment
-
-
-def _make_passing_quality_report() -> QualityReport:
-    return QualityReport(passed=True, issues=[], metrics={"sharpness": 200.0})
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.schedule import ClassType, DayOfWeek, Schedule
 from app.models.user import Role, User
+from app.services.face_service import FrameAssessment
 from tests.conftest import auth_header
+
+
+def _make_passing_quality_report() -> QualityReport:
+    return QualityReport(passed=True, issues=[], metrics={"sharpness": 200.0})
 
 
 async def _login(client: AsyncClient, email: str, password: str) -> str:

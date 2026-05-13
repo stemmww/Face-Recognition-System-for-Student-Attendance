@@ -1,6 +1,5 @@
 """Unit tests for app.ai.quality — face image quality assessment."""
 
-import cv2
 import numpy as np
 import pytest
 

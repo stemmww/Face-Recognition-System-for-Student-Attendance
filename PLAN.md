@@ -91,7 +91,15 @@ AI-powered attendance system where professors start QR-based sessions, students 
   promotes soft → hard for admin enrollment and verification auto-enroll, so
   the stored centroid cannot drift toward low-quality embeddings. All
   thresholds are tunable via `QUALITY_*` env vars.
-- **Test suite (116 tests):** pytest + pytest-asyncio with in-memory SQLite
+- **ROC-tuned threshold (`SELF_RECOGNITION_THRESHOLD = 0.22`):** calibrated on
+  LFW (500 subjects, 2476 embeddings) — AUC 0.988, EER 2.1 %. Replaces the
+  previously hand-picked 0.35.
+- **Multi-frame majority voting (`FaceService.vote_frames`):** each captured
+  frame is independently compared against the user's stored embeddings;
+  verification accepts when at least `VOTING_MIN_FRAMES` (default 3) frames
+  vote yes. Replaces averaging — one blurry frame is outvoted rather than
+  dragging the mean toward the threshold.
+- **Test suite (125 tests):** pytest + pytest-asyncio with in-memory SQLite
   - Unit tests: JWT tokens, password hashing, haversine GPS distance, liveness detection (passive + active challenges)
   - API integration tests: auth endpoints (login, refresh, forgot/reset), user CRUD, RBAC enforcement
 - Error boundary at layout level (page crash keeps sidebar/header visible)

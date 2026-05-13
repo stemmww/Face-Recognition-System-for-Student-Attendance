@@ -9,6 +9,10 @@
 
 import type { CSSProperties } from "react";
 
+export const BRAND_PRIMARY = "#3D5AFE";
+export const BRAND_PRIMARY_RGB = "61, 90, 254";
+export const BRAND_PRIMARY_DARK = "#2747F5";
+
 // ---------------------------------------------------------------------------
 // Color palette — call with isDark to get the right variant
 // ---------------------------------------------------------------------------
@@ -28,7 +32,7 @@ export function themeColors(isDark: boolean) {
     /** Muted icon inside inputs */
     inputIcon: "#94a3b8",
     /** Primary accent */
-    primary: "#2323CE",
+    primary: BRAND_PRIMARY,
     /** Divider / separator border */
     divider: isDark ? "#334155" : "#e2e8f0",
   } as const;
@@ -67,7 +71,7 @@ export const authPageStyles = {
     borderRadius: 10,
     fontWeight: 600,
     fontSize: 15,
-    boxShadow: "0 4px 14px rgba(35,35,206,0.35)",
+    boxShadow: `0 4px 14px rgba(${BRAND_PRIMARY_RGB}, 0.35)`,
   } as CSSProperties,
 
   /** Form label span */

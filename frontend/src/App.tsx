@@ -34,6 +34,7 @@ import Attend from "@/pages/student/Attend";
 // Shared pages
 import Profile from "@/pages/Profile";
 import ResetPassword from "@/pages/ResetPassword";
+import { BRAND_PRIMARY, BRAND_PRIMARY_RGB } from "@/styles/theme";
 
 function DashboardRouter() {
   const { user } = useAuth();
@@ -206,8 +207,8 @@ export default function App() {
       theme={{
         algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
-          colorPrimary: "#2323CE",
-          colorInfo: "#2323CE",
+          colorPrimary: BRAND_PRIMARY,
+          colorInfo: BRAND_PRIMARY,
           colorSuccess: "#10b981",
           colorWarning: "#f59e0b",
           colorError: "#ef4444",
@@ -229,13 +230,13 @@ export default function App() {
         },
         components: {
           Button: {
-            colorPrimary: "#2323CE",
+            colorPrimary: BRAND_PRIMARY,
             algorithm: true,
           },
           Menu: {
             darkItemBg: "transparent",
-            darkItemSelectedBg: "rgba(35,35,206,0.25)",
-            darkItemHoverBg: "rgba(35,35,206,0.15)",
+            darkItemSelectedBg: `rgba(${BRAND_PRIMARY_RGB},0.25)`,
+            darkItemHoverBg: `rgba(${BRAND_PRIMARY_RGB},0.15)`,
             darkItemSelectedColor: "#c7d2fe",
           },
           Card: {

@@ -303,29 +303,29 @@ async def verify_attendance(
                 "not a recording on a screen."
             )
 
-    # --- 7. Face recognition using averaged embeddings from quality-checked frames ---
+    # --- 7. Face recognition via multi-frame majority voting ---
     assessments, best_frame_idx, reject_reason = FaceService.process_verification_frames(pipe, images)
     if not assessments:
         msg = reject_reason or "No usable face detected in the captured frames."
         raise BadRequestError(f"Face capture quality too low: {msg}")
 
-    avg_embedding = FaceService.average_embeddings([a.embedding for a in assessments])
-
-    matches = await FaceService.find_matches(
-        db, avg_embedding,
-        threshold=settings.SELF_RECOGNITION_THRESHOLD,
-        limit=1,
-        user_ids=[current_user.id],
-    )
-    if not matches:
-        raise BadRequestError("Face verification failed. Your face was not recognized.")
-
-    similarity = matches[0]["similarity"]
+    vote = await FaceService.vote_frames(db, assessments, current_user.id)
+    if not vote.passed:
+        raise BadRequestError(
+            f"Face verification failed. Only {vote.votes} of {vote.total} "
+            f"frames matched your stored face. Please try again."
+        )
+    # Record the best similarity observed across all passing frames
+    similarity = vote.max_similarity
 
     # --- 7.5. Progressive auto-enrollment (strict-only, prevents centroid drift) ---
+    # We auto-enroll the sharpest frame's embedding directly — no longer
+    # averaging across frames, since voting already validated each frame
+    # independently and an averaged embedding biases toward the cluster mean.
     if best_frame_idx is not None:
+        best = assessments[best_frame_idx]
         await FaceService.auto_enroll_if_strict(
-            db, current_user.id, assessments[best_frame_idx], avg_embedding,
+            db, current_user.id, best, best.embedding,
         )
 
     # --- 8. Record attendance ---

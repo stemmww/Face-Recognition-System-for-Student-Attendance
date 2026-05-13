@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     # AUC=0.988, EER=2.1%. τ=0.22 yields FAR ≤ 0.1% at TAR ≈ 97.9%.
     SELF_RECOGNITION_THRESHOLD: float = 0.22
 
+    # Multi-frame majority voting: a frame "votes yes" when its similarity
+    # exceeds SELF_RECOGNITION_THRESHOLD; verification passes when at least
+    # this many frames agree. Outvotes single blurry/off-angle frames.
+    VOTING_MIN_FRAMES: int = 3
+
     # --- Face quality gate ---
     # Hard thresholds (reject the photo) and soft thresholds (warn only).
     # Tuned for a typical 720p webcam at ~50 cm distance.

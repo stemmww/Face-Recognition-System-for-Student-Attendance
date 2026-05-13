@@ -36,6 +36,23 @@ class FrameAssessment:
     embedding: np.ndarray
 
 
+@dataclass
+class VoteResult:
+    """Outcome of multi-frame majority voting against a user's stored embeddings.
+
+    Each frame independently compares against the user's centroid; a frame
+    "votes yes" when its best similarity beats the recognition threshold.
+    A configurable minimum number of yes-votes is required to accept.
+    """
+
+    passed: bool
+    votes: int               # number of frames whose similarity > threshold
+    total: int               # number of frames considered (== len(assessments))
+    threshold: float         # similarity threshold used
+    similarities: list[float]  # per-frame best similarity (parallel to assessments)
+    max_similarity: float    # the best similarity observed across all frames
+
+
 class FaceService:
     @staticmethod
     def _ensure_upload_dir() -> Path:
@@ -229,10 +246,69 @@ class FaceService:
             return False
 
     @staticmethod
-    def average_embeddings(embeddings: list[np.ndarray]) -> np.ndarray:
-        """Average a list of unit-norm embeddings and re-normalise to the hypersphere."""
-        avg = np.mean(embeddings, axis=0)
-        return avg / (np.linalg.norm(avg) + 1e-8)
+    async def vote_frames(
+        db: AsyncSession,
+        assessments: list[FrameAssessment],
+        user_id: int,
+        threshold: float | None = None,
+        min_votes: int | None = None,
+    ) -> VoteResult:
+        """Multi-frame majority voting against one user's stored embeddings.
+
+        Each frame's embedding is compared against the user's centroid; a
+        frame "votes yes" when its best similarity exceeds `threshold`.
+        Acceptance requires at least `min_votes` yes-votes — more robust than
+        averaging because a single blurry/off-angle frame is outvoted rather
+        than dragging the mean down.
+
+        Falls back gracefully when the user has fewer frames than min_votes:
+        in that case all available frames must agree.
+        """
+        if threshold is None:
+            threshold = settings.SELF_RECOGNITION_THRESHOLD
+        if min_votes is None:
+            min_votes = settings.VOTING_MIN_FRAMES
+
+        # Cap required votes to the number of frames actually captured —
+        # demanding 3 votes from a 2-frame batch would always fail.
+        effective_min_votes = min(min_votes, len(assessments))
+
+        similarities: list[float] = []
+        votes = 0
+        for a in assessments:
+            emb_str = str(a.embedding.tolist())
+            result = await db.execute(
+                text("""
+                    SELECT 1 - (embedding <=> CAST(:emb AS vector)) AS sim
+                    FROM face_embeddings
+                    WHERE user_id = :uid
+                    ORDER BY embedding <=> CAST(:emb AS vector)
+                    LIMIT 1
+                """),
+                {"emb": emb_str, "uid": user_id},
+            )
+            row = result.fetchone()
+            sim = float(row[0]) if row is not None else 0.0
+            similarities.append(round(sim, 4))
+            if sim > threshold:
+                votes += 1
+
+        passed = votes >= effective_min_votes
+        max_sim = max(similarities) if similarities else 0.0
+        logger.info(
+            "Voting for user %d: %d/%d frames voted yes (threshold=%.3f, "
+            "min_votes=%d, max_sim=%.3f) → %s",
+            user_id, votes, len(assessments), threshold, effective_min_votes,
+            max_sim, "PASS" if passed else "FAIL",
+        )
+        return VoteResult(
+            passed=passed,
+            votes=votes,
+            total=len(assessments),
+            threshold=threshold,
+            similarities=similarities,
+            max_similarity=max_sim,
+        )
 
     @staticmethod
     async def find_matches(

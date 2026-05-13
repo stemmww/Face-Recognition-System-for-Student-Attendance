@@ -236,17 +236,17 @@ class TestAttendApi:
             lambda *args, **kwargs: np.zeros((8, 8, 3), dtype=np.uint8),
         )
 
-        async def _fake_find_matches(*args, **kwargs):
-            user_ids = kwargs.get("user_ids") or []
-            return [{
-                "user_id": user_ids[0] if user_ids else student_one.id,
-                "first_name": "Student",
-                "last_name": "Test",
-                "email": "student@test.com",
-                "similarity": 0.99,
-            }]
+        async def _fake_vote_frames(_db, assessments, _user_id, **_kwargs):
+            from app.services.face_service import VoteResult
+            n = len(assessments)
+            return VoteResult(
+                passed=True, votes=n, total=n, threshold=0.22,
+                similarities=[0.99] * n, max_similarity=0.99,
+            )
 
-        monkeypatch.setattr(attend_api.FaceService, "find_matches", _fake_find_matches)
+        monkeypatch.setattr(
+            attend_api.FaceService, "vote_frames", staticmethod(_fake_vote_frames),
+        )
 
         admin_token = await _login(client, admin_user.email, "admin123")
         session_response = await client.post(

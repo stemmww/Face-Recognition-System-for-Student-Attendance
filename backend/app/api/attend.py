@@ -303,19 +303,13 @@ async def verify_attendance(
                 "not a recording on a screen."
             )
 
-    # --- 7. Face recognition using averaged embeddings from all frames ---
-    embeddings = []
-    for img in images:
-        emb, _ = pipe.extract_embedding(img)
-        if emb is not None:
-            embeddings.append(emb)
+    # --- 7. Face recognition using averaged embeddings from quality-checked frames ---
+    assessments, best_frame_idx, reject_reason = FaceService.process_verification_frames(pipe, images)
+    if not assessments:
+        msg = reject_reason or "No usable face detected in the captured frames."
+        raise BadRequestError(f"Face capture quality too low: {msg}")
 
-    if not embeddings:
-        raise BadRequestError("No face detected in the image. Please try again.")
-
-    # Average all frame embeddings for a more robust representation
-    avg_embedding = np.mean(embeddings, axis=0)
-    avg_embedding = avg_embedding / (np.linalg.norm(avg_embedding) + 1e-8)
+    avg_embedding = FaceService.average_embeddings([a.embedding for a in assessments])
 
     matches = await FaceService.find_matches(
         db, avg_embedding,
@@ -328,25 +322,11 @@ async def verify_attendance(
 
     similarity = matches[0]["similarity"]
 
-    # --- 7.5. Progressive auto-enrollment ---
-    # Save the verified embedding to improve future recognition.
-    # Cap at 20 embeddings per student to avoid unbounded growth.
-    MAX_AUTO_EMBEDDINGS = 20
-    existing_embeddings = await FaceService.list_embeddings(db, current_user.id)
-    if len(existing_embeddings) < MAX_AUTO_EMBEDDINGS:
-        try:
-            # Save the best frame (first one) as the photo
-            photo_data = cv2.imencode(".jpg", images[0])[1].tobytes()
-            photo_path = await FaceService.save_photo(photo_data, "auto.jpg")
-            await FaceService.enroll_face(
-                db, current_user.id, avg_embedding, photo_path,
-            )
-            logger.info(
-                "Auto-enrolled embedding for user %d (now %d total)",
-                current_user.id, len(existing_embeddings) + 1,
-            )
-        except Exception:
-            logger.warning("Auto-enrollment failed for user %d, skipping", current_user.id)
+    # --- 7.5. Progressive auto-enrollment (strict-only, prevents centroid drift) ---
+    if best_frame_idx is not None:
+        await FaceService.auto_enroll_if_strict(
+            db, current_user.id, assessments[best_frame_idx], avg_embedding,
+        )
 
     # --- 8. Record attendance ---
     record, is_new = await AttendanceRecordService.record_recognition(

@@ -208,6 +208,12 @@ class TestAttendApi:
         monkeypatch.setattr(attend_api, "validate_challenge_sequence", lambda *args, **kwargs: (True, "ok"))
         monkeypatch.setattr(attend_api, "detect_screen_spoof", lambda *args, **kwargs: (True, 0.0))
         monkeypatch.setattr(attend_api, "detect_video_replay", lambda *args, **kwargs: (True, 0.0))
+        # Stub anti-spoof at the service layer — returning None mirrors the
+        # "model not available" branch and causes the check to be skipped,
+        # which is what we want for routing-level tests.
+        monkeypatch.setattr(
+            attend_api.FaceService, "check_spoof", staticmethod(lambda *a, **kw: None),
+        )
         # Replace the AI-heavy service call with a stub returning a single
         # passing frame, so the test exercises routing/auth/db, not the pipeline.
         def _fake_process_frames(pipeline, images):

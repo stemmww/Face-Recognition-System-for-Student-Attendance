@@ -50,7 +50,7 @@ async def forgot_password(body: ForgotPasswordRequest, db: AsyncSession = Depend
 
     try:
         await send_reset_email(user.email, reset_url)
-    except Exception:
+    except Exception:  # noqa: BLE001 — SMTP errors must not leak email existence
         logger.warning(
             "Email sending failed for %s — returning generic forgot-password response",
             user.email,

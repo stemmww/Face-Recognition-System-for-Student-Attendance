@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
+from sqlalchemy.exc import DatabaseError
 
 from app.config import settings
 from app.core.security import decode_token, hash_password
@@ -42,7 +43,10 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         try:
             await conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS vector"))
-        except Exception:
+        except DatabaseError:
+            # SQLite (tests) doesn't know CREATE EXTENSION; some Postgres
+            # deployments lack the privilege. Either way, vector ops will
+            # just fail later if pgvector isn't actually present.
             logger.debug("pgvector extension not available (expected for SQLite tests)")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -98,8 +102,8 @@ async def audit_middleware(request: Request, call_next):
                 ip_address=ip,
             ))
             await db.commit()
-    except Exception:
-        pass  # никогда не ломаем основной ответ
+    except Exception:  # noqa: BLE001 — audit must never break the main response
+        pass
 
     return response
 

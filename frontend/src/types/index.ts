@@ -129,7 +129,6 @@ export interface FaceEnrollResponse {
   photo_path: string;
   faces_detected: number;
   message: string;
-  quality_warnings: string[];
 }
 
 export interface FaceVerifyMatch {

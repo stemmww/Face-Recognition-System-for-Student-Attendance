@@ -10,15 +10,15 @@ from app.models.notification import Notification
 from app.models.audit_log import AuditLog
 
 __all__ = [
-    "User",
+    "Appeal",
+    "AttendanceRecord",
+    "AttendanceSession",
+    "AuditLog",
     "Course",
     "CourseProf",
     "Enrollment",
-    "Schedule",
-    "AttendanceSession",
-    "AttendanceRecord",
     "FaceEmbedding",
-    "Appeal",
     "Notification",
-    "AuditLog",
+    "Schedule",
+    "User",
 ]

@@ -78,7 +78,6 @@ async def enroll_face(
         photo_path=record.photo_path,
         faces_detected=1,
         message="Face enrolled successfully",
-        quality_warnings=[],
     )
 
 

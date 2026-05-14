@@ -29,8 +29,9 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Model input is 80x80 RGB, normalised the same way as ImageNet pretraining
-# in the original Minivision pipeline (mean/std after /255).
+# Model input is 80x80 RGB. The ONNX weights from yakhyo's repack embed the
+# normalisation (BatchNorm) inside the graph, so the only preprocessing we
+# need on the Python side is BGR→RGB, HWC→CHW and astype(float32).
 _INPUT_SIZE = 80
 
 

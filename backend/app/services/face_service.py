@@ -271,7 +271,7 @@ class FaceService:
                 assessment.quality.metrics.get("sharpness", 0.0),
             )
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001 — auto-enroll is best-effort, must not break verification
             logger.warning("Auto-enrollment failed for user %d, skipping", user_id)
             return False
 

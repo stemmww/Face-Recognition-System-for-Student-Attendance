@@ -174,7 +174,7 @@ def compute_pose_offsets(landmarks: np.ndarray) -> tuple[float, float]:
 
 def assess_face_quality(
     image: np.ndarray,
-    det: "Detection",
+    det: Detection,
     *,
     strict: bool = False,
 ) -> QualityReport:
@@ -196,7 +196,6 @@ def assess_face_quality(
     issues: list[QualityIssue] = []
     metrics: dict[str, float] = {}
 
-    h, w = image.shape[:2]
     face_px = compute_face_size_px(det.bbox)
     face_ratio = compute_face_ratio(det.bbox, image.shape[:2])
     metrics["face_size_px"] = float(face_px)

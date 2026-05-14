@@ -74,7 +74,7 @@ export default function StudentDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();

@@ -48,7 +48,10 @@ function AuthenticatedApp() {
   const { user, isLoading, fetchUser, logout } = useAuth();
 
   useEffect(() => {
+    // Run only once on mount — authoritative auth bootstrap.
+    // Including `user`/`fetchUser` in deps would re-fetch on every store update.
     if (!user) fetchUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (isLoading || !user) {

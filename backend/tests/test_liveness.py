@@ -116,9 +116,8 @@ class TestBlinkValidation:
 
     def test_blink_detected_with_dip_pattern(self):
         """Simulate blink: nose-eye vertical distance dips then recovers."""
-        frames = []
-        for nose_y in [60, 58, 55, 58, 60]:  # dip at frame 2, recovery at 4
-            frames.append(_make_landmarks(nose=(50, nose_y)))
+        # Sequence: dip at frame 2, recovery at 4
+        frames = [_make_landmarks(nose=(50, nose_y)) for nose_y in [60, 58, 55, 58, 60]]
         assert validate_blink(frames, threshold=0.05)
 
     def test_no_blink_with_static_face(self):
@@ -138,16 +137,12 @@ class TestHeadTurnValidation:
 
     def test_left_turn_detected(self):
         """Simulate head turning left: nose moves right relative to eye midpoint."""
-        frames = []
-        for nose_x in [50, 55, 60, 62]:
-            frames.append(_make_landmarks(nose=(nose_x, 60)))
+        frames = [_make_landmarks(nose=(nose_x, 60)) for nose_x in [50, 55, 60, 62]]
         assert validate_head_turn(frames, direction="left", threshold=0.1)
 
     def test_right_turn_detected(self):
         """Simulate head turning right: nose moves left relative to eye midpoint."""
-        frames = []
-        for nose_x in [50, 45, 40, 38]:
-            frames.append(_make_landmarks(nose=(nose_x, 60)))
+        frames = [_make_landmarks(nose=(nose_x, 60)) for nose_x in [50, 45, 40, 38]]
         assert validate_head_turn(frames, direction="right", threshold=0.1)
 
     def test_no_turn_with_static_face(self):
@@ -167,9 +162,7 @@ class TestNodValidation:
 
     def test_nod_detected(self):
         """Simulate nod: nose moves down then back up."""
-        frames = []
-        for nose_y in [60, 65, 70, 65, 60]:
-            frames.append(_make_landmarks(nose=(50, nose_y)))
+        frames = [_make_landmarks(nose=(50, nose_y)) for nose_y in [60, 65, 70, 65, 60]]
         assert validate_nod(frames, threshold=0.05)
 
     def test_no_nod_with_static_face(self):

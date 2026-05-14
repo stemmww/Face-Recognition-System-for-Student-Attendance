@@ -238,7 +238,7 @@ async def verify_attendance(
             frame_landmarks.append(largest.landmarks)
             frame_detections.append(largest)
 
-        live, score = is_live(frame_landmarks, threshold=settings.LIVENESS_THRESHOLD)
+        live, _score = is_live(frame_landmarks, threshold=settings.LIVENESS_THRESHOLD)
         if not live:
             raise BadRequestError(
                 "Liveness check failed — a live face is required. "
@@ -307,7 +307,7 @@ async def verify_attendance(
             )
 
         # --- 6.8. Video replay detection (micro-texture temporal analysis) ---
-        is_real_video, replay_sim = detect_video_replay(face_crops)
+        is_real_video, _replay_sim = detect_video_replay(face_crops)
         if not is_real_video:
             raise BadRequestError(
                 "Video replay detected. Please use your real face, "

@@ -3,7 +3,20 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.ruff.lint]
-ignore = ["E712"]
+# Default (E/W/F) plus targeted bug-catchers. We keep style/docstring rule
+# families off — too noisy for a thesis project — but flake8-bugbear (B),
+# blind-except (BLE), pyupgrade (UP), Ruff-specific (RUF) and basic perf
+# (PERF) catch the kind of mistakes I made earlier in the AI-upgrade work
+# (e.g. raise without `from err`, zip without strict=, int(round())).
+extend-select = ["B", "BLE", "UP", "RUF", "PERF"]
+ignore = [
+    "E712",       # explicit `== True` is fine in SQLAlchemy filters
+    "B008",       # FastAPI Depends(...) in defaults — idiomatic
+    "RUF002",     # ambiguous unicode in docstrings (×, →) — intentional
+    "RUF003",     # ambiguous unicode in comments — intentional
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/conftest.py" = ["E402"]
+# Tests intentionally poke private attributes and skip strict typing
+"tests/**/*.py" = ["RUF059"]

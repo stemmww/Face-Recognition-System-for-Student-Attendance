@@ -85,6 +85,18 @@ class TestChallengeGeneration:
             c = generate_challenge()
             assert isinstance(c, ChallengeType)
 
+    def test_generate_never_returns_blink(self):
+        # BLINK is intentionally excluded from the selection pool — 5-point
+        # SCRFD landmarks can't reliably detect eye closure. See the
+        # _SELECTABLE_CHALLENGES list in app/utils/liveness.py.
+        for _ in range(200):
+            assert generate_challenge() != ChallengeType.BLINK
+
+    def test_sequence_never_contains_blink(self):
+        for _ in range(50):
+            for ct in generate_challenge_sequence(3):
+                assert ct != ChallengeType.BLINK
+
     def test_generate_sequence_returns_distinct_types(self):
         sequence = generate_challenge_sequence(2)
         assert len(sequence) == 2

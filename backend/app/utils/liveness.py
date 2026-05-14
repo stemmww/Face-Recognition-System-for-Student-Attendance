@@ -2,8 +2,11 @@
 + screen/print spoof detection.
 
 Passive check: multi-frame landmark stability analysis.
-Active challenges: blink, head turn (left/right), nod — validated via
-5-point SCRFD landmarks [left_eye, right_eye, nose, left_mouth, right_mouth].
+Active challenges: head turn (left/right), nod — validated via 5-point
+SCRFD landmarks [left_eye, right_eye, nose, left_mouth, right_mouth]. The
+BLINK challenge is implemented (validate_blink + ChallengeType.BLINK) but
+not offered to new sessions because reliable blink detection requires a
+68-point landmark model rather than SCRFD's 5-point output.
 Screen detection: high-frequency texture analysis (moire patterns, pixel grids).
 """
 
@@ -39,16 +42,29 @@ _CHALLENGE_INSTRUCTIONS = {
     ChallengeType.NOD: "Please nod your head up and down",
 }
 
+# Challenges offered to new sessions. BLINK is intentionally excluded:
+# SCRFD only emits 5 facial landmarks (one point per eye), so the classic
+# Eye Aspect Ratio detection isn't possible. The fallback heuristic in
+# `validate_blink` (nose-vs-eye-midpoint vertical drift) fires inconsistently
+# in practice, frustrating real users. Detecting blinks reliably would
+# require switching to a 68-point landmark model (e.g. MediaPipe FaceMesh).
+# Token compatibility is preserved: BLINK still validates against in-flight
+# tokens via validate_challenge → validate_blink.
+_SELECTABLE_CHALLENGES: list[ChallengeType] = [
+    ChallengeType.TURN_LEFT,
+    ChallengeType.TURN_RIGHT,
+    ChallengeType.NOD,
+]
+
 
 def generate_challenge() -> ChallengeType:
-    return random.choice(list(ChallengeType))
+    return random.choice(_SELECTABLE_CHALLENGES)
 
 
 def generate_challenge_sequence(step_count: int = 2) -> list[ChallengeType]:
-    choices = list(ChallengeType)
     if step_count <= 1:
         return [generate_challenge()]
-    return random.sample(choices, k=min(step_count, len(choices)))
+    return random.sample(_SELECTABLE_CHALLENGES, k=min(step_count, len(_SELECTABLE_CHALLENGES)))
 
 
 def get_challenge_instruction(challenge: ChallengeType) -> str:

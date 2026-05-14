@@ -10,14 +10,12 @@ interface ChallengeGuideProps {
 }
 
 const ICONS: Record<string, string> = {
-  blink: "EYE",
   turn_left: "FACE",
   turn_right: "FACE",
   nod: "FACE",
 };
 
 const LABELS: Record<string, string> = {
-  blink: "Blink",
   turn_left: "Turn left",
   turn_right: "Turn right",
   nod: "Nod",
@@ -26,7 +24,7 @@ const LABELS: Record<string, string> = {
 export default function ChallengeGuide({ challengeTypes, instruction }: ChallengeGuideProps) {
   const { t } = useTranslation();
   const [animStep, setAnimStep] = useState(0);
-  const primaryChallenge = challengeTypes[0] || "blink";
+  const primaryChallenge = challengeTypes[0] || "nod";
 
   useEffect(() => {
     const id = setInterval(() => setAnimStep((s) => (s + 1) % 2), 800);
@@ -96,11 +94,6 @@ export default function ChallengeGuide({ challengeTypes, instruction }: Challeng
 
 function getAnimationStyle(type: string, step: number): React.CSSProperties {
   switch (type) {
-    case "blink":
-      return {
-        opacity: step === 0 ? 1 : 0.15,
-        transform: step === 0 ? "scaleY(1)" : "scaleY(0.1)",
-      };
     case "turn_left":
       return {
         transform: step === 0 ? "rotateY(0deg)" : "rotateY(40deg)",

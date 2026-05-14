@@ -307,7 +307,6 @@ const en = {
     capturing: "Capturing {{current}}/{{total}}...",
     captureVerify: "Capture & Verify",
     challengeHint: "Perform the action above, then tap Capture & Verify",
-    challengeHelp_blink: "Blink naturally 1–2 times while looking at the camera, then tap Capture",
     challengeHelp_turn_left: "Slowly turn your head to the left, then tap Capture",
     challengeHelp_turn_right: "Slowly turn your head to the right, then tap Capture",
     challengeHelp_nod: "Nod your head up and down slowly, then tap Capture",

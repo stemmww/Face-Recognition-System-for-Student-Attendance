@@ -11,7 +11,6 @@ from app.utils.liveness import (
     get_challenge_instruction,
     get_challenge_sequence_instruction,
     is_live,
-    validate_blink,
     validate_challenge,
     validate_challenge_sequence,
     validate_head_turn,
@@ -105,27 +104,6 @@ class TestChallengeGeneration:
 
 
 # ---------------------------------------------------------------------------
-# Blink validation
-# ---------------------------------------------------------------------------
-
-
-class TestBlinkValidation:
-    def test_too_few_frames_fails(self):
-        frames = [_make_landmarks() for _ in range(3)]
-        assert not validate_blink(frames)
-
-    def test_blink_detected_with_dip_pattern(self):
-        """Simulate blink: nose-eye vertical distance dips then recovers."""
-        # Sequence: dip at frame 2, recovery at 4
-        frames = [_make_landmarks(nose=(50, nose_y)) for nose_y in [60, 58, 55, 58, 60]]
-        assert validate_blink(frames, threshold=0.05)
-
-    def test_no_blink_with_static_face(self):
-        lm = _make_landmarks()
-        assert not validate_blink([lm, lm, lm, lm, lm], threshold=0.1)
-
-
-# ---------------------------------------------------------------------------
 # Head turn validation
 # ---------------------------------------------------------------------------
 
@@ -176,12 +154,6 @@ class TestNodValidation:
 
 
 class TestValidateChallenge:
-    def test_blink_dispatches(self):
-        frames = [_make_landmarks(nose=(50, ny)) for ny in [60, 58, 55, 58, 60]]
-        ok, msg = validate_challenge(ChallengeType.BLINK, frames)
-        assert bool(ok) == ok  # works for both bool and np.bool_
-        assert isinstance(msg, str)
-
     def test_turn_left_dispatches(self):
         frames = [_make_landmarks(nose=(nx, 60)) for nx in [50, 55, 60, 62]]
         ok, msg = validate_challenge(ChallengeType.TURN_LEFT, frames)

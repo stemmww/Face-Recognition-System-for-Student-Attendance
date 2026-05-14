@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     # to 1 when only one or two frames survive the quality gate.
     VOTING_MIN_FLOOR: int = 2
 
+    # Anti-spoofing: CNN-based liveness via the MiniFASNet ensemble from
+    # Minivision's Silent-Face-Anti-Spoofing project. Set ENABLED=False to
+    # fall back to the legacy heuristics only (detect_screen_spoof + replay).
+    ANTI_SPOOF_ENABLED: bool = True
+    # Minimum live-class probability (averaged across the V1SE + V2 models)
+    # to accept the face as real. 0.7 is the authors' recommended balance.
+    ANTI_SPOOF_THRESHOLD: float = 0.7
+
     # --- Face quality gate ---
     # Hard thresholds (reject the photo) and soft thresholds (warn only).
     # Tuned for a typical 720p webcam at ~50 cm distance.

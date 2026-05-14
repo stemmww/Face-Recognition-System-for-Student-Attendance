@@ -48,7 +48,7 @@ AI-powered attendance system where professors start QR-based sessions, students 
 - Face verification: compare against enrolled embeddings with cosine similarity
 - Embedding management: list, delete per student, delete all
 - Admin Face Registry page with pipeline status, photo upload, and verification testing
-- AI model weights downloaded via `download_models.py` (excluded from git)
+- AI model weights downloaded via `python -m tools.download_models` (weights excluded from git)
 
 ### Phase 4 — QR Attendance & Live Sessions
 
@@ -101,7 +101,14 @@ AI-powered attendance system where professors start QR-based sessions, students 
   security budget constant regardless of how many frames the frontend
   captures (currently 12). Replaces averaging — one blurry frame is
   outvoted rather than dragging the mean toward the threshold.
-- **Test suite (125 tests):** pytest + pytest-asyncio with in-memory SQLite
+- **CNN anti-spoofing (`app/ai/anti_spoof.py`):** ensemble of MiniFASNetV1SE
+  (scale 4.0) + MiniFASNetV2 (scale 2.7) ONNX models from Minivision's
+  Silent-Face-Anti-Spoofing. Each model produces a softmax over
+  [live, 2D-fake, 3D-fake]; the live-class probabilities are averaged and
+  the face is accepted as real when the mean exceeds
+  `ANTI_SPOOF_THRESHOLD` (default 0.7). Runs after liveness/challenge,
+  before legacy heuristics — heuristics remain as defence in depth.
+- **Test suite (136 tests):** pytest + pytest-asyncio with in-memory SQLite
   - Unit tests: JWT tokens, password hashing, haversine GPS distance, liveness detection (passive + active challenges)
   - API integration tests: auth endpoints (login, refresh, forgot/reset), user CRUD, RBAC enforcement
 - Error boundary at layout level (page crash keeps sidebar/header visible)
@@ -182,7 +189,7 @@ Tests use an in-memory SQLite database — no Docker or PostgreSQL required.
 |------|-----------|
 | Face recognition accuracy too low | Multiple reference photos per student (3–5); tunable cosine threshold (default 0.5); quality gate rejects blurry/dark/off-angle frames before they reach ArcFace; professor manual override + manual roll-call tab |
 | Auto-enrollment poisoning the stored centroid | Strict quality gate on auto-enroll: only frames passing every hard *and* soft threshold are persisted, with a 20-embedding cap per student |
-| Spoofing with photo/video | Active liveness challenges (blink, head turn, nod) + passive landmark variance check |
+| Spoofing with photo/video | CNN-based anti-spoofing (MiniFASNet ensemble) as primary defence + active liveness challenges (blink, head turn, nod) + passive landmark variance check + heuristic screen / video-replay detectors as defence in depth |
 | QR code sharing between students | One-time-use nonce per QR token; rate limiting per student per session; GPS enforcement when configured |
 | Camera quality / lighting issues | 5-frame capture with 400ms intervals; SCRFD handles varied conditions; face alignment before embedding |
 | pgvector slow with many embeddings | Scope search to enrolled students only; HNSW index available for scaling |

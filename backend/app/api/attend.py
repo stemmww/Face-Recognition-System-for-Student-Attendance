@@ -269,7 +269,15 @@ async def verify_attendance(
         except JWTError:
             raise BadRequestError("Invalid or expired challenge token")
 
-        # --- 6.7. Screen / print spoof detection on face crops ---
+        # --- 6.6. CNN-based anti-spoofing (MiniFASNet ensemble) ---
+        spoof_check = FaceService.check_spoof(images, frame_detections)
+        if spoof_check is not None and not spoof_check.is_real:
+            raise BadRequestError(
+                "Anti-spoofing check failed — please present your real face, "
+                "not a photo, video, or mask."
+            )
+
+        # --- 6.7. Screen / print spoof detection on face crops (legacy backup) ---
         face_crops = []
         for img, det in zip(images, frame_detections):
             x1, y1, x2, y2 = det.bbox

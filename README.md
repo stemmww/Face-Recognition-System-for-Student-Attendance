@@ -48,7 +48,7 @@ python -m venv .venv
 .venv/Scripts/activate      # Windows
 # source .venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
-python download_models.py    # Download AI models (~300 MB, one-time)
+python -m tools.download_models    # Download AI models (~300 MB, one-time)
 uvicorn app.main:app --reload
 ```
 

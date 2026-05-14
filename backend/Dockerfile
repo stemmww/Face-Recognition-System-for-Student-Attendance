@@ -9,13 +9,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Long timeout + retries to survive slow connections to PyPI mirrors.
+RUN pip install --no-cache-dir --timeout 300 --retries 5 -r requirements.txt
 
 COPY . .
 
 RUN mkdir -p /app/uploads /app/models
 
-RUN python download_models.py
+RUN python -m tools.download_models
 
 EXPOSE 8000
 

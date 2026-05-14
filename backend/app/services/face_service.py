@@ -11,6 +11,7 @@ import numpy as np
 from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.anti_spoof import AntiSpoofResult, get_anti_spoof
 from app.ai.detector import Detection
 from app.ai.pipeline import FacePipeline
 from app.ai.quality import QualityReport, assess_face_quality
@@ -204,6 +205,34 @@ class FaceService:
                 best_idx = len(assessments) - 1
 
         return assessments, best_idx, last_reject
+
+    @staticmethod
+    def check_spoof(
+        images: list[np.ndarray],
+        detections: list[Detection],
+    ) -> AntiSpoofResult | None:
+        """Run the MiniFASNet ensemble against the middle frame's bbox.
+
+        Returns:
+          - AntiSpoofResult when the model ran (caller checks `is_real`)
+          - None when anti-spoof is disabled in settings OR no model is
+            available (treat as "skip the check", not "reject")
+
+        Middle frame is chosen on purpose: the start of the capture window
+        is usually adjusting/looking down, the end is wrapping up the
+        challenge — the middle has the most stable pose.
+        """
+        if not settings.ANTI_SPOOF_ENABLED:
+            return None
+        ensemble = get_anti_spoof()
+        if not ensemble.is_available:
+            return None
+        mid = len(images) // 2
+        return ensemble.predict(
+            images[mid],
+            detections[mid].bbox,
+            threshold=settings.ANTI_SPOOF_THRESHOLD,
+        )
 
     @staticmethod
     async def auto_enroll_if_strict(

@@ -4,7 +4,7 @@
 - MiniFASNet anti-spoofing models from yakhyo/face-anti-spoofing (which
   re-publishes the Minivision weights as ONNX).
 
-Run: python download_models.py
+Run from backend/:  python -m tools.download_models
 """
 
 import os
@@ -13,7 +13,8 @@ import zipfile
 from pathlib import Path
 from urllib.request import urlretrieve
 
-MODELS_DIR = Path(__file__).parent / "models"
+# Script lives at backend/tools/, models live at backend/models/
+MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 
 BUFFALO_URL = "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"
 BUFFALO_FILES = {

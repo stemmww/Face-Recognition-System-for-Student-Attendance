@@ -12,7 +12,6 @@ from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.anti_spoof import get_anti_spoof
 from app.ai.pipeline import get_pipeline
 from app.api.deps import get_current_user
 from app.config import settings
@@ -271,26 +270,12 @@ async def verify_attendance(
             raise BadRequestError("Invalid or expired challenge token")
 
         # --- 6.6. CNN-based anti-spoofing (MiniFASNet ensemble) ---
-        # Primary anti-spoof. Runs on the sharpest frame's bbox only, since
-        # MiniFASNet inference is more expensive than per-frame and we
-        # already established frame-to-frame consistency via liveness.
-        if settings.ANTI_SPOOF_ENABLED:
-            anti_spoof = get_anti_spoof()
-            if anti_spoof.is_available:
-                # Pick the largest detected face from the middle frame as the
-                # canonical sample — middle of the capture window is usually
-                # the most stable pose (start = adjusting, end = finishing the challenge).
-                mid = len(images) // 2
-                spoof_check = anti_spoof.predict(
-                    images[mid],
-                    frame_detections[mid].bbox,
-                    threshold=settings.ANTI_SPOOF_THRESHOLD,
-                )
-                if spoof_check is not None and not spoof_check.is_real:
-                    raise BadRequestError(
-                        "Anti-spoofing check failed — please present your real face, "
-                        "not a photo, video, or mask."
-                    )
+        spoof_check = FaceService.check_spoof(images, frame_detections)
+        if spoof_check is not None and not spoof_check.is_real:
+            raise BadRequestError(
+                "Anti-spoofing check failed — please present your real face, "
+                "not a photo, video, or mask."
+            )
 
         # --- 6.7. Screen / print spoof detection on face crops (legacy backup) ---
         face_crops = []

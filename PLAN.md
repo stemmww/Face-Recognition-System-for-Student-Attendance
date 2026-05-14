@@ -48,7 +48,7 @@ AI-powered attendance system where professors start QR-based sessions, students 
 - Face verification: compare against enrolled embeddings with cosine similarity
 - Embedding management: list, delete per student, delete all
 - Admin Face Registry page with pipeline status, photo upload, and verification testing
-- AI model weights downloaded via `download_models.py` (excluded from git)
+- AI model weights downloaded via `python -m tools.download_models` (weights excluded from git)
 
 ### Phase 4 — QR Attendance & Live Sessions
 

@@ -138,8 +138,8 @@ async def verify_attendance(
             token, session.qr_secret, algorithms=["HS256"],
             options={"leeway": 10},
         )
-    except JWTError:
-        raise BadRequestError("Invalid or expired QR token")
+    except JWTError as err:
+        raise BadRequestError("Invalid or expired QR token") from err
 
     # --- 2.5. One-time nonce check (consume only after successful verification) ---
     _cleanup_expired_caches()
@@ -266,8 +266,8 @@ async def verify_attendance(
                     "then tap Capture again."
                 )
                 raise BadRequestError(f"Liveness challenge failed: {reason}. {hint}")
-        except JWTError:
-            raise BadRequestError("Invalid or expired challenge token")
+        except JWTError as err:
+            raise BadRequestError("Invalid or expired challenge token") from err
 
         # --- 6.6. CNN-based anti-spoofing (MiniFASNet ensemble) ---
         spoof_check = FaceService.check_spoof(images, frame_detections)
@@ -278,8 +278,11 @@ async def verify_attendance(
             )
 
         # --- 6.7. Screen / print spoof detection on face crops (legacy backup) ---
+        # strict=True guards against the (currently impossible) case where the
+        # two lists drift apart; would surface a real bug as an exception
+        # rather than silently dropping trailing frames.
         face_crops = []
-        for img, det in zip(images, frame_detections):
+        for img, det in zip(images, frame_detections, strict=True):
             x1, y1, x2, y2 = det.bbox
             h, w = img.shape[:2]
             pad = int(max(x2 - x1, y2 - y1) * 0.1)
@@ -372,5 +375,5 @@ def _decode_qr_token(token: str) -> int:
         if session_id is None:
             raise BadRequestError("Invalid QR token: missing session_id")
         return int(session_id)
-    except JWTError:
-        raise BadRequestError("Invalid QR token")
+    except JWTError as err:
+        raise BadRequestError("Invalid QR token") from err

@@ -65,7 +65,7 @@ class TestEnsembleDecision:
         """Construct an ensemble with both models present but stubbed."""
         ens = AntiSpoofEnsemble("dummy_v1.onnx", "dummy_v2.onnx")
         # Force `is_loaded` so the ensemble considers them present
-        for model, probs in zip(ens._models, model_outputs):
+        for model, probs in zip(ens._models, model_outputs, strict=True):
             model._session = "stub"  # truthy
             model._load_attempted = True
             model.predict = _stub_predict(probs) if probs is not None else lambda _: None

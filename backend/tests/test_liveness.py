@@ -11,7 +11,6 @@ from app.utils.liveness import (
     get_challenge_instruction,
     get_challenge_sequence_instruction,
     is_live,
-    validate_blink,
     validate_challenge,
     validate_challenge_sequence,
     validate_head_turn,
@@ -85,18 +84,6 @@ class TestChallengeGeneration:
             c = generate_challenge()
             assert isinstance(c, ChallengeType)
 
-    def test_generate_never_returns_blink(self):
-        # BLINK is intentionally excluded from the selection pool — 5-point
-        # SCRFD landmarks can't reliably detect eye closure. See the
-        # _SELECTABLE_CHALLENGES list in app/utils/liveness.py.
-        for _ in range(200):
-            assert generate_challenge() != ChallengeType.BLINK
-
-    def test_sequence_never_contains_blink(self):
-        for _ in range(50):
-            for ct in generate_challenge_sequence(3):
-                assert ct != ChallengeType.BLINK
-
     def test_generate_sequence_returns_distinct_types(self):
         sequence = generate_challenge_sequence(2)
         assert len(sequence) == 2
@@ -114,27 +101,6 @@ class TestChallengeGeneration:
         )
         assert "Step 1" in instr
         assert "Step 2" in instr
-
-
-# ---------------------------------------------------------------------------
-# Blink validation
-# ---------------------------------------------------------------------------
-
-
-class TestBlinkValidation:
-    def test_too_few_frames_fails(self):
-        frames = [_make_landmarks() for _ in range(3)]
-        assert not validate_blink(frames)
-
-    def test_blink_detected_with_dip_pattern(self):
-        """Simulate blink: nose-eye vertical distance dips then recovers."""
-        # Sequence: dip at frame 2, recovery at 4
-        frames = [_make_landmarks(nose=(50, nose_y)) for nose_y in [60, 58, 55, 58, 60]]
-        assert validate_blink(frames, threshold=0.05)
-
-    def test_no_blink_with_static_face(self):
-        lm = _make_landmarks()
-        assert not validate_blink([lm, lm, lm, lm, lm], threshold=0.1)
 
 
 # ---------------------------------------------------------------------------
@@ -188,12 +154,6 @@ class TestNodValidation:
 
 
 class TestValidateChallenge:
-    def test_blink_dispatches(self):
-        frames = [_make_landmarks(nose=(50, ny)) for ny in [60, 58, 55, 58, 60]]
-        ok, msg = validate_challenge(ChallengeType.BLINK, frames)
-        assert bool(ok) == ok  # works for both bool and np.bool_
-        assert isinstance(msg, str)
-
     def test_turn_left_dispatches(self):
         frames = [_make_landmarks(nose=(nx, 60)) for nx in [50, 55, 60, 62]]
         ok, msg = validate_challenge(ChallengeType.TURN_LEFT, frames)

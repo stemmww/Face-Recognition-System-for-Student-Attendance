@@ -14,6 +14,7 @@ import numpy as np
 
 from app.ai.detector import FaceDetector
 from app.ai.recognizer import FaceRecognizer, align_face
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +93,6 @@ _pipeline: FacePipeline | None = None
 def get_pipeline() -> FacePipeline:
     global _pipeline
     if _pipeline is None:
-        from app.config import settings
-
         _pipeline = FacePipeline(
             detector_model_path=f"{settings.AI_MODEL_PATH}/det_10g.onnx",
             recognizer_model_path=f"{settings.AI_MODEL_PATH}/w600k_r50.onnx",

@@ -25,6 +25,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from app.config import settings
+
 logger = logging.getLogger(__name__)
 
 # Model input is 80x80 RGB, normalised the same way as ImageNet pretraining
@@ -59,10 +61,10 @@ def crop_face_for_antispoof(
 
     new_w = bw * scale
     new_h = bh * scale
-    nx1 = int(round(cx - new_w / 2.0))
-    ny1 = int(round(cy - new_h / 2.0))
-    nx2 = int(round(cx + new_w / 2.0))
-    ny2 = int(round(cy + new_h / 2.0))
+    nx1 = round(cx - new_w / 2.0)
+    ny1 = round(cy - new_h / 2.0)
+    nx2 = round(cx + new_w / 2.0)
+    ny2 = round(cy + new_h / 2.0)
 
     h, w = image.shape[:2]
     # Pad with replicated border if expanded crop falls outside the image
@@ -218,8 +220,6 @@ def get_anti_spoof() -> AntiSpoofEnsemble:
     """Lazily build and return the process-wide anti-spoof ensemble."""
     global _ensemble
     if _ensemble is None:
-        from app.config import settings
-
         _ensemble = AntiSpoofEnsemble(
             v1se_model_path=f"{settings.AI_MODEL_PATH}/MiniFASNetV1SE.onnx",
             v2_model_path=f"{settings.AI_MODEL_PATH}/MiniFASNetV2.onnx",

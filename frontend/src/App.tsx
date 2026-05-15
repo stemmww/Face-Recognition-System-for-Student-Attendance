@@ -240,7 +240,7 @@ export default function App() {
             darkItemBg: "transparent",
             darkItemSelectedBg: `rgba(${BRAND_PRIMARY_RGB},0.25)`,
             darkItemHoverBg: `rgba(${BRAND_PRIMARY_RGB},0.15)`,
-            darkItemSelectedColor: "#c7d2fe",
+            darkItemSelectedColor: BRAND_PRIMARY,
           },
           Card: {
             borderRadiusLG: 12,

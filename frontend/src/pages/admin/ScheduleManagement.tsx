@@ -19,6 +19,7 @@ import dayjs from "dayjs";
 import type { Course, Schedule } from "@/types";
 import { listCourses } from "@/api/courses";
 import { createSchedule, deleteSchedule, listSchedules, updateSchedule } from "@/api/schedules";
+import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Title } = Typography;
 
@@ -27,7 +28,7 @@ const DAY_ORDER: Record<string, number> = {
 };
 
 const classTypeColors: Record<string, string> = {
-  lecture: "blue",
+  lecture: BRAND_PRIMARY,
   lab: "green",
   seminar: "purple",
 };

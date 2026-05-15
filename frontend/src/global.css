@@ -152,16 +152,16 @@ body.dark .notification-scroll::-webkit-scrollbar-thumb:hover {
 
 /* Mark all as read button */
 .mark-all-read-btn:hover {
-  color: #818cf8 !important;
+  color: rgb(64, 169, 255) !important;
   filter: brightness(1.2);
 }
 
 body.dark .mark-all-read-btn {
-  color: #818cf8 !important;
+  color: rgb(64, 169, 255) !important;
 }
 
 body.dark .mark-all-read-btn:hover {
-  color: #a5b4fc !important;
+  color: rgb(64, 169, 255) !important;
   filter: none;
 }
 

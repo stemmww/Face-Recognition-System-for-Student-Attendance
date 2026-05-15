@@ -37,6 +37,7 @@ import { getMyAttendanceSummary } from "@/api/attendance";
 import { getUnreadCount } from "@/api/notifications";
 import { getMyTrends } from "@/api/statistics";
 import { getStudentActiveSessions } from "@/api/sessions";
+import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Title, Text } = Typography;
 
@@ -216,7 +217,7 @@ export default function StudentDashboard() {
               <YAxis domain={[0, 100]} fontSize={12} tickFormatter={(v) => `${v}%`} />
               <Tooltip formatter={(value: number, name: string) => name === "rate" ? `${value}%` : value} />
               <Legend />
-              <Area type="monotone" dataKey="rate" name={t("dashboard.attendanceRate")} stroke="#2323CE" fill="#2323CE" fillOpacity={0.15} strokeWidth={2} />
+              <Area type="monotone" dataKey="rate" name={t("dashboard.attendanceRate")} stroke={BRAND_PRIMARY} fill={BRAND_PRIMARY} fillOpacity={0.15} strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>

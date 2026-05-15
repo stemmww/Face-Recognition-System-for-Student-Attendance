@@ -89,7 +89,7 @@ export default function Login() {
   const cardBg = isDark ? "rgb(33, 33, 33)" : "#ffffff";
   const borderCol = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
   const toolbarBg = isDark ? "rgba(31,41,55,0.85)" : "rgba(255,255,255,0.85)";
-  const toolbarIcon = isDark ? "#c7d2fe" : "#64748b";
+  const toolbarIcon = isDark ? colors.primary : "#64748b";
 
   return (
     <div

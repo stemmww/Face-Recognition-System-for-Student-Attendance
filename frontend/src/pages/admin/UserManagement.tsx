@@ -27,12 +27,13 @@ import {
 import type { User, Role, BulkImportResult } from "@/types";
 import { createUser, deactivateUser, importStudentsCSV, listUsers, updateUser } from "@/api/users";
 import { formatDateTime } from "@/utils/formatters";
+import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Title } = Typography;
 
 const roleColors: Record<Role, string> = {
   admin: "red",
-  professor: "blue",
+  professor: BRAND_PRIMARY,
   student: "green",
 };
 
@@ -208,7 +209,7 @@ export default function UserManagement() {
       dataIndex: "role",
       key: "role",
       render: (role: Role) => (
-        <Tag color={roleColors[role]}>{t(`roles.${role}`)}</Tag>
+        <Tag bordered={false} color={roleColors[role]}>{t(`roles.${role}`)}</Tag>
       ),
     },
     {
@@ -216,7 +217,7 @@ export default function UserManagement() {
       dataIndex: "is_active",
       key: "is_active",
       render: (active: boolean) => (
-        <Tag color={active ? "green" : "default"}>{active ? t("common.active") : t("common.inactive")}</Tag>
+        <Tag bordered={false} color={active ? "green" : "default"}>{active ? t("common.active") : t("common.inactive")}</Tag>
       ),
     },
     {

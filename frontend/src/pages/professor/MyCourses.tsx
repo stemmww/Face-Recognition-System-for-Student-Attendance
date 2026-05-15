@@ -9,11 +9,12 @@ import {
 import type { Course, Schedule } from "@/types";
 import { listCourses, getCourseStudents } from "@/api/courses";
 import { listSchedules } from "@/api/schedules";
+import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Title, Text, Paragraph } = Typography;
 
 const classTypeColors: Record<string, string> = {
-  lecture: "blue", lab: "green", seminar: "purple",
+  lecture: BRAND_PRIMARY, lab: "green", seminar: "purple",
 };
 
 function formatTime(t: string) {

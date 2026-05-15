@@ -8,7 +8,6 @@ import {
   Dropdown,
   Layout,
   List,
-  Tag,
   Tooltip,
   Typography,
 } from "antd";
@@ -37,12 +36,6 @@ interface Props {
   onMenuClick: () => void;
 }
 
-const roleColors: Record<string, string> = {
-  admin: "purple",
-  professor: "geekblue",
-  student: "cyan",
-};
-
 const LANGS = [
   { key: "en", label: "English" },
   { key: "kk", label: "Қазақша" },
@@ -57,7 +50,7 @@ const iconBtnStyle = (isDark: boolean): React.CSSProperties => ({
   height: 36,
   borderRadius: 8,
   fontSize: 17,
-  color: isDark ? "#c7d2fe" : "#475569",
+  color: isDark ? BRAND_PRIMARY : "#475569",
   transition: "all 0.2s",
 });
 
@@ -168,7 +161,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
                   onClick={handleMarkAllRead}
                   className="mark-all-read-btn"
                   style={{
-                    color: isDark ? "#91a3ff" : BRAND_PRIMARY,
+                    color: BRAND_PRIMARY,
                     fontWeight: 500,
                   }}
                 >
@@ -257,7 +250,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
             type="text"
             icon={<MenuOutlined style={{ fontSize: 18 }} />}
             onClick={onMenuClick}
-            style={{ color: isDark ? "#c7d2fe" : "#475569" }}
+            style={{ color: isDark ? BRAND_PRIMARY : "#475569" }}
           />
         )}
       </div>
@@ -292,7 +285,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
         >
           <Button type="text" style={iconBtnStyle(isDark)}>
             <Badge count={unreadCount} size="small" offset={[4, -4]}>
-              <BellOutlined style={{ fontSize: 17, color: isDark ? "#c7d2fe" : "#475569" }} />
+              <BellOutlined style={{ fontSize: 17, color: isDark ? BRAND_PRIMARY : "#475569" }} />
             </Badge>
           </Button>
         </Dropdown>
@@ -306,16 +299,6 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
             margin: isMobile ? "0 2px" : "0 6px",
           }}
         />
-
-        {/* Role tag */}
-        {!isMobile && (
-          <Tag
-            color={roleColors[user.role]}
-            style={{ borderRadius: 6, fontWeight: 500, textTransform: "capitalize", margin: 0 }}
-          >
-            {t(`roles.${user.role}`)}
-          </Tag>
-        )}
 
         {/* User dropdown */}
         <Dropdown menu={userItems} placement="bottomRight" trigger={["click"]}>

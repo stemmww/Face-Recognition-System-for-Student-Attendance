@@ -29,6 +29,7 @@ import type { AttendanceRecord, AttendanceSession, Course } from "@/types";
 import { listCourses } from "@/api/courses";
 import { getSession, listSessions } from "@/api/sessions";
 import { exportCourseCSV, exportSessionCSV, getSessionAttendance, updateAttendanceStatus } from "@/api/attendance";
+import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Title, Text } = Typography;
 
@@ -311,7 +312,7 @@ export default function ProfessorAttendance() {
 
                 if (sessionStart) {
                   items.push({
-                    color: "#2323CE" as string,
+                    color: BRAND_PRIMARY,
                     children: (
                       <div>
                         <Text strong>{t("attendance.sessionStarted")}</Text>
@@ -349,7 +350,7 @@ export default function ProfessorAttendance() {
 
                 if (sessionDetail?.ended_at) {
                   items.push({
-                    color: "#2323CE" as string,
+                    color: BRAND_PRIMARY,
                     children: (
                       <div>
                         <Text strong>{t("attendance.sessionEnded")}</Text>

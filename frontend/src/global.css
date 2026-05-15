@@ -59,6 +59,45 @@ body.dark #root {
   background-color: #111827;
 }
 
+body,
+button,
+input,
+textarea,
+select {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Auth inputs: keep dark theme stable on focus/autofill */
+body.dark .auth-input.ant-input,
+body.dark .auth-input.ant-input-affix-wrapper,
+body.dark .auth-input.ant-input-affix-wrapper:hover,
+body.dark .auth-input.ant-input-affix-wrapper-focused,
+body.dark .auth-input.ant-input-affix-wrapper:focus,
+body.dark .auth-input.ant-input-affix-wrapper:focus-within {
+  background: #111827 !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark .auth-input.ant-input-affix-wrapper .ant-input,
+body.dark .auth-input.ant-input-affix-wrapper .ant-input:focus {
+  background: transparent !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark .auth-input input:-webkit-autofill,
+body.dark .auth-input input:-webkit-autofill:hover,
+body.dark .auth-input input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e2e8f0 !important;
+  box-shadow: 0 0 0 1000px #111827 inset !important;
+  caret-color: #e2e8f0;
+}
+
+body.dark .auth-input input::placeholder,
+body.dark .auth-input.ant-input::placeholder {
+  color: #64748b !important;
+}
+
 /* Disable hover highlight on notification dropdown items */
 .ant-dropdown-menu-item.no-hover-highlight:hover,
 .ant-dropdown-menu-item.no-hover-highlight:active,

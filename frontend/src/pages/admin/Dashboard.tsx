@@ -205,7 +205,6 @@ function CoursesTable({ courses, loading, c }: { courses: Course[]; loading: boo
                       <td style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
                         <span
                           style={{
-                            fontFamily: "'Courier New', Courier, monospace",
                             fontWeight: 600,
                             fontSize: 13,
                             color: c.text,

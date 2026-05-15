@@ -21,7 +21,7 @@ export default function AppLayout({ user, onLogout }: Props) {
   const isMobile = useIsMobile();
   const isDark = useThemeStore((s) => s.isDark);
 
-  const sidebarWidth = isMobile ? 0 : collapsed ? 64 : 220;
+  const sidebarWidth = isMobile ? 0 : collapsed ? 64 : 248;
   const pageBg = isDark ? "#111827" : "#f8fafc";
 
   return (

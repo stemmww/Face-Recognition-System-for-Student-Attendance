@@ -272,7 +272,7 @@ export default function Login() {
                 borderRadius: "50%",
                 background: `${colors.primary}14`,
                 border: `2px solid ${colors.primary}30`,
-                display: "flex",
+                display: "none",
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 32,
@@ -304,7 +304,6 @@ export default function Login() {
               {t("login.description")}
             </Text>
 
-            {/* Feature badges */}
             <div
               style={{
                 display: "flex",
@@ -312,11 +311,7 @@ export default function Login() {
                 marginTop: 36,
               }}
             >
-              {[
-                { value: "AI", label: t("login.featureAI") },
-                { value: "QR", label: t("login.featureQR") },
-                { value: "GPS", label: t("login.featureGPS") },
-              ].map((item) => (
+              {([] as Array<{ value: string; label: string }>).map((item) => (
                 <div
                   key={item.value}
                   style={{
@@ -429,6 +424,7 @@ export default function Login() {
                 style={{ marginBottom: 16 }}
               >
                 <Input
+                  className="auth-input"
                   prefix={<MailOutlined style={{ color: colors.inputIcon }} />}
                   placeholder={t("login.emailPlaceholder")}
                   style={{
@@ -449,6 +445,7 @@ export default function Login() {
                 style={{ marginBottom: 12 }}
               >
                 <Input.Password
+                  className="auth-input"
                   prefix={<LockOutlined style={{ color: colors.inputIcon }} />}
                   placeholder={t("login.passwordPlaceholder")}
                   style={{
@@ -553,6 +550,7 @@ export default function Login() {
             ]}
           >
             <Input
+              className="auth-input"
               prefix={<MailOutlined style={{ color: colors.inputIcon }} />}
               placeholder={t("login.emailPlaceholder")}
               style={authPageStyles.input}

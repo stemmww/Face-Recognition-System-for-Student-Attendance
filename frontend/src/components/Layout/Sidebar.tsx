@@ -242,13 +242,14 @@ function SidebarContent({
                   padding: collapsed ? "9px" : "9px 10px",
                   borderRadius: 10,
                   cursor: "pointer",
-                  fontSize: 13.5,
+                  fontSize: 13,
                   fontWeight: isActive ? 600 : 500,
                   color: isActive ? text : textMuted,
                   background: isActive ? active : "transparent",
                   transition: "all 0.15s",
                   justifyContent: collapsed ? "center" : "flex-start",
                   marginBottom: 2,
+                  minHeight: 38,
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) e.currentTarget.style.background = hover;
@@ -270,7 +271,19 @@ function SidebarContent({
                 >
                   {item.icon}
                 </span>
-                {!collapsed && <span style={{ whiteSpace: "nowrap" }}>{item.label}</span>}
+                {!collapsed && (
+                  <span
+                    title={item.label}
+                    style={{
+                      minWidth: 0,
+                      lineHeight: 1.25,
+                      whiteSpace: "normal",
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -307,7 +320,7 @@ export default function Sidebar({
         placement="left"
         open={mobileOpen}
         onClose={onMobileClose}
-        width={240}
+        width={264}
         styles={{
           body: { padding: 0, background: surface },
           header: { display: "none" },
@@ -326,7 +339,7 @@ export default function Sidebar({
   return (
     <div
       style={{
-        width: collapsed ? 64 : 220,
+        width: collapsed ? 64 : 248,
         position: "fixed",
         left: 0,
         top: 0,

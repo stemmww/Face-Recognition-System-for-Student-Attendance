@@ -240,12 +240,12 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
     <AntHeader
       style={{
         padding: isMobile ? "0 12px" : "0 24px",
-        background: isDark ? "#1f2937" : "#fff",
+        background: isDark ? "#1f2937" : "#ffffff",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderBottom: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
-        boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.04)",
+        borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+        boxShadow: isDark ? "none" : "0 1px 2px rgba(0,0,0,0.04)",
         height: 56,
         lineHeight: "56px",
       }}

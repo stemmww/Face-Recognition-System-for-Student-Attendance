@@ -11,6 +11,16 @@ from app.schemas.user import UserCreate, UserUpdate
 
 class UserService:
     @staticmethod
+    def _parse_import_role(raw_role: str) -> Role | None:
+        normalized = raw_role.strip().lower()
+        if not normalized:
+            return Role.STUDENT
+        try:
+            return Role(normalized)
+        except ValueError:
+            return None
+
+    @staticmethod
     async def list_users(
         db: AsyncSession,
         role: Role | None = None,
@@ -79,6 +89,7 @@ class UserService:
     ) -> dict:
         created = 0
         skipped = 0
+        updated_roles = 0
         enrolled = 0
         errors: list[str] = []
 
@@ -87,10 +98,16 @@ class UserService:
             first_name = row.get("first_name", "").strip()
             last_name = row.get("last_name", "").strip()
             password = row.get("password", "").strip()
+            role_raw = row.get("role", "").strip()
             course_codes_raw = row.get("course_codes", "").strip()
 
             if not email or not first_name or not last_name or not password:
                 errors.append(f"Row {i}: missing required fields")
+                continue
+
+            role = UserService._parse_import_role(role_raw)
+            if role is None:
+                errors.append(f"Row {i}: invalid role '{role_raw}'")
                 continue
 
             # Find or create user
@@ -99,13 +116,16 @@ class UserService:
 
             if user is not None:
                 skipped += 1
+                if user.role != role:
+                    user.role = role
+                    updated_roles += 1
             else:
                 user = User(
                     email=email,
                     hashed_password=hash_password(password),
                     first_name=first_name,
                     last_name=last_name,
-                    role=Role.STUDENT,
+                    role=role,
                 )
                 db.add(user)
                 await db.flush()
@@ -113,6 +133,12 @@ class UserService:
 
             # Enroll in courses
             if course_codes_raw:
+                if user.role != Role.STUDENT:
+                    errors.append(
+                        f"Row {i}: course_codes can only be used for students"
+                    )
+                    continue
+
                 if user is not None and not user.is_active:
                     errors.append(
                         f"Row {i}: existing user '{email}' is inactive and cannot be enrolled"
@@ -143,6 +169,7 @@ class UserService:
         return {
             "created": created,
             "skipped": skipped,
+            "updated_roles": updated_roles,
             "enrolled": enrolled,
             "errors": errors,
         }

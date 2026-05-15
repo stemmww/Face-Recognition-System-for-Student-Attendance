@@ -126,11 +126,14 @@ export default function UserManagement() {
     try {
       const result = await importStudentsCSV(file);
       setImportResult(result);
-      if (result.created > 0) {
-        message.success(t("usersPage.importSuccess", { created: result.created, enrolled: result.enrolled }));
+      const affected = result.created + result.enrolled + result.updated_roles;
+      if (affected > 0) {
+        message.success(
+          `CSV import complete: ${result.created} created, ${result.updated_roles} roles updated, ${result.enrolled} enrollments added`
+        );
         fetchUsers();
       } else {
-        message.info(t("usersPage.noNewStudents"));
+        message.info("No users were created or updated");
       }
     } catch {
       message.error(t("usersPage.importFailed"));
@@ -343,11 +346,11 @@ export default function UserManagement() {
           description={
             <div>
               <p style={{ margin: "4px 0" }}>{t("usersPage.csvRequired")}: <strong>email, first_name, last_name, password</strong></p>
-              <p style={{ margin: "4px 0" }}>{t("usersPage.csvOptional")}: <strong>course_codes</strong> ({t("usersPage.csvSeparated")})</p>
+              <p style={{ margin: "4px 0" }}>{t("usersPage.csvOptional")}: <strong>role, course_codes</strong> ({t("usersPage.csvSeparated")})</p>
               <code style={{ fontSize: 12, display: "block", marginTop: 8, padding: 8, borderRadius: 4 }}>
-                email,first_name,last_name,password,course_codes<br />
-                john@uni.edu,John,Doe,pass123,SE2322<br />
-                jane@uni.edu,Jane,Smith,pass456,SE2322;CS101
+                email,first_name,last_name,password,role,course_codes<br />
+                john@uni.edu,John,Doe,pass123,student,SE2322<br />
+                jane@uni.edu,Jane,Smith,pass456,professor,
               </code>
             </div>
           }
@@ -378,8 +381,9 @@ export default function UserManagement() {
               message={t("usersPage.importComplete")}
               description={
                 <ul style={{ margin: 0, paddingLeft: 20 }}>
-                  <li><strong>{importResult.created}</strong> {t("usersPage.studentsCreated")}</li>
+                  <li><strong>{importResult.created}</strong> users created</li>
                   <li><strong>{importResult.skipped}</strong> {t("usersPage.accountsSkipped")}</li>
+                  <li><strong>{importResult.updated_roles}</strong> roles updated</li>
                   <li><strong>{importResult.enrolled}</strong> {t("usersPage.enrollmentsAdded")}</li>
                   {importResult.errors.length > 0 && (
                     <li style={{ color: "#ff4d4f" }}>

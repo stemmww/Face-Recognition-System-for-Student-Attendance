@@ -15,6 +15,14 @@ env/
 .env.local
 .env.*.local
 
+# Local Docker overrides
+docker-compose.override.yml
+docker-compose*.local.yml
+compose.override.yml
+compose*.local.yml
+Dockerfile.local
+*.Dockerfile.local
+
 # IDE
 .vscode/
 .idea/

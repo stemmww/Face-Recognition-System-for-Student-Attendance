@@ -1,8 +1,10 @@
 """API integration tests for user endpoints: CRUD, RBAC, password change."""
 
 from httpx import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
+from app.models.user import Role, User
 from tests.conftest import auth_header
 
 
@@ -98,6 +100,66 @@ class TestListUsers:
         token = await _login(client, "student@test.com", "student123")
         r = await client.get("/api/users", headers=auth_header(token))
         assert r.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# POST /users/import-csv
+# ---------------------------------------------------------------------------
+
+
+class TestImportUsersCsv:
+    async def test_import_uses_role_column_for_new_users(
+        self, client: AsyncClient, db: AsyncSession, admin_user: User
+    ):
+        token = await _login(client, "admin@test.com", "admin123")
+        csv_content = (
+            "email,first_name,last_name,password,role,course_codes\n"
+            "csv-prof@test.com,Csv,Professor,admin123,professor,\n"
+            "csv-student@test.com,Csv,Student,admin123,student,\n"
+        )
+
+        r = await client.post(
+            "/api/users/import-csv",
+            headers=auth_header(token),
+            files={"file": ("users.csv", csv_content.encode("utf-8"), "text/csv")},
+        )
+
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["created"] == 2
+        assert data["updated_roles"] == 0
+
+        users = await db.execute(
+            select(User).where(User.email.in_(["csv-prof@test.com", "csv-student@test.com"]))
+        )
+        roles = {user.email: user.role for user in users.scalars().all()}
+        assert roles["csv-prof@test.com"] == Role.PROFESSOR
+        assert roles["csv-student@test.com"] == Role.STUDENT
+
+    async def test_import_updates_existing_user_role(
+        self, client: AsyncClient, db: AsyncSession, admin_user: User, student_user: User
+    ):
+        token = await _login(client, "admin@test.com", "admin123")
+        csv_content = (
+            "email,first_name,last_name,password,role,course_codes\n"
+            f"{student_user.email},Test,Student,student123,professor,\n"
+        )
+
+        r = await client.post(
+            "/api/users/import-csv",
+            headers=auth_header(token),
+            files={"file": ("users.csv", csv_content.encode("utf-8"), "text/csv")},
+        )
+
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["created"] == 0
+        assert data["skipped"] == 1
+        assert data["updated_roles"] == 1
+
+        user = await db.scalar(select(User).where(User.email == student_user.email))
+        assert user is not None
+        assert user.role == Role.PROFESSOR
 
 
 # ---------------------------------------------------------------------------

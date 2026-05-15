@@ -137,10 +137,11 @@ async def import_students_csv(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN)),
 ):
-    """Bulk import students from a CSV file.
+    """Bulk import users from a CSV file.
 
-    CSV columns: email, first_name, last_name, password, course_codes
-    course_codes is optional and can contain multiple codes separated by commas or semicolons.
+    CSV columns: email, first_name, last_name, password, role, course_codes
+    role is optional and defaults to student.
+    course_codes is optional for students and can contain multiple codes separated by commas or semicolons.
     """
     content = await file.read()
     text = content.decode("utf-8-sig")

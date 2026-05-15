@@ -75,11 +75,13 @@ class BulkImportRow(BaseModel):
     first_name: str
     last_name: str
     password: str
+    role: Role = Role.STUDENT
     course_codes: list[str] = []
 
 
 class BulkImportResult(BaseModel):
     created: int
     skipped: int
+    updated_roles: int = 0
     enrolled: int
     errors: list[str]

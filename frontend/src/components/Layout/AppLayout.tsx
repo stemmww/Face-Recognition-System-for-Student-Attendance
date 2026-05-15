@@ -21,10 +21,11 @@ export default function AppLayout({ user, onLogout }: Props) {
   const isMobile = useIsMobile();
   const isDark = useThemeStore((s) => s.isDark);
 
-  const marginLeft = isMobile ? 0 : collapsed ? 80 : 200;
+  const sidebarWidth = isMobile ? 0 : collapsed ? 64 : 220;
+  const pageBg = isDark ? "#111827" : "#f8fafc";
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout style={{ minHeight: "100vh", background: pageBg }}>
       <Sidebar
         role={user.role}
         collapsed={collapsed}
@@ -33,7 +34,14 @@ export default function AppLayout({ user, onLogout }: Props) {
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
-      <Layout style={{ marginLeft, transition: isMobile ? "none" : "margin-left 0.2s" }}>
+      <Layout
+        style={{
+          marginLeft: sidebarWidth,
+          transition: isMobile ? "none" : "margin-left 0.2s",
+          background: pageBg,
+          minHeight: "100vh",
+        }}
+      >
         <Header
           user={user}
           onLogout={onLogout}
@@ -42,12 +50,9 @@ export default function AppLayout({ user, onLogout }: Props) {
         />
         <Content
           style={{
-            margin: isMobile ? 12 : 24,
             padding: isMobile ? 16 : 24,
-            background: isDark ? "#1f2937" : "#fff",
-            borderRadius: 12,
-            minHeight: 280,
-            boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.04)",
+            background: pageBg,
+            minHeight: "calc(100vh - 56px)",
           }}
         >
           <ErrorBoundary>

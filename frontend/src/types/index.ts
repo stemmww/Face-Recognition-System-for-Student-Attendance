@@ -208,6 +208,7 @@ export interface ManualAttendanceEntry {
 export interface BulkImportResult {
   created: number;
   skipped: number;
+  updated_roles: number;
   enrolled: number;
   errors: string[];
 }

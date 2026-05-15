@@ -14,7 +14,7 @@ import { useThemeStore } from "@/stores/themeStore";
 
 function tv(isDark: boolean) {
   return {
-    surface: isDark ? "#1f2937" : "#ffffff",
+    surface: isDark ? "rgb(33, 33, 33)" : "#ffffff",
     border: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
     borderStrong: isDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.1)",
     text: isDark ? "#e2e8f0" : "#1e293b",

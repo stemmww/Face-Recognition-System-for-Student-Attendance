@@ -20,7 +20,7 @@ export const BRAND_PRIMARY_DARK = "#2747F5";
 export function themeColors(isDark: boolean) {
   return {
     /** Page / panel background */
-    pageBg: isDark ? "#1f2937" : "#f8fafc",
+    pageBg: isDark ? "rgb(12, 12, 12)" : "#f8fafc",
     /** Heading text (Title) */
     heading: isDark ? "#e2e8f0" : "#1e293b",
     /** Body / subtitle text */
@@ -49,7 +49,7 @@ export const authPageStyles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: isDark ? "#1f2937" : "#f8fafc",
+    background: isDark ? "rgb(12, 12, 12)" : "#f8fafc",
     transition: "background 0.4s ease",
   }),
 

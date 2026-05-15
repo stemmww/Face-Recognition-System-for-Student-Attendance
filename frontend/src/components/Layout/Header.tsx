@@ -240,7 +240,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
     <AntHeader
       style={{
         padding: isMobile ? "0 12px" : "0 24px",
-        background: isDark ? "#1f2937" : "#ffffff",
+        background: isDark ? "rgb(33, 33, 33)" : "#ffffff",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -302,7 +302,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
           style={{
             width: 1,
             height: 24,
-            background: isDark ? "#374151" : "#e2e8f0",
+            background: isDark ? "#3a3a3a" : "#e2e8f0",
             margin: isMobile ? "0 2px" : "0 6px",
           }}
         />

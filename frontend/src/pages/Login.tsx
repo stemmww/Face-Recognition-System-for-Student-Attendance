@@ -84,9 +84,9 @@ export default function Login() {
   };
 
   /* ── colour helpers ── */
-  const panelBg = isDark ? "#111827" : "#ffffff";
-  const formBg = isDark ? "#1f2937" : "#f8fafc";
-  const cardBg = isDark ? "#1f2937" : "#ffffff";
+  const panelBg = isDark ? "rgb(12, 12, 12)" : "#ffffff";
+  const formBg = isDark ? "rgb(12, 12, 12)" : "#f8fafc";
+  const cardBg = isDark ? "rgb(33, 33, 33)" : "#ffffff";
   const borderCol = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
   const toolbarBg = isDark ? "rgba(31,41,55,0.85)" : "rgba(255,255,255,0.85)";
   const toolbarIcon = isDark ? "#c7d2fe" : "#64748b";

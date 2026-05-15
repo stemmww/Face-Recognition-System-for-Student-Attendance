@@ -22,7 +22,7 @@ export default function AppLayout({ user, onLogout }: Props) {
   const isDark = useThemeStore((s) => s.isDark);
 
   const sidebarWidth = isMobile ? 0 : collapsed ? 64 : 248;
-  const pageBg = isDark ? "#111827" : "#f8fafc";
+  const pageBg = isDark ? "rgb(12, 12, 12)" : "#f8fafc";
 
   return (
     <Layout style={{ minHeight: "100vh", background: pageBg }}>

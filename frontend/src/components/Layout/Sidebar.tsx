@@ -14,7 +14,6 @@ import {
 } from "@ant-design/icons";
 import type { Role } from "@/types";
 import { useThemeStore } from "@/stores/themeStore";
-import { useAuthStore } from "@/stores/authStore";
 
 interface Props {
   role: Role;
@@ -42,7 +41,7 @@ function useNavSections(role: Role): NavSection[] {
   if (role === "admin") {
     return [
       {
-        label: "GENERAL",
+        label: "admin-main",
         items: [
           { key: "/dashboard", icon: <DashboardOutlined />, label: t("nav.dashboard") },
           { key: "/admin/users", icon: <TeamOutlined />, label: t("nav.userManagement") },
@@ -51,7 +50,7 @@ function useNavSections(role: Role): NavSection[] {
         ],
       },
       {
-        label: "SYSTEM",
+        label: "admin-extra",
         items: [
           { key: "/admin/faces", icon: <ScanOutlined />, label: t("nav.faceRegistry") },
           { key: "/admin/attendance", icon: <BarChartOutlined />, label: t("nav.attendance") },
@@ -64,7 +63,7 @@ function useNavSections(role: Role): NavSection[] {
   if (role === "professor") {
     return [
       {
-        label: "GENERAL",
+        label: "professor-main",
         items: [
           { key: "/dashboard", icon: <DashboardOutlined />, label: t("nav.dashboard") },
           { key: "/courses", icon: <BookOutlined />, label: t("nav.myCourses") },
@@ -73,7 +72,7 @@ function useNavSections(role: Role): NavSection[] {
         ],
       },
       {
-        label: "MORE",
+        label: "professor-extra",
         items: [
           { key: "/statistics", icon: <BarChartOutlined />, label: t("nav.statistics") },
           { key: "/appeals-review", icon: <FileTextOutlined />, label: t("nav.appeals") },
@@ -85,7 +84,7 @@ function useNavSections(role: Role): NavSection[] {
 
   return [
     {
-      label: "GENERAL",
+      label: "student-main",
       items: [
         { key: "/dashboard", icon: <DashboardOutlined />, label: t("nav.dashboard") },
         { key: "/attend", icon: <ScanOutlined />, label: t("nav.attend") },
@@ -93,7 +92,7 @@ function useNavSections(role: Role): NavSection[] {
       ],
     },
     {
-      label: "MORE",
+      label: "student-extra",
       items: [
         { key: "/appeals", icon: <FileTextOutlined />, label: t("nav.appeals") },
         { key: "/notifications", icon: <BellOutlined />, label: t("nav.notifications") },
@@ -101,16 +100,6 @@ function useNavSections(role: Role): NavSection[] {
       ],
     },
   ];
-}
-
-const roleLabels: Record<Role, string> = {
-  admin: "Administrator",
-  professor: "Professor",
-  student: "Student",
-};
-
-function getInitials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 function SidebarContent({
@@ -125,14 +114,12 @@ function SidebarContent({
   currentPath: string;
 }) {
   const isDark = useThemeStore((s) => s.isDark);
-  const user = useAuthStore((s) => s.user);
   const sections = useNavSections(role);
 
-  const surface = isDark ? "#1f2937" : "#ffffff";
+  const surface = isDark ? "rgb(33, 33, 33)" : "#ffffff";
   const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
   const text = isDark ? "#e2e8f0" : "#1e293b";
   const textMuted = isDark ? "#94a3b8" : "#64748b";
-  const textFaint = isDark ? "#64748b" : "#94a3b8";
   const accent = "#3D5AFE";
   const hover = isDark ? "rgba(255,255,255,0.06)" : "#f1f5f9";
   const active = isDark ? "rgba(61,90,254,0.15)" : "#eef2ff";
@@ -145,89 +132,15 @@ function SidebarContent({
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        padding: collapsed ? "16px 8px" : "20px 14px",
+        padding: collapsed ? "16px 8px" : "18px 14px",
         gap: 4,
         overflowY: "auto",
         overflowX: "hidden",
         transition: "padding 0.2s",
       }}
     >
-      {/* Profile */}
-      {!collapsed && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "8px 10px",
-            borderRadius: 12,
-            marginBottom: 12,
-          }}
-        >
-          <div
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: "50%",
-              background: `linear-gradient(135deg, ${accent}, #6B82FE)`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 13,
-              flexShrink: 0,
-            }}
-          >
-            {user ? getInitials(user.first_name, user.last_name) : "?"}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 13.5, color: text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {user ? `${user.first_name} ${user.last_name}` : "—"}
-            </div>
-            <div style={{ fontSize: 11, color: textMuted }}>{roleLabels[role]}</div>
-          </div>
-        </div>
-      )}
-
-      {collapsed && (
-        <div
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: "50%",
-            background: `linear-gradient(135deg, ${accent}, #6B82FE)`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 13,
-            margin: "0 auto 12px",
-          }}
-        >
-          {user ? getInitials(user.first_name, user.last_name) : "?"}
-        </div>
-      )}
-
-      {/* Nav Sections */}
       {sections.map((section) => (
-        <div key={section.label} style={{ marginTop: collapsed ? 12 : 16 }}>
-          {!collapsed && (
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: textFaint,
-                letterSpacing: "0.1em",
-                padding: "0 10px",
-                marginBottom: 6,
-                textTransform: "uppercase",
-              }}
-            >
-              {section.label}
-            </div>
-          )}
+        <div key={section.label} style={{ marginTop: 0 }}>
           {section.items.map((item) => {
             const isActive = currentPath === item.key || currentPath.startsWith(item.key + "/");
             return (
@@ -307,7 +220,7 @@ export default function Sidebar({
   const navigate = useNavigate();
   const location = useLocation();
   const isDark = useThemeStore((s) => s.isDark);
-  const surface = isDark ? "#1f2937" : "#ffffff";
+  const surface = isDark ? "rgb(33, 33, 33)" : "#ffffff";
 
   const handleClick = (key: string) => {
     navigate(key);

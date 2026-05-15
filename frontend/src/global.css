@@ -52,11 +52,11 @@ body {
 
 /* Dark mode body background */
 body.dark {
-  background-color: #111827;
+  background-color: rgb(12, 12, 12);
 }
 
 body.dark #root {
-  background-color: #111827;
+  background-color: rgb(12, 12, 12);
 }
 
 body,
@@ -74,7 +74,7 @@ body.dark .auth-input.ant-input-affix-wrapper:hover,
 body.dark .auth-input.ant-input-affix-wrapper-focused,
 body.dark .auth-input.ant-input-affix-wrapper:focus,
 body.dark .auth-input.ant-input-affix-wrapper:focus-within {
-  background: #111827 !important;
+  background: rgb(33, 33, 33) !important;
   border-color: #334155 !important;
   color: #e2e8f0 !important;
 }
@@ -89,7 +89,7 @@ body.dark .auth-input input:-webkit-autofill,
 body.dark .auth-input input:-webkit-autofill:hover,
 body.dark .auth-input input:-webkit-autofill:focus {
   -webkit-text-fill-color: #e2e8f0 !important;
-  box-shadow: 0 0 0 1000px #111827 inset !important;
+  box-shadow: 0 0 0 1000px rgb(33, 33, 33) inset !important;
   caret-color: #e2e8f0;
 }
 

@@ -215,13 +215,13 @@ export default function App() {
           colorSuccess: "#10b981",
           colorWarning: "#f59e0b",
           colorError: "#ef4444",
-          colorBgLayout: isDark ? "#111827" : "#f1f5f9",
+          colorBgLayout: isDark ? "rgb(12, 12, 12)" : "#f1f5f9",
           ...(isDark && {
-            colorBgContainer: "#1e293b",
-            colorBgElevated: "#1e293b",
-            colorBorder: "#334155",
-            colorBorderSecondary: "#283548",
-            colorBgSpotlight: "#374151",
+            colorBgContainer: "rgb(33, 33, 33)",
+            colorBgElevated: "rgb(33, 33, 33)",
+            colorBorder: "#3a3a3a",
+            colorBorderSecondary: "#2b2b2b",
+            colorBgSpotlight: "rgb(33, 33, 33)",
             colorText: "#e2e8f0",
             colorTextSecondary: "#94a3b8",
             colorTextTertiary: "#64748b",
@@ -245,13 +245,13 @@ export default function App() {
           Card: {
             borderRadiusLG: 12,
             ...(isDark && {
-              colorBgContainer: "#1e293b",
+              colorBgContainer: "rgb(33, 33, 33)",
             }),
           },
           Table: isDark ? {
-            colorBgContainer: "#1e293b",
-            headerBg: "#283548",
-            rowHoverBg: "#283548",
+            colorBgContainer: "rgb(33, 33, 33)",
+            headerBg: "#2b2b2b",
+            rowHoverBg: "#2b2b2b",
           } : {},
         },
       }}

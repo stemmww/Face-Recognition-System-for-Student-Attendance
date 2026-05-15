@@ -1,20 +1,15 @@
-import re
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, field_validator
 
 from app.models.user import Role
 
-_PASSWORD_MIN_LENGTH = 8
-_PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$")
-_PASSWORD_HINT = (
-    "Password must be at least 8 characters and contain "
-    "an uppercase letter, a lowercase letter, and a digit."
-)
+_PASSWORD_MIN_LENGTH = 6
+_PASSWORD_HINT = "Password must be at least 6 characters."
 
 
 def _validate_password(v: str) -> str:
-    if len(v) < _PASSWORD_MIN_LENGTH or not _PASSWORD_PATTERN.search(v):
+    if len(v) < _PASSWORD_MIN_LENGTH:
         raise ValueError(_PASSWORD_HINT)
     return v
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { isAxiosError } from "axios";
 import {
   Alert,
   Button,
@@ -41,6 +42,29 @@ interface UserFormValues {
   first_name: string;
   last_name: string;
   role: Role;
+}
+
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (!isAxiosError(error)) return fallback;
+
+  const data = error.response?.data as { detail?: unknown } | undefined;
+  const detail = data?.detail;
+
+  if (typeof detail === "string") return detail;
+
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item !== "object" || item === null || !("msg" in item)) return null;
+        const msg = (item as { msg?: unknown }).msg;
+        return typeof msg === "string" ? msg : null;
+      })
+      .filter((msg): msg is string => Boolean(msg));
+
+    if (messages.length > 0) return messages.join("; ");
+  }
+
+  return fallback;
 }
 
 export default function UserManagement() {
@@ -115,8 +139,13 @@ export default function UserManagement() {
       setModalOpen(false);
       form.resetFields();
       fetchUsers();
-    } catch {
-      message.error(editingUser ? t("usersPage.updateFailed") : t("usersPage.createFailed"));
+    } catch (error) {
+      message.error(
+        getApiErrorMessage(
+          error,
+          editingUser ? t("usersPage.updateFailed") : t("usersPage.createFailed")
+        )
+      );
     }
   };
 
@@ -285,14 +314,14 @@ export default function UserManagement() {
             label={t("usersPage.firstName")}
             rules={[{ required: true, message: t("common.required") }]}
           >
-            <Input placeholder="John" />
+            <Input placeholder="First name" />
           </Form.Item>
           <Form.Item
             name="last_name"
             label={t("usersPage.lastName")}
             rules={[{ required: true, message: t("common.required") }]}
           >
-            <Input placeholder="Doe" />
+            <Input placeholder="Last name" />
           </Form.Item>
           <Form.Item
             name="email"
@@ -302,7 +331,7 @@ export default function UserManagement() {
               { type: "email", message: t("login.emailInvalid") },
             ]}
           >
-            <Input placeholder="john.doe@university.edu" />
+            <Input placeholder="user@example.com" />
           </Form.Item>
           <Form.Item
             name="password"
@@ -349,8 +378,8 @@ export default function UserManagement() {
               <p style={{ margin: "4px 0" }}>{t("usersPage.csvOptional")}: <strong>role, course_codes</strong> ({t("usersPage.csvSeparated")})</p>
               <code style={{ fontSize: 12, display: "block", marginTop: 8, padding: 8, borderRadius: 4 }}>
                 email,first_name,last_name,password,role,course_codes<br />
-                john@uni.edu,John,Doe,pass123,student,SE2322<br />
-                jane@uni.edu,Jane,Smith,pass456,professor,
+                student_1@example.com,student_1,Student,admin123,student,SE2322<br />
+                professor_1@example.com,professor_1,Professor,admin123,professor,
               </code>
             </div>
           }

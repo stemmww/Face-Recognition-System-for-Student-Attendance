@@ -61,6 +61,22 @@ class TestCreateUser:
         assert data["role"] == "student"
         assert data["is_active"] is True
 
+    async def test_admin_creates_user_with_default_test_password(
+        self, client: AsyncClient, admin_user: User
+    ):
+        token = await _login(client, "admin@test.com", "admin123")
+        r = await client.post("/api/users", headers=auth_header(token), json={
+            "email": "manual-professor@test.com",
+            "password": "admin123",
+            "first_name": "Manual",
+            "last_name": "Professor",
+            "role": "professor",
+        })
+        assert r.status_code == 201, r.text
+        data = r.json()
+        assert data["email"] == "manual-professor@test.com"
+        assert data["role"] == "professor"
+
     async def test_student_cannot_create_user(self, client: AsyncClient, student_user: User):
         token = await _login(client, "student@test.com", "student123")
         r = await client.post("/api/users", headers=auth_header(token), json={

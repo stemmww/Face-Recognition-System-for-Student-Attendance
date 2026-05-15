@@ -14,6 +14,7 @@ import {
 } from "@ant-design/icons";
 import type { Role } from "@/types";
 import { useThemeStore } from "@/stores/themeStore";
+import { BRAND_PRIMARY, BRAND_PRIMARY_DARK } from "@/styles/theme";
 
 interface Props {
   role: Role;
@@ -120,7 +121,7 @@ function SidebarContent({
   const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
   const text = isDark ? "#e2e8f0" : "#1e293b";
   const textMuted = isDark ? "#94a3b8" : "#64748b";
-  const accent = "#3D5AFE";
+  const accent = BRAND_PRIMARY;
   const hover = isDark ? "rgba(255,255,255,0.06)" : "#f1f5f9";
   const active = isDark ? "rgba(61,90,254,0.15)" : "#eef2ff";
 
@@ -285,7 +286,7 @@ export default function Sidebar({
             width: 32,
             height: 32,
             borderRadius: 8,
-            background: "#3D5AFE",
+            background: BRAND_PRIMARY,
             border: "none",
             cursor: "pointer",
             display: "flex",
@@ -295,11 +296,11 @@ export default function Sidebar({
             boxShadow: "0 2px 8px rgba(61,90,254,0.35)",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#2747F5";
+            e.currentTarget.style.background = BRAND_PRIMARY_DARK;
             e.currentTarget.style.transform = "scale(1.08)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#3D5AFE";
+            e.currentTarget.style.background = BRAND_PRIMARY;
             e.currentTarget.style.transform = "scale(1)";
           }}
         >

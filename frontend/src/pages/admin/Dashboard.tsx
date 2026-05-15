@@ -11,6 +11,7 @@ import { listCourses } from "@/api/courses";
 import { getCourseTrends } from "@/api/statistics";
 import type { User, Course, SessionTrendPoint } from "@/types";
 import { useThemeStore } from "@/stores/themeStore";
+import { BRAND_PRIMARY } from "@/styles/theme";
 
 function tv(isDark: boolean) {
   return {
@@ -20,7 +21,7 @@ function tv(isDark: boolean) {
     text: isDark ? "#e2e8f0" : "#1e293b",
     textMuted: isDark ? "#94a3b8" : "#64748b",
     textFaint: isDark ? "#64748b" : "#94a3b8",
-    accent: "#3D5AFE",
+    accent: BRAND_PRIMARY,
     accentSoft: isDark ? "rgba(61,90,254,0.15)" : "#eef2ff",
     green: isDark ? "#34d399" : "#10b981",
     greenSoft: isDark ? "#064e3b" : "#d1fae5",

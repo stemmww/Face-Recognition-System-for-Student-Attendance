@@ -9,9 +9,9 @@
 
 import type { CSSProperties } from "react";
 
-export const BRAND_PRIMARY = "#3D5AFE";
-export const BRAND_PRIMARY_RGB = "61, 90, 254";
-export const BRAND_PRIMARY_DARK = "#2747F5";
+export const BRAND_PRIMARY = "rgb(64, 169, 255)";
+export const BRAND_PRIMARY_RGB = "64, 169, 255";
+export const BRAND_PRIMARY_DARK = "rgb(38, 139, 220)";
 
 // ---------------------------------------------------------------------------
 // Color palette — call with isDark to get the right variant

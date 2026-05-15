@@ -389,6 +389,21 @@ export default function Login() {
             }}
           >
             <div style={{ marginBottom: 28 }}>
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 14,
+                  background: colors.primary,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 18px",
+                  boxShadow: `0 8px 24px rgba(64, 169, 255, ${isDark ? 0.25 : 0.22})`,
+                }}
+              >
+                <ScanOutlined style={{ fontSize: 26, color: "#fff" }} />
+              </div>
               <Title
                 level={3}
                 style={{

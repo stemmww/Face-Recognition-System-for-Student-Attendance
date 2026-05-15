@@ -162,7 +162,7 @@ export default function Login() {
       {!isMobile && (
         <div
           style={{
-            flex: "0 0 50%",
+            flex: "0 0 100%",
             background: panelBg,
             position: "relative",
             overflow: "hidden",
@@ -171,6 +171,30 @@ export default function Login() {
             transition: "background 0.4s ease",
           }}
         >
+          <img
+            src="/assets/login-attendance-hero.png"
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              zIndex: 0,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              background: isDark
+                ? "linear-gradient(90deg, rgba(12,12,12,0.76), rgba(12,12,12,0.3), rgba(12,12,12,0.64))"
+                : "linear-gradient(90deg, rgba(15,23,42,0.62), rgba(15,23,42,0.18), rgba(248,250,252,0.62))",
+              zIndex: 1,
+            }}
+          />
           {/* Logo / brand area */}
           <div style={{ padding: "36px 40px", position: "relative", zIndex: 2 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -191,7 +215,7 @@ export default function Login() {
                 style={{
                   fontWeight: 700,
                   fontSize: 18,
-                  color: colors.heading,
+                  color: "#fff",
                 }}
               >
                 {t("login.title")}
@@ -210,6 +234,7 @@ export default function Login() {
               background: `linear-gradient(135deg, ${colors.primary}22 0%, ${colors.primary}08 100%)`,
               clipPath: "polygon(0 100%, 0 20%, 80% 100%)",
               zIndex: 0,
+              display: "none",
             }}
           />
           <div
@@ -222,6 +247,7 @@ export default function Login() {
               background: `linear-gradient(135deg, ${colors.primary}18 0%, ${colors.primary}05 100%)`,
               clipPath: "polygon(0 100%, 0 30%, 70% 100%)",
               zIndex: 0,
+              display: "none",
             }}
           />
 
@@ -231,7 +257,7 @@ export default function Login() {
               position: "absolute",
               top: 100,
               right: 60,
-              display: "grid",
+              display: "none",
               gridTemplateColumns: "repeat(5, 8px)",
               gap: 12,
               opacity: isDark ? 0.15 : 0.2,
@@ -254,13 +280,16 @@ export default function Login() {
           {/* Centre illustration area */}
           <div
             style={{
-              flex: 1,
+              position: "absolute",
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: "50%",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              position: "relative",
-              zIndex: 1,
+              zIndex: 2,
               padding: "0 40px",
             }}
           >
@@ -284,7 +313,7 @@ export default function Login() {
             <Title
               level={3}
               style={{
-                color: colors.heading,
+                color: "#fff",
                 marginBottom: 8,
                 fontWeight: 700,
                 textAlign: "center",
@@ -294,7 +323,7 @@ export default function Login() {
             </Title>
             <Text
               style={{
-                color: colors.subtitle,
+                color: "rgba(255,255,255,0.78)",
                 fontSize: 15,
                 textAlign: "center",
                 maxWidth: 340,
@@ -306,7 +335,7 @@ export default function Login() {
 
             <div
               style={{
-                display: "flex",
+                display: "none",
                 gap: 12,
                 marginTop: 36,
               }}
@@ -340,9 +369,12 @@ export default function Login() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: formBg,
+          background: isMobile ? formBg : "transparent",
+          marginLeft: isMobile ? 0 : "-42%",
           transition: "background 0.4s ease",
           padding: isMobile ? "80px 24px 32px" : "48px 24px",
+          position: "relative",
+          zIndex: 3,
         }}
       >
         <div style={{ width: "100%", maxWidth: 420 }}>
@@ -382,39 +414,25 @@ export default function Login() {
               borderRadius: 16,
               padding: isMobile ? "28px 24px" : "40px 36px",
               boxShadow: isDark
-                ? "0 4px 24px rgba(0,0,0,0.3)"
-                : "0 4px 24px rgba(0,0,0,0.06)",
+                ? "0 18px 50px rgba(0,0,0,0.38)"
+                : "0 18px 50px rgba(15,23,42,0.16)",
               border: `1px solid ${borderCol}`,
               transition: "all 0.4s ease",
             }}
           >
             <div style={{ marginBottom: 28 }}>
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 14,
-                  background: colors.primary,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 18px",
-                  boxShadow: `0 8px 24px rgba(64, 169, 255, ${isDark ? 0.25 : 0.22})`,
-                }}
-              >
-                <ScanOutlined style={{ fontSize: 26, color: "#fff" }} />
-              </div>
               <Title
                 level={3}
                 style={{
                   marginBottom: 4,
                   color: colors.heading,
                   fontWeight: 700,
+                  fontSize: 28,
                 }}
               >
                 {t("login.signIn")}
               </Title>
-              <Text style={{ color: colors.subtitle, fontSize: 14 }}>
+              <Text style={{ color: colors.subtitle, fontSize: 15 }}>
                 {t("login.signInSubtitle")}
               </Text>
             </div>
@@ -428,7 +446,7 @@ export default function Login() {
               <Form.Item
                 name="email"
                 label={
-                  <span style={authPageStyles.formLabel(isDark)}>
+                  <span style={{ ...authPageStyles.formLabel(isDark), fontSize: 15 }}>
                     {t("login.emailLabel")}
                   </span>
                 }
@@ -445,6 +463,7 @@ export default function Login() {
                   style={{
                     ...authPageStyles.input,
                     borderColor: colors.inputBorder,
+                    fontSize: 15,
                   }}
                 />
               </Form.Item>
@@ -452,7 +471,7 @@ export default function Login() {
               <Form.Item
                 name="password"
                 label={
-                  <span style={authPageStyles.formLabel(isDark)}>
+                  <span style={{ ...authPageStyles.formLabel(isDark), fontSize: 15 }}>
                     {t("login.passwordLabel")}
                   </span>
                 }
@@ -466,6 +485,7 @@ export default function Login() {
                   style={{
                     ...authPageStyles.input,
                     borderColor: colors.inputBorder,
+                    fontSize: 15,
                   }}
                 />
               </Form.Item>
@@ -482,7 +502,7 @@ export default function Login() {
                 <Checkbox>
                   <span
                     style={{
-                      fontSize: 13,
+                      fontSize: 14,
                       color: colors.subtitle,
                     }}
                   >
@@ -493,7 +513,7 @@ export default function Login() {
                   type="link"
                   style={{
                     padding: 0,
-                    fontSize: 13,
+                    fontSize: 14,
                     color: colors.primary,
                     fontWeight: 500,
                   }}

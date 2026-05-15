@@ -43,16 +43,19 @@ class VoteResult:
     """Outcome of multi-frame majority voting against a user's stored embeddings.
 
     Each frame independently compares against the user's centroid; a frame
-    "votes yes" when its best similarity beats the recognition threshold.
-    A configurable minimum number of yes-votes is required to accept.
+    "votes yes" when its best similarity beats the recognition threshold AND
+    beats the best impostor similarity by `hard_negative_margin`. A
+    configurable minimum number of yes-votes is required to accept.
     """
 
     passed: bool
-    votes: int               # number of frames whose similarity > threshold
-    total: int               # number of frames considered (== len(assessments))
+    votes: int               # frames that voted yes
+    total: int               # frames considered (== len(assessments))
     threshold: float         # similarity threshold used
-    similarities: list[float]  # per-frame best similarity (parallel to assessments)
-    max_similarity: float    # the best similarity observed across all frames
+    similarities: list[float]      # per-frame self-similarity
+    other_similarities: list[float]  # per-frame best impostor-similarity
+    max_similarity: float    # best self-similarity observed
+    hard_negative_rejections: int  # frames where self ≤ other + margin
 
 
 class FaceService:
@@ -283,15 +286,25 @@ class FaceService:
         threshold: float | None = None,
         min_ratio: float | None = None,
         min_floor: int | None = None,
+        hard_negative_margin: float | None = None,
     ) -> VoteResult:
-        """Multi-frame majority voting against one user's stored embeddings.
+        """Multi-frame majority voting with cross-user hard-negative check.
 
-        Each frame's embedding is compared against the user's centroid; a
-        frame "votes yes" when its best similarity exceeds `threshold`.
-        Acceptance requires at least `ceil(min_ratio * n)` yes-votes (with
-        a floor to avoid collapsing to a single vote on tiny batches). Using
-        a ratio rather than an absolute count keeps the security budget
-        constant when the frontend changes how many frames it captures.
+        Each frame's embedding is compared against the user's enrolled
+        embeddings (`self_sim`) AND against every *other* enrolled user's
+        embeddings (`other_sim`). A frame votes yes only when both hold:
+
+          1. self_sim > threshold     -- recognised at all
+          2. self_sim > other_sim + hard_negative_margin
+                                       -- recognised more strongly as the
+                                          claimed user than as anyone else
+
+        Condition (2) defends against identity confusion — twins, siblings,
+        or coincidentally similar faces in the enrolled pool. With margin=0
+        the cross-user check is effectively disabled.
+
+        Acceptance requires at least `ceil(min_ratio * n)` yes-votes with a
+        floor protecting tiny batches.
         """
         if threshold is None:
             threshold = settings.SELF_RECOGNITION_THRESHOLD
@@ -299,17 +312,22 @@ class FaceService:
             min_ratio = settings.VOTING_MIN_RATIO
         if min_floor is None:
             min_floor = settings.VOTING_MIN_FLOOR
+        if hard_negative_margin is None:
+            hard_negative_margin = settings.HARD_NEGATIVE_MARGIN
 
         n = len(assessments)
-        # Required votes = ceil(ratio * n), bounded by [floor, n]
         required = max(min_floor, math.ceil(min_ratio * n))
         effective_min_votes = min(required, n)
 
-        similarities: list[float] = []
+        self_sims: list[float] = []
+        other_sims: list[float] = []
         votes = 0
+        hard_negative_rejections = 0
         for a in assessments:
             emb_str = str(a.embedding.tolist())
-            result = await db.execute(
+
+            # Closest match among the claimed user's enrolled embeddings.
+            self_row = (await db.execute(
                 text("""
                     SELECT 1 - (embedding <=> CAST(:emb AS vector)) AS sim
                     FROM face_embeddings
@@ -318,28 +336,53 @@ class FaceService:
                     LIMIT 1
                 """),
                 {"emb": emb_str, "uid": user_id},
-            )
-            row = result.fetchone()
-            sim = float(row[0]) if row is not None else 0.0
-            similarities.append(round(sim, 4))
-            if sim > threshold:
+            )).fetchone()
+            self_sim = float(self_row[0]) if self_row is not None else 0.0
+
+            # Closest match among *other* enrolled users. Returns 0 when the
+            # database has nobody else enrolled — which collapses the margin
+            # check to "self_sim > threshold" (current behaviour).
+            other_row = (await db.execute(
+                text("""
+                    SELECT 1 - (embedding <=> CAST(:emb AS vector)) AS sim
+                    FROM face_embeddings
+                    WHERE user_id != :uid
+                    ORDER BY embedding <=> CAST(:emb AS vector)
+                    LIMIT 1
+                """),
+                {"emb": emb_str, "uid": user_id},
+            )).fetchone()
+            other_sim = float(other_row[0]) if other_row is not None else 0.0
+
+            self_sims.append(round(self_sim, 4))
+            other_sims.append(round(other_sim, 4))
+
+            passes_threshold = self_sim > threshold
+            beats_impostors = self_sim > other_sim + hard_negative_margin
+            if passes_threshold and beats_impostors:
                 votes += 1
+            elif passes_threshold and not beats_impostors:
+                hard_negative_rejections += 1
 
         passed = votes >= effective_min_votes
-        max_sim = max(similarities) if similarities else 0.0
+        max_sim = max(self_sims) if self_sims else 0.0
         logger.info(
             "Voting for user %d: %d/%d frames voted yes "
-            "(threshold=%.3f, required=%d, ratio=%.2f, max_sim=%.3f) → %s",
+            "(threshold=%.3f, required=%d, ratio=%.2f, margin=%.3f, "
+            "max_self=%.3f, hard_neg_rejected=%d) → %s",
             user_id, votes, n, threshold, effective_min_votes, min_ratio,
-            max_sim, "PASS" if passed else "FAIL",
+            hard_negative_margin, max_sim, hard_negative_rejections,
+            "PASS" if passed else "FAIL",
         )
         return VoteResult(
             passed=passed,
             votes=votes,
             total=len(assessments),
             threshold=threshold,
-            similarities=similarities,
+            similarities=self_sims,
+            other_similarities=other_sims,
             max_similarity=max_sim,
+            hard_negative_rejections=hard_negative_rejections,
         )
 
     @staticmethod

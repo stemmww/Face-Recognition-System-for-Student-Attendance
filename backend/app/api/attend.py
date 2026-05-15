@@ -322,6 +322,16 @@ async def verify_attendance(
 
     vote = await FaceService.vote_frames(db, assessments, current_user.id)
     if not vote.passed:
+        # Distinguish "no match" from "you look more like someone else": the
+        # latter often happens to legitimate users in pathological conditions
+        # (twin in the cohort, harsh side-lighting, etc.) and the retry hint
+        # is different — re-shoot in better light vs. re-enroll your face.
+        if vote.hard_negative_rejections > vote.votes:
+            raise BadRequestError(
+                "Face verification failed: your face matched another enrolled "
+                "user more strongly than yourself in this lighting. Move to "
+                "better light and try again, or ask an admin to re-enroll your face."
+            )
         raise BadRequestError(
             f"Face verification failed. Only {vote.votes} of {vote.total} "
             f"frames matched your stored face. Please try again."

@@ -247,7 +247,8 @@ class TestAttendApi:
             n = len(assessments)
             return VoteResult(
                 passed=True, votes=n, total=n, threshold=0.22,
-                similarities=[0.99] * n, max_similarity=0.99,
+                similarities=[0.99] * n, other_similarities=[0.0] * n,
+                max_similarity=0.99, hard_negative_rejections=0,
             )
 
         monkeypatch.setattr(

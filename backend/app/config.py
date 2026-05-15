@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # to 1 when only one or two frames survive the quality gate.
     VOTING_MIN_FLOOR: int = 2
 
+    # Hard-negative safety margin for identity confusion (twins, siblings,
+    # look-alikes). A frame only votes yes when its similarity with the
+    # claimed user beats its similarity with *any other* enrolled user by
+    # at least this much. Setting to 0 disables the check entirely.
+    HARD_NEGATIVE_MARGIN: float = 0.05
+
     # Anti-spoofing: CNN-based liveness via the MiniFASNet ensemble from
     # Minivision's Silent-Face-Anti-Spoofing project. Set ENABLED=False to
     # fall back to the legacy heuristics only (detect_screen_spoof + replay).

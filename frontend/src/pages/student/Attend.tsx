@@ -26,7 +26,11 @@ import ChallengeGuide from "@/components/ChallengeGuide";
 const { Title, Text } = Typography;
 
 const SCANNER_ELEMENT_ID = "qr-reader";
-const FRAME_COUNT = 12;
+// 6 frames × 250 ms ≈ 1.25 s of capture is enough for passive liveness
+// (which needs ≥3 frames of natural micro-movement) and active challenges
+// (which need ~5 frames to trace the gesture's arc). The voting layer is
+// ratio-based, so the security budget rescales automatically with N.
+const FRAME_COUNT = 6;
 const FRAME_DELAY_MS = 250;
 
 type Step = "scan" | "face" | "verifying" | "done";

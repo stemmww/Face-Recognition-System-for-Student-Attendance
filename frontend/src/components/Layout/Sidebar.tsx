@@ -11,6 +11,9 @@ import {
   BellOutlined,
   FileTextOutlined,
   TeamOutlined,
+  ApartmentOutlined,
+  HomeOutlined,
+  ScheduleOutlined,
 } from "@ant-design/icons";
 import type { Role } from "@/types";
 import { useThemeStore } from "@/stores/themeStore";
@@ -46,7 +49,10 @@ function useNavSections(role: Role): NavSection[] {
         items: [
           { key: "/dashboard", icon: <DashboardOutlined />, label: t("nav.dashboard") },
           { key: "/admin/users", icon: <TeamOutlined />, label: t("nav.userManagement") },
-          { key: "/admin/courses", icon: <BookOutlined />, label: t("nav.courses") },
+          { key: "/admin/groups", icon: <ApartmentOutlined />, label: t("nav.groups") },
+          { key: "/admin/professors", icon: <UserOutlined />, label: t("nav.professors") },
+          { key: "/admin/courses", icon: <BookOutlined />, label: t("nav.subjects") },
+          { key: "/admin/classrooms", icon: <HomeOutlined />, label: t("nav.classrooms") },
           { key: "/admin/schedules", icon: <CalendarOutlined />, label: t("nav.schedules") },
         ],
       },
@@ -67,6 +73,7 @@ function useNavSections(role: Role): NavSection[] {
         label: "professor-main",
         items: [
           { key: "/dashboard", icon: <DashboardOutlined />, label: t("nav.dashboard") },
+          { key: "/my-schedule", icon: <ScheduleOutlined />, label: t("nav.mySchedule") },
           { key: "/courses", icon: <BookOutlined />, label: t("nav.myCourses") },
           { key: "/sessions", icon: <ScanOutlined />, label: t("nav.liveSessions") },
           { key: "/attendance", icon: <CalendarOutlined />, label: t("nav.attendance") },
@@ -88,6 +95,7 @@ function useNavSections(role: Role): NavSection[] {
       label: "student-main",
       items: [
         { key: "/dashboard", icon: <DashboardOutlined />, label: t("nav.dashboard") },
+        { key: "/my-schedule", icon: <ScheduleOutlined />, label: t("nav.mySchedule") },
         { key: "/attend", icon: <ScanOutlined />, label: t("nav.attend") },
         { key: "/courses", icon: <BookOutlined />, label: t("nav.myCourses") },
       ],

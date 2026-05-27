@@ -44,9 +44,6 @@ async def lifespan(app: FastAPI):
         try:
             await conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS vector"))
         except DatabaseError:
-            # SQLite (tests) doesn't know CREATE EXTENSION; some Postgres
-            # deployments lack the privilege. Either way, vector ops will
-            # just fail later if pgvector isn't actually present.
             logger.debug("pgvector extension not available (expected for SQLite tests)")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -102,7 +99,7 @@ async def audit_middleware(request: Request, call_next):
                 ip_address=ip,
             ))
             await db.commit()
-    except Exception:  # noqa: BLE001 — audit must never break the main response
+    except Exception:  # noqa: BLE001
         pass
 
     return response
@@ -113,19 +110,19 @@ async def health_check():
     return {"status": "healthy"}
 
 
-# --- Phase 1 routers ---
+# --- Phase 1: Auth + Users ---
 from app.api import auth, users  # noqa: E402
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 
-# --- Phase 2 routers ---
+# --- Phase 2: Courses + Schedules ---
 from app.api import courses, schedules  # noqa: E402
 
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 app.include_router(schedules.router, prefix="/api/schedules", tags=["Schedules"])
 
-# --- Phase 3 routers ---
+# --- Phase 3: Face ---
 from app.api import face  # noqa: E402
 
 app.include_router(face.router, prefix="/api/face", tags=["Face Registry"])
@@ -135,25 +132,37 @@ uploads_path = Path(settings.UPLOAD_DIR)
 uploads_path.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
-# --- Phase 4 routers ---
+# --- Phase 4: Attendance ---
 from app.api import attendance, attendance_session, attend  # noqa: E402
 
 app.include_router(attendance_session.router, prefix="/api/sessions", tags=["Sessions"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
 app.include_router(attend.router, prefix="/api/attend", tags=["Student Attend"])
 
-# --- Phase 5 routers ---
+# --- Phase 5: Notifications ---
 from app.api import notifications  # noqa: E402
 
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
-# --- Phase 6 routers ---
+# --- Phase 6: Appeals + Statistics + Audit ---
 from app.api import appeals, statistics  # noqa: E402
 
 app.include_router(appeals.router, prefix="/api/appeals", tags=["Appeals"])
 app.include_router(statistics.router, prefix="/api/statistics", tags=["Statistics"])
 
-# --- Audit log ---
 from app.api import audit  # noqa: E402
 
 app.include_router(audit.router, prefix="/api/audit", tags=["Audit"])
+
+# --- Phase 7: Academic management (groups, classrooms, professors) ---
+from app.api import classrooms, group_subjects, groups, professors  # noqa: E402
+
+app.include_router(classrooms.router, prefix="/api/classrooms", tags=["Classrooms"])
+app.include_router(groups.router, prefix="/api/groups", tags=["Groups"])
+app.include_router(group_subjects.router, prefix="/api/groups", tags=["Group Subjects"])
+app.include_router(professors.router, prefix="/api/professors", tags=["Professors"])
+
+# --- Phase 8: Professor availability ---
+from app.api import professor_availability  # noqa: E402
+
+app.include_router(professor_availability.router, prefix="/api/availability", tags=["Availability"])

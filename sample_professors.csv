@@ -1,0 +1,6 @@
+email,first_name,last_name,password,tags
+john.smith@university.edu,John,Smith,Pass1234!,algorithms;data-structures
+alice.jones@university.edu,Alice,Jones,Pass1234!,machine-learning;ai
+bob.brown@university.edu,Bob,Brown,Pass1234!,databases;sql
+carol.white@university.edu,Carol,White,Pass1234!,web-development;javascript
+david.lee@university.edu,David,Lee,Pass1234!,networks;security

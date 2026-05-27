@@ -1,0 +1,9 @@
+day_of_week,start_time,end_time,discipline,room,type,lecturer,groups
+MONDAY,08:00,09:30,Software Engineering,C1.1.101,LECTURE,Иванов Иван,SE-2322
+MONDAY,09:50,11:20,Software Engineering,C1.1.205,PRACTICE,Иванов Иван,SE-2322
+TUESDAY,08:00,09:30,Computer Science,C1.2.301,LECTURE,Петров Алексей,CS-2301
+TUESDAY,11:40,13:10,Computer Science,C1.2.105,PRACTICE,Петров Алексей,CS-2301
+WEDNESDAY,08:00,09:30,Software Engineering,C1.1.101,LECTURE,Иванов Иван,SE-2301
+THURSDAY,09:50,11:20,Big Data Analysis,C2.1.402,LECTURE,Сидоров Михаил,BDA-2302
+FRIDAY,08:00,09:30,Cybersecurity,C1.3.201,LECTURE,Козлов Артём,CB-2301
+FRIDAY,09:50,11:20,Cybersecurity,C1.3.102,PRACTICE,Козлов Артём,CB-2301

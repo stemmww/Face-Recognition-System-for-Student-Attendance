@@ -19,12 +19,15 @@ class Course(Base):
     __tablename__ = "courses"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)    # auto 6-digit e.g. 000001
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    semester: Mapped[str] = mapped_column(String(20), nullable=False)
+    semester: Mapped[str] = mapped_column(String(20), nullable=False)             # FALL/WINTER/SPRING
     academic_year: Mapped[str] = mapped_column(String(9), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    lesson_type: Mapped[str | None] = mapped_column(String(10), nullable=True)    # LECTURE/PRACTICE
+    group_type: Mapped[str | None] = mapped_column(String(10), nullable=True)     # MAIN/ELECTIVE
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=func.now(), onupdate=func.now())
 
     professors = relationship("User", secondary="course_professors", backref="taught_courses")
     enrollments = relationship("Enrollment", back_populates="course")

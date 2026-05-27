@@ -1,19 +1,30 @@
-import type { Schedule } from "@/types";
+import type { CsvImportResult, Schedule } from "@/types";
 import apiClient from "./client";
 
-export async function listSchedules(courseId?: number): Promise<Schedule[]> {
-  const params = courseId ? { course_id: courseId } : {};
+export async function listSchedules(params?: {
+  semester?: string;
+  academic_year?: string;
+}): Promise<Schedule[]> {
   const { data } = await apiClient.get<Schedule[]>("/schedules", { params });
+  return data;
+}
+
+export async function getMySchedule(): Promise<Schedule[]> {
+  const { data } = await apiClient.get<Schedule[]>("/schedules/my");
   return data;
 }
 
 export async function createSchedule(payload: {
   course_id: number;
+  professor_id?: number | null;
+  classroom_id?: number | null;
   day_of_week: string;
   start_time: string;
-  end_time: string;
-  room: string;
-  class_type?: string;
+  end_time?: string | null;
+  lesson_type?: string;
+  semester?: string | null;
+  academic_year?: string | null;
+  group_ids?: number[];
 }): Promise<Schedule> {
   const { data } = await apiClient.post<Schedule>("/schedules", payload);
   return data;
@@ -21,7 +32,18 @@ export async function createSchedule(payload: {
 
 export async function updateSchedule(
   scheduleId: number,
-  payload: Partial<Schedule>
+  payload: {
+    course_id?: number | null;
+    professor_id?: number | null;
+    classroom_id?: number | null;
+    day_of_week?: string;
+    start_time?: string;
+    end_time?: string;
+    lesson_type?: string;
+    semester?: string | null;
+    academic_year?: string | null;
+    group_ids?: number[];
+  }
 ): Promise<Schedule> {
   const { data } = await apiClient.put<Schedule>(`/schedules/${scheduleId}`, payload);
   return data;
@@ -29,4 +51,11 @@ export async function updateSchedule(
 
 export async function deleteSchedule(scheduleId: number): Promise<void> {
   await apiClient.delete(`/schedules/${scheduleId}`);
+}
+
+export async function importSchedulesCSV(file: File): Promise<CsvImportResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await apiClient.post<CsvImportResult>("/schedules/import/csv", formData);
+  return data;
 }

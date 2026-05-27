@@ -11,6 +11,9 @@ import Login from "@/pages/Login";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import UserManagement from "@/pages/admin/UserManagement";
 import CourseManagement from "@/pages/admin/CourseManagement";
+import GroupManagement from "@/pages/admin/GroupManagement";
+import ProfessorManagement from "@/pages/admin/ProfessorManagement";
+import ClassroomManagement from "@/pages/admin/ClassroomManagement";
 import ScheduleManagement from "@/pages/admin/ScheduleManagement";
 import FaceRegistry from "@/pages/admin/FaceRegistry";
 import AttendanceOverview from "@/pages/admin/AttendanceOverview";
@@ -18,6 +21,7 @@ import AttendanceOverview from "@/pages/admin/AttendanceOverview";
 // Professor pages
 import ProfessorDashboard from "@/pages/professor/Dashboard";
 import ProfessorMyCourses from "@/pages/professor/MyCourses";
+import ProfessorMySchedule from "@/pages/professor/MySchedule";
 import LiveSession from "@/pages/professor/LiveSession";
 import ProfessorAttendance from "@/pages/professor/Attendance";
 import ProfessorStatistics from "@/pages/professor/Statistics";
@@ -26,6 +30,7 @@ import AppealsReview from "@/pages/professor/AppealsReview";
 // Student pages
 import StudentDashboard from "@/pages/student/Dashboard";
 import StudentMyCourses from "@/pages/student/MyCourses";
+import StudentMySchedule from "@/pages/student/MySchedule";
 import AttendanceHistory from "@/pages/student/AttendanceHistory";
 import Appeals from "@/pages/student/Appeals";
 import NotificationsPage from "@/pages/student/Notifications";
@@ -74,6 +79,30 @@ function AuthenticatedApp() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <UserManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/groups"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <GroupManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/professors"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <ProfessorManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/classrooms"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <ClassroomManagement />
             </ProtectedRoute>
           }
         />
@@ -154,6 +183,16 @@ function AuthenticatedApp() {
           }
         />
 
+        {/* My Schedule (professor + student) */}
+        <Route
+          path="/my-schedule"
+          element={
+            <ProtectedRoute allowedRoles={["professor", "student"]}>
+              <MyScheduleRouter />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Student routes */}
         <Route
           path="/attend"
@@ -199,6 +238,13 @@ function CoursesRouter() {
   if (!user) return null;
   if (user.role === "professor") return <ProfessorMyCourses />;
   return <StudentMyCourses />;
+}
+
+function MyScheduleRouter() {
+  const { user } = useAuth();
+  if (!user) return null;
+  if (user.role === "professor") return <ProfessorMySchedule />;
+  return <StudentMySchedule />;
 }
 
 export default function App() {

@@ -1,4 +1,4 @@
-import enum
+﻿import enum
 from datetime import datetime
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint, func
@@ -29,7 +29,7 @@ class AttendanceRecord(Base):
     recognized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     marked_by: Mapped[MarkedBy] = mapped_column(Enum(MarkedBy), default=MarkedBy.SYSTEM)
     override_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=func.now(), onupdate=func.now())
 
     student = relationship("User")
     session = relationship("AttendanceSession", back_populates="records")

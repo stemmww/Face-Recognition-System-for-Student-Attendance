@@ -11,7 +11,7 @@ import { BRAND_PRIMARY } from "@/styles/theme";
 const { Title, Text, Paragraph } = Typography;
 
 const classTypeColors: Record<string, string> = {
-  lecture: BRAND_PRIMARY, lab: "green", seminar: "purple",
+  LECTURE: BRAND_PRIMARY, PRACTICE: "green",
 };
 
 function formatTime(t: string) {
@@ -94,9 +94,9 @@ export default function StudentMyCourses() {
                   <CalendarOutlined /> <Text strong>{t("coursesPage.scheduleLabel")}:</Text>
                   {schedules.map((s) => (
                     <div key={s.id} style={{ marginLeft: 20, marginTop: 4 }}>
-                      <Tag color={classTypeColors[s.class_type]}>{capitalize(s.class_type)}</Tag>
+                      <Tag color={classTypeColors[s.lesson_type]}>{s.lesson_type}</Tag>
                       {capitalize(s.day_of_week)} {formatTime(s.start_time)}–{formatTime(s.end_time)}
-                      <Text type="secondary"> ({s.room})</Text>
+                      <Text type="secondary"> ({s.classroom_name ?? s.room})</Text>
                     </div>
                   ))}
                 </div>

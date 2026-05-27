@@ -22,17 +22,42 @@ export interface Course {
   description: string | null;
   semester: string;
   academic_year: string;
+  lesson_type: string | null;
+  group_type: string | null;
   created_at: string;
+}
+
+export type DayOfWeek =
+  | "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY"
+  | "FRIDAY" | "SATURDAY" | "SUNDAY";
+
+export type LessonType = "LECTURE" | "PRACTICE";
+export type SemesterType = "FALL" | "WINTER" | "SPRING";
+export type GroupType = "MAIN" | "ELECTIVE";
+
+export interface ScheduleGroupInfo {
+  id: number;
+  name: string;
+  group_type: string;
 }
 
 export interface Schedule {
   id: number;
   course_id: number;
-  day_of_week: string;
+  course_code: string | null;
+  course_name: string | null;
+  professor_id: number | null;
+  professor_name: string | null;
+  classroom_id: number | null;
+  classroom_name: string | null;
+  day_of_week: DayOfWeek;
   start_time: string;
   end_time: string;
-  room: string;
-  class_type: "lecture" | "lab" | "seminar";
+  room: string | null;
+  lesson_type: LessonType;
+  semester: SemesterType | null;
+  academic_year: string | null;
+  groups: ScheduleGroupInfo[];
 }
 
 export type AttendanceStatus = "present" | "late" | "absent";
@@ -251,4 +276,93 @@ export interface StudentTrendPoint {
   course_code: string;
   course_name: string;
   status: string;
+}
+
+// ---------------------------------------------------------------------------
+// Academic management: Groups
+// ---------------------------------------------------------------------------
+
+export interface Group {
+  id: number;
+  major: string;
+  major_name: string;
+  enrollment_year_short: number;
+  enrollment_year_full: number;
+  group_number: number;
+  group_type: GroupType;
+  semester: SemesterType | null;
+  academic_year: string | null;
+  is_active: boolean;
+  name: string;
+  current_study_year: number;
+  student_count: number;
+}
+
+// ---------------------------------------------------------------------------
+// Academic management: Classrooms
+// ---------------------------------------------------------------------------
+
+export interface Classroom {
+  id: number;
+  name: string;
+  block: string | null;
+  floor: number | null;
+  room_number: string | null;
+  room_type: string | null;
+  room_type_label: string | null;
+  capacity: number | null;
+  is_active: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Academic management: Professors + Tags
+// ---------------------------------------------------------------------------
+
+export interface ProfessorTag {
+  id: number;
+  name: string;
+}
+
+export interface Professor {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+  tags: ProfessorTag[];
+}
+
+// ---------------------------------------------------------------------------
+// Academic management: Group Subjects
+// ---------------------------------------------------------------------------
+
+export interface GroupSubject {
+  id: number;
+  group_id: number;
+  course_id: number;
+  course_code: string;
+  course_name: string;
+  semester: string;
+}
+
+// ---------------------------------------------------------------------------
+// Academic management: Professor Availability
+// ---------------------------------------------------------------------------
+
+export interface ProfessorAvailability {
+  id: number;
+  professor_id: number;
+  day_of_week: DayOfWeek;
+  start_time: string;
+  end_time: string;
+}
+
+// ---------------------------------------------------------------------------
+// CSV import result
+// ---------------------------------------------------------------------------
+
+export interface CsvImportResult {
+  created: number;
+  skipped: number;
+  errors: string[];
 }

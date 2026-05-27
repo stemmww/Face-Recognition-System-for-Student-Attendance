@@ -108,7 +108,7 @@ export default function LiveSession() {
 
   useEffect(() => {
     if (selectedCourse) {
-      listSchedules(selectedCourse).then(setSchedules).catch(() => {});
+      listSchedules().then((all) => setSchedules(all.filter((s) => s.course_id === selectedCourse))).catch(() => {});
     } else {
       setSchedules([]);
     }
@@ -582,7 +582,7 @@ export default function LiveSession() {
             disabled={!selectedCourse}
             options={schedules.map((s) => ({
               value: s.id,
-              label: `${capitalize(s.day_of_week)} ${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)} (${s.room}, ${capitalize(s.class_type)})`,
+              label: `${capitalize(s.day_of_week)} ${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)} (${s.classroom_name ?? s.room}, ${s.lesson_type})`,
             }))}
           />
 

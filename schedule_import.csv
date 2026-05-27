@@ -1,0 +1,10 @@
+day_of_week,start_time,end_time,discipline,room,type,lecturer,groups
+MONDAY,08:00,09:30,Advanced Programming,C1.1.22,LECTURE,,SE-2322
+MONDAY,09:50,11:20,Advanced Programming,C1.1.11,PRACTICE,,SE-2322
+TUESDAY,08:00,09:30,Introduction of OOP,C1.1.22,LECTURE,,CS-2601
+TUESDAY,09:50,11:20,Introduction of OOP,C1.1.11,PRACTICE,,CS-2601
+WEDNESDAY,08:00,09:30,Philosophy,C1.1.22,LECTURE,,SE-2322
+WEDNESDAY,11:40,13:10,History of Kazakhstan,C1.1.22,LECTURE,,SE-2322
+THURSDAY,08:00,09:30,Introduction to Computer Science,C1.1.22,LECTURE,,CS-2601
+THURSDAY,09:50,11:20,Introduction to Computer Science,C1.1.11,PRACTICE,,CS-2601
+FRIDAY,08:00,09:30,Philosophy,C1.1.22,LECTURE,,CS-2601

@@ -1,0 +1,8 @@
+course_name,day_of_week,start_time,lesson_type,professor_email,classroom_name,semester,academic_year,group_codes
+Algorithms and Data Structures,MONDAY,09:00,LECTURE,john.smith@university.edu,C1.1.101L,FALL,2025-2026,SE-2322;CS-2301
+Algorithms and Data Structures,WEDNESDAY,11:00,PRACTICE,john.smith@university.edu,C1.1.201P,FALL,2025-2026,SE-2322
+Database Systems,TUESDAY,09:00,LECTURE,bob.brown@university.edu,C1.2.102L,FALL,2025-2026,SE-2322;SE-2421
+Machine Learning Fundamentals,THURSDAY,11:00,LECTURE,alice.jones@university.edu,C1.1.101L,SPRING,2025-2026,CS-2301;BDA-2401
+Web Development,FRIDAY,14:00,PRACTICE,carol.white@university.edu,C1.1.201P,FALL,2025-2026,SE-2322
+Computer Networks,MONDAY,13:00,LECTURE,david.lee@university.edu,C1.2.102L,SPRING,2025-2026,SE-2421;CS-2301
+Elective: Big Data,WEDNESDAY,09:00,PRACTICE,alice.jones@university.edu,C1.1.201P,FALL,2025-2026,BDA-2401

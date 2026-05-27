@@ -1,0 +1,7 @@
+name,description,semester,academic_year,lesson_type,group_type
+Algorithms and Data Structures,Core CS algorithms course,FALL,2025-2026,LECTURE,MAIN
+Database Systems,Relational and NoSQL databases,FALL,2025-2026,LECTURE,MAIN
+Machine Learning Fundamentals,Introduction to ML and AI,SPRING,2025-2026,LECTURE,MAIN
+Web Development,Modern web technologies and frameworks,FALL,2025-2026,PRACTICE,MAIN
+Computer Networks,Networking protocols and security,SPRING,2025-2026,LECTURE,MAIN
+Elective: Big Data,Big data processing tools,FALL,2025-2026,PRACTICE,ELECTIVE

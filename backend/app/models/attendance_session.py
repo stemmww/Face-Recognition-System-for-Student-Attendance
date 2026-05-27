@@ -1,4 +1,4 @@
-import enum
+﻿import enum
 from datetime import date as date_type, datetime
 
 from sqlalchemy import Date, DateTime, Enum, Float, ForeignKey, Integer, String, func
@@ -18,7 +18,7 @@ class AttendanceSession(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     schedule_id: Mapped[int] = mapped_column(ForeignKey("schedules.id", ondelete="CASCADE"), nullable=False)
     date: Mapped[date_type] = mapped_column(Date, nullable=False)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=func.now())
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     started_by: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     status: Mapped[SessionStatus] = mapped_column(Enum(SessionStatus), default=SessionStatus.ACTIVE)

@@ -1,0 +1,9 @@
+name,capacity,is_active
+C1.1.101L,120,true
+C1.1.201P,30,true
+C1.1.301K,40,true
+C1.2.102L,80,true
+C1.2.202P,25,true
+C1.3.303K,35,true
+C1.1.401L,150,true
+C1.2.102P,20,false

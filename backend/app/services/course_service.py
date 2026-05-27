@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestError, DuplicateError, NotFoundError
@@ -6,6 +6,19 @@ from app.models.course import Course, CourseProf
 from app.models.enrollment import Enrollment
 from app.models.user import Role, User
 from app.schemas.course import CourseCreate, CourseUpdate
+
+
+async def _generate_code(db: AsyncSession) -> str:
+    """Generate the next 6-digit course code, e.g. 000001, 000002."""
+    result = await db.execute(select(func.count()).select_from(Course))
+    count = result.scalar_one()
+    # Find the next unique code by trying sequentially
+    for candidate in range(count + 1, count + 1000):
+        code = f"{candidate:06d}"
+        existing = await db.execute(select(Course).where(Course.code == code))
+        if existing.scalar_one_or_none() is None:
+            return code
+    raise BadRequestError("Cannot generate unique course code")
 
 
 class CourseService:
@@ -24,17 +37,9 @@ class CourseService:
         result = await db.execute(select(User).where(User.id.in_(requested_ids)))
         users = {user.id: user for user in result.scalars().all()}
 
-        missing_ids = [str(user_id) for user_id in requested_ids if user_id not in users]
-        inactive_ids = [
-            str(user_id)
-            for user_id in requested_ids
-            if user_id in users and not users[user_id].is_active
-        ]
-        wrong_role_ids = [
-            str(user_id)
-            for user_id in requested_ids
-            if user_id in users and users[user_id].role != expected_role
-        ]
+        missing_ids = [str(uid) for uid in requested_ids if uid not in users]
+        inactive_ids = [str(uid) for uid in requested_ids if uid in users and not users[uid].is_active]
+        wrong_role_ids = [str(uid) for uid in requested_ids if uid in users and users[uid].role != expected_role]
 
         if not (missing_ids or inactive_ids or wrong_role_ids):
             return
@@ -43,21 +48,23 @@ class CourseService:
         if missing_ids:
             errors.append(f"Unknown user ids: {', '.join(missing_ids)}")
         if inactive_ids:
-            errors.append(
-                f"Cannot {verb} inactive {expected_role.value}s: {', '.join(inactive_ids)}"
-            )
+            errors.append(f"Cannot {verb} inactive {expected_role.value}s: {', '.join(inactive_ids)}")
         if wrong_role_ids:
-            errors.append(
-                f"Only {expected_role.value}s can be {verb}ed: {', '.join(wrong_role_ids)}"
-            )
+            errors.append(f"Only {expected_role.value}s can be {verb}ed: {', '.join(wrong_role_ids)}")
         raise BadRequestError("; ".join(errors))
 
     @staticmethod
     async def create_course(db: AsyncSession, data: CourseCreate) -> Course:
-        existing = await db.execute(select(Course).where(Course.code == data.code))
-        if existing.scalar_one_or_none():
-            raise DuplicateError("Course with this code")
-        course = Course(**data.model_dump())
+        code = await _generate_code(db)
+        course = Course(
+            code=code,
+            name=data.name,
+            description=data.description,
+            semester=data.semester,
+            academic_year=data.academic_year,
+            lesson_type=data.lesson_type,
+            group_type=data.group_type,
+        )
         db.add(course)
         await db.commit()
         await db.refresh(course)
@@ -109,18 +116,10 @@ class CourseService:
     @staticmethod
     async def assign_professors(db: AsyncSession, course_id: int, professor_ids: list[int]) -> None:
         await CourseService.get_course(db, course_id)
-        await CourseService._validate_assignable_users(
-            db,
-            professor_ids,
-            expected_role=Role.PROFESSOR,
-            verb="assign",
-        )
+        await CourseService._validate_assignable_users(db, professor_ids, expected_role=Role.PROFESSOR, verb="assign")
         for prof_id in professor_ids:
             existing = await db.execute(
-                select(CourseProf).where(
-                    CourseProf.course_id == course_id,
-                    CourseProf.professor_id == prof_id,
-                )
+                select(CourseProf).where(CourseProf.course_id == course_id, CourseProf.professor_id == prof_id)
             )
             if existing.scalar_one_or_none() is None:
                 db.add(CourseProf(course_id=course_id, professor_id=prof_id))
@@ -129,10 +128,7 @@ class CourseService:
     @staticmethod
     async def remove_professor(db: AsyncSession, course_id: int, professor_id: int) -> None:
         await db.execute(
-            delete(CourseProf).where(
-                CourseProf.course_id == course_id,
-                CourseProf.professor_id == professor_id,
-            )
+            delete(CourseProf).where(CourseProf.course_id == course_id, CourseProf.professor_id == professor_id)
         )
         await db.commit()
 
@@ -149,18 +145,10 @@ class CourseService:
     @staticmethod
     async def enroll_students(db: AsyncSession, course_id: int, student_ids: list[int]) -> None:
         await CourseService.get_course(db, course_id)
-        await CourseService._validate_assignable_users(
-            db,
-            student_ids,
-            expected_role=Role.STUDENT,
-            verb="enroll",
-        )
+        await CourseService._validate_assignable_users(db, student_ids, expected_role=Role.STUDENT, verb="enroll")
         for student_id in student_ids:
             existing = await db.execute(
-                select(Enrollment).where(
-                    Enrollment.course_id == course_id,
-                    Enrollment.student_id == student_id,
-                )
+                select(Enrollment).where(Enrollment.course_id == course_id, Enrollment.student_id == student_id)
             )
             if existing.scalar_one_or_none() is None:
                 db.add(Enrollment(course_id=course_id, student_id=student_id))
@@ -169,10 +157,7 @@ class CourseService:
     @staticmethod
     async def remove_student(db: AsyncSession, course_id: int, student_id: int) -> None:
         await db.execute(
-            delete(Enrollment).where(
-                Enrollment.course_id == course_id,
-                Enrollment.student_id == student_id,
-            )
+            delete(Enrollment).where(Enrollment.course_id == course_id, Enrollment.student_id == student_id)
         )
         await db.commit()
 

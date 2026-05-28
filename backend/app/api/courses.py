@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.core.rbac import require_role
 from app.database import get_db
-from app.models.group import Group
 from app.models.group_subject import GroupSubject
 from app.models.user import Role, User
 from app.schemas.course import CourseCreate, CourseOut, CourseUpdate, EnrollmentRequest, ProfessorAssignRequest
@@ -50,6 +49,28 @@ async def list_courses(
     current_user: User = Depends(get_current_user),
 ):
     return await CourseService.list_courses(db, current_user)
+
+
+# Must be registered BEFORE /{course_id} to avoid FastAPI matching "all-groups" as an int param
+@router.get("/all-groups", response_model=list[CourseGroupOut])
+async def list_all_course_groups(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_role(Role.ADMIN)),
+):
+    result = await db.execute(
+        select(GroupSubject).options(selectinload(GroupSubject.group))
+    )
+    return [
+        CourseGroupOut(
+            group_subject_id=gs.id,
+            group_id=gs.group_id,
+            course_id=gs.course_id,
+            group_name=gs.group.name if gs.group else f"#{gs.group_id}",
+            group_type=gs.group.group_type if gs.group else "",
+            semester=gs.semester or "",
+        )
+        for gs in result.scalars().all()
+    ]
 
 
 @router.get("/{course_id}", response_model=CourseOut)
@@ -146,27 +167,6 @@ async def remove_student(
 
 
 # --- Groups linked to course ---
-
-@router.get("/all-groups", response_model=list[CourseGroupOut])
-async def list_all_course_groups(
-    db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_role(Role.ADMIN)),
-):
-    result = await db.execute(
-        select(GroupSubject).options(selectinload(GroupSubject.group))
-    )
-    return [
-        CourseGroupOut(
-            group_subject_id=gs.id,
-            group_id=gs.group_id,
-            course_id=gs.course_id,
-            group_name=gs.group.name if gs.group else f"#{gs.group_id}",
-            group_type=gs.group.group_type if gs.group else "",
-            semester=gs.semester or "",
-        )
-        for gs in result.scalars().all()
-    ]
-
 
 @router.get("/{course_id}/groups", response_model=list[CourseGroupOut])
 async def list_course_groups(
@@ -283,7 +283,7 @@ async def import_courses_csv(
             )
             await CourseService.create_course(db, data)
             created += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(f"Row {i} ({name}): {e}")
             skipped += 1
 

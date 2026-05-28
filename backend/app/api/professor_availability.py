@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
 from app.core.exceptions import NotFoundError
 from app.core.rbac import require_role
 from app.database import get_db

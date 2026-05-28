@@ -276,7 +276,7 @@ async def import_groups_csv(
             if student_ids:
                 await GroupService.add_students(db, group_out.id, student_ids)
             created += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(f"Row {i} ({name_cell or major}): {e}")
             skipped += 1
 

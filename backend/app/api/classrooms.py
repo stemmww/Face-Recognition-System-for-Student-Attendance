@@ -94,7 +94,7 @@ async def import_classrooms_csv(
             data = ClassroomCreate(name=name, capacity=capacity, is_active=is_active)
             await ClassroomService.create(db, data)
             created += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(f"Row {i} ({name}): {e}")
             skipped += 1
 

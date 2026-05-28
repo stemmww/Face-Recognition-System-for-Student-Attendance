@@ -1,8 +1,9 @@
 from pydantic import BaseModel, EmailStr
 
 
-class ProfessorTagOut(BaseModel):
+class CourseSummaryOut(BaseModel):
     id: int
+    code: str
     name: str
 
     model_config = {"from_attributes": True}
@@ -13,14 +14,12 @@ class ProfessorCreate(BaseModel):
     first_name: str
     last_name: str
     password: str
-    tags: list[str] = []     # tag names
 
 
 class ProfessorUpdate(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     is_active: bool | None = None
-    tags: list[str] | None = None   # replace all tags
 
 
 class ProfessorOut(BaseModel):
@@ -29,7 +28,15 @@ class ProfessorOut(BaseModel):
     first_name: str
     last_name: str
     is_active: bool
-    tags: list[ProfessorTagOut] = []
+    courses: list[CourseSummaryOut] = []
+
+    model_config = {"from_attributes": True}
+
+
+# kept for backward compat (CSV import uses it)
+class ProfessorTagOut(BaseModel):
+    id: int
+    name: str
 
     model_config = {"from_attributes": True}
 

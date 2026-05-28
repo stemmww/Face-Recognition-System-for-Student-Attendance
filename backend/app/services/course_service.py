@@ -1,7 +1,7 @@
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import BadRequestError, DuplicateError, NotFoundError
+from app.core.exceptions import BadRequestError, NotFoundError
 from app.models.course import Course, CourseProf
 from app.models.enrollment import Enrollment
 from app.models.user import Role, User
@@ -101,7 +101,12 @@ class CourseService:
     @staticmethod
     async def update_course(db: AsyncSession, course_id: int, data: CourseUpdate) -> Course:
         course = await CourseService.get_course(db, course_id)
-        for field, value in data.model_dump(exclude_unset=True).items():
+        updates = data.model_dump(exclude_unset=True)
+        if "code" in updates and updates["code"] != course.code:
+            conflict = await db.execute(select(Course).where(Course.code == updates["code"]))
+            if conflict.scalar_one_or_none() is not None:
+                raise BadRequestError("Course with this code already exists")
+        for field, value in updates.items():
             setattr(course, field, value)
         await db.commit()
         await db.refresh(course)

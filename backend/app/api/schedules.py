@@ -109,7 +109,7 @@ async def import_schedules_csv(
         try:
             h, m = start_raw.split(":")
             start = time(int(h), int(m))
-        except Exception:
+        except Exception:  # noqa: BLE001
             errors.append(f"Row {i}: invalid start_time '{start_raw}'")
             skipped += 1
             continue
@@ -162,7 +162,7 @@ async def import_schedules_csv(
                 if not gc:
                     continue
                 # Parse group code e.g. SE-2322
-                res = await db.execute(select(Group).where(Group.is_active == True))  # noqa: E712
+                res = await db.execute(select(Group).where(Group.is_active == True))
                 all_groups = res.scalars().all()
                 matched = next((g for g in all_groups if g.name == gc), None)
                 if matched is None:
@@ -188,7 +188,7 @@ async def import_schedules_csv(
             )
             await ScheduleService.create_schedule(db, data)
             created += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(f"Row {i}: {e}")
             skipped += 1
 

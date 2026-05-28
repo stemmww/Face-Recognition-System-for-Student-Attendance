@@ -1,6 +1,4 @@
 from datetime import time
-from typing import Literal
-
 from pydantic import BaseModel, field_validator
 
 from app.models.schedule import DAY_OF_WEEK_VALUES, LESSON_TYPE_VALUES, SEMESTER_VALUES

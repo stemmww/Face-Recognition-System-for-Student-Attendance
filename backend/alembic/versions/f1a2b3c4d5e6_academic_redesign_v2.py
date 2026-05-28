@@ -252,7 +252,7 @@ def upgrade() -> None:
             # Drop old unique constraint, drop old column, rename new column, re-add constraint
             try:
                 op.drop_constraint("uq_group_subject_semester", "group_subjects")
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
             op.execute("ALTER TABLE group_subjects DROP COLUMN semester")
             op.execute("ALTER TABLE group_subjects RENAME COLUMN semester_str TO semester")

@@ -318,8 +318,9 @@ export interface Classroom {
 // Academic management: Professors + Tags
 // ---------------------------------------------------------------------------
 
-export interface ProfessorTag {
+export interface CourseSummary {
   id: number;
+  code: string;
   name: string;
 }
 
@@ -329,7 +330,7 @@ export interface Professor {
   first_name: string;
   last_name: string;
   is_active: boolean;
-  tags: ProfessorTag[];
+  courses: CourseSummary[];
 }
 
 // ---------------------------------------------------------------------------

@@ -176,11 +176,10 @@ export default function CourseManagement() {
     try {
       const values = await form.validateFields();
       if (editingCourse) {
-        const { code: _code, ...updatePayload } = values as Partial<Course> & { code?: string };
-        await updateCourse(editingCourse.id, updatePayload);
+        await updateCourse(editingCourse.id, values as Partial<Course>);
         message.success(t("coursesPage.courseUpdated"));
       } else {
-        const { code: _code, ...createPayload } = values as any;
+        const { code: _code, ...createPayload } = values as Omit<CourseFormValues, "code">  & { code?: string };
         await createCourse(createPayload);
         message.success(t("coursesPage.courseCreated"));
       }
@@ -398,8 +397,8 @@ export default function CourseManagement() {
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           {editingCourse && (
-            <Form.Item name="code" label={t("coursesPage.courseCode")}>
-              <Input disabled />
+            <Form.Item name="code" label={t("coursesPage.courseCode")} rules={[{ required: true }]}>
+              <Input />
             </Form.Item>
           )}
           <Form.Item name="name" label={t("coursesPage.courseName")} rules={[{ required: true }]}>

@@ -342,8 +342,8 @@ export default function ScheduleManagement() {
       }
       setModalOpen(false);
       fetchAll();
-    } catch (e: any) {
-      const detail = e?.response?.data?.detail;
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       message.error(detail || t("common.operationFailed"));
     }
   };

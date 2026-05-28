@@ -1,13 +1,12 @@
 from datetime import datetime, time, timedelta
+from typing import ClassVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import BadRequestError, NotFoundError
-from app.models.classroom import Classroom
-from app.models.course import Course
-from app.models.group import Group, group_students
+from app.models.group import group_students
 from app.models.schedule import Schedule, schedule_groups
 from app.models.user import Role, User
 from app.schemas.schedule import ScheduleCreate, ScheduleOut, ScheduleUpdate
@@ -24,9 +23,7 @@ def _times_overlap(s1: time, e1: time, s2: time, e2: time) -> bool:
 
 
 def _build_out(schedule: Schedule) -> ScheduleOut:
-    groups_info = []
-    for g in (schedule.groups or []):
-        groups_info.append({"id": g.id, "name": g.name, "group_type": g.group_type})
+    groups_info = [{"id": g.id, "name": g.name, "group_type": g.group_type} for g in (schedule.groups or [])]
 
     prof_name = None
     if schedule.professor:
@@ -53,7 +50,7 @@ def _build_out(schedule: Schedule) -> ScheduleOut:
 
 
 class ScheduleService:
-    _LOAD = [
+    _LOAD: ClassVar[list] = [
         selectinload(Schedule.course),
         selectinload(Schedule.professor),
         selectinload(Schedule.classroom),
@@ -91,8 +88,8 @@ class ScheduleService:
         for s in existing:
             if exclude_id and s.id == exclude_id:
                 continue
-            s_start = s.start_time if isinstance(s.start_time, time) else s.start_time
-            s_end = s.end_time if isinstance(s.end_time, time) else s.end_time
+            s_start = s.start_time
+            s_end = s.end_time
             if not _times_overlap(start, end, s_start, s_end):
                 continue
             # Overlapping time slot — check conflicts

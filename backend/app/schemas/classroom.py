@@ -2,7 +2,7 @@ import re
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from app.models.classroom import BLOCK_VALUES, ROOM_TYPE_LABELS, ROOM_TYPE_VALUES
+from app.models.classroom import ROOM_TYPE_LABELS
 
 # Canonical format: C1.1.101L
 # block.floor_room_type  e.g. C1.2.305P

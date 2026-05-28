@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert, Button, Form, Input, Modal, Popconfirm, Select,
+  Alert, Button, Form, Input, Modal, Popconfirm,
   Space, Table, Tag, Typography, Upload, message,
 } from "antd";
 import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
-import type { CsvImportResult, Professor, ProfessorTag } from "@/types";
+import type { CourseSummary, CsvImportResult, Professor } from "@/types";
 import {
   createProfessor, deleteProfessor, importProfessorsCSV,
-  listAllTags, listProfessors, updateProfessor,
+  listProfessors, updateProfessor,
 } from "@/api/professors";
+import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Title, Text } = Typography;
 
 export default function ProfessorManagement() {
   const { t } = useTranslation();
   const [professors, setProfessors] = useState<Professor[]>([]);
-  const [allTags, setAllTags] = useState<ProfessorTag[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Professor | null>(null);
@@ -30,9 +30,7 @@ export default function ProfessorManagement() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [profs, tags] = await Promise.all([listProfessors(), listAllTags()]);
-      setProfessors(profs);
-      setAllTags(tags);
+      setProfessors(await listProfessors());
     } catch {
       message.error(t("professorsPage.loadFailed"));
     } finally {
@@ -50,11 +48,7 @@ export default function ProfessorManagement() {
 
   const openEdit = (p: Professor) => {
     setEditing(p);
-    form.setFieldsValue({
-      first_name: p.first_name,
-      last_name: p.last_name,
-      tags: p.tags.map((tag) => tag.name),
-    });
+    form.setFieldsValue({ first_name: p.first_name, last_name: p.last_name });
     setModalOpen(true);
   };
 
@@ -65,7 +59,6 @@ export default function ProfessorManagement() {
         await updateProfessor(editing.id, {
           first_name: values.first_name,
           last_name: values.last_name,
-          tags: values.tags || [],
         });
         message.success(t("professorsPage.updated"));
       } else {
@@ -74,7 +67,6 @@ export default function ProfessorManagement() {
           first_name: values.first_name,
           last_name: values.last_name,
           password: values.password,
-          tags: values.tags || [],
         });
         message.success(t("professorsPage.created"));
       }
@@ -110,8 +102,6 @@ export default function ProfessorManagement() {
     }
   };
 
-  const tagOptions = allTags.map((tag) => ({ value: tag.name, label: tag.name }));
-
   const columns = [
     {
       title: t("common.name"),
@@ -120,11 +110,17 @@ export default function ProfessorManagement() {
     },
     { title: t("common.email"), dataIndex: "email", key: "email" },
     {
-      title: t("professorsPage.tags"),
-      key: "tags",
+      title: t("nav.subjects"),
+      key: "courses",
       render: (_: unknown, p: Professor) =>
-        p.tags.length
-          ? p.tags.map((tag) => <Tag key={tag.id} color="blue">{tag.name}</Tag>)
+        p.courses.length
+          ? (
+            <Space size={4} wrap>
+              {p.courses.map((c: CourseSummary) => (
+                <Tag key={c.id} color={BRAND_PRIMARY} style={{ fontSize: 11 }}>{c.code}</Tag>
+              ))}
+            </Space>
+          )
           : <Text type="secondary">—</Text>,
     },
     {
@@ -186,6 +182,7 @@ export default function ProfessorManagement() {
         pagination={{ pageSize: 20, showTotal: (n) => `${n} ${t("common.total")}` }}
       />
 
+      {/* Create / Edit modal */}
       <Modal
         title={editing ? t("professorsPage.editProfessor") : t("professorsPage.addProfessor")}
         open={modalOpen}
@@ -197,30 +194,16 @@ export default function ProfessorManagement() {
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <div style={{ display: "flex", gap: 12 }}>
-            <Form.Item
-              name="first_name"
-              label={t("usersPage.firstName")}
-              rules={[{ required: true }]}
-              style={{ flex: 1 }}
-            >
+            <Form.Item name="first_name" label={t("usersPage.firstName")} rules={[{ required: true }]} style={{ flex: 1 }}>
               <Input />
             </Form.Item>
-            <Form.Item
-              name="last_name"
-              label={t("usersPage.lastName")}
-              rules={[{ required: true }]}
-              style={{ flex: 1 }}
-            >
+            <Form.Item name="last_name" label={t("usersPage.lastName")} rules={[{ required: true }]} style={{ flex: 1 }}>
               <Input />
             </Form.Item>
           </div>
           {!editing && (
             <>
-              <Form.Item
-                name="email"
-                label={t("common.email")}
-                rules={[{ required: true, type: "email" }]}
-              >
+              <Form.Item name="email" label={t("common.email")} rules={[{ required: true, type: "email" }]}>
                 <Input />
               </Form.Item>
               <Form.Item
@@ -232,31 +215,18 @@ export default function ProfessorManagement() {
               </Form.Item>
             </>
           )}
-          <Form.Item name="tags" label={t("professorsPage.tags")}>
-            <Select
-              mode="tags"
-              placeholder={t("professorsPage.addTags")}
-              options={tagOptions}
-              allowClear
-            />
-          </Form.Item>
         </Form>
       </Modal>
 
+      {/* CSV import modal */}
       <Modal
         title={t("professorsPage.importTitle")}
         open={csvModalOpen}
         onCancel={() => setCsvModalOpen(false)}
         footer={[
           <Button key="cancel" onClick={() => setCsvModalOpen(false)}>{t("common.close")}</Button>,
-          <Button
-            key="import"
-            type="primary"
-            loading={csvLoading}
-            disabled={!csvFile}
-            onClick={handleCsvImport}
-          >
-            {t("professorsPage.importCSV")}
+          <Button key="import" type="primary" loading={csvLoading} disabled={!csvFile} onClick={handleCsvImport}>
+            {t("common.import")}
           </Button>,
         ]}
         width={480}
@@ -264,9 +234,6 @@ export default function ProfessorManagement() {
         <div style={{ marginBottom: 12 }}>
           <Text type="secondary" style={{ display: "block", marginBottom: 4 }}>
             {t("professorsPage.csvRequired")}
-          </Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t("professorsPage.csvOptional")}
           </Text>
         </div>
         <Upload.Dragger
@@ -280,22 +247,21 @@ export default function ProfessorManagement() {
           <p className="ant-upload-text">{t("usersPage.dragCSV")}</p>
         </Upload.Dragger>
         {csvResult && (
-          <div style={{ marginTop: 12 }}>
-            <Alert
-              type={csvResult.errors.length > 0 ? "warning" : "success"}
-              message={`${t("usersPage.importComplete")}: ${csvResult.created} ${t("usersPage.studentsCreated")}, ${csvResult.skipped} ${t("usersPage.accountsSkipped")}`}
-              description={
-                csvResult.errors.length > 0 ? (
-                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }}>
-                    {csvResult.errors.slice(0, 10).map((e, i) => <li key={i}>{e}</li>)}
-                    {csvResult.errors.length > 10 && (
-                      <li>{t("usersPage.andMore", { count: csvResult.errors.length - 10 })}</li>
-                    )}
-                  </ul>
-                ) : undefined
-              }
-            />
-          </div>
+          <Alert
+            style={{ marginTop: 12 }}
+            type={csvResult.errors.length > 0 ? "warning" : "success"}
+            message={`${t("usersPage.importComplete")}: ${csvResult.created} ${t("usersPage.studentsCreated")}, ${csvResult.skipped} ${t("usersPage.accountsSkipped")}`}
+            description={
+              csvResult.errors.length > 0 ? (
+                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }}>
+                  {csvResult.errors.slice(0, 10).map((e, i) => <li key={i}>{e}</li>)}
+                  {csvResult.errors.length > 10 && (
+                    <li>{t("usersPage.andMore", { count: csvResult.errors.length - 10 })}</li>
+                  )}
+                </ul>
+              ) : undefined
+            }
+          />
         )}
       </Modal>
     </>

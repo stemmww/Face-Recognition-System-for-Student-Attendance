@@ -27,7 +27,7 @@ class ClassroomService:
     async def list(db: AsyncSession, active_only: bool = True) -> list[ClassroomOut]:
         query = select(Classroom)
         if active_only:
-            query = query.where(Classroom.is_active == True)  # noqa: E712
+            query = query.where(Classroom.is_active == True)
         query = query.order_by(Classroom.name)
         result = await db.execute(query)
         return [ClassroomOut.from_orm(c) for c in result.scalars().all()]

@@ -31,7 +31,7 @@ class GroupService:
     ) -> list[GroupOut]:
         query = select(Group)
         if active_only:
-            query = query.where(Group.is_active == True)  # noqa: E712
+            query = query.where(Group.is_active == True)
         if group_type:
             query = query.where(Group.group_type == group_type.upper())
         query = query.order_by(Group.major, Group.enrollment_year_short, Group.group_number)
@@ -83,7 +83,7 @@ class GroupService:
                     .join(Group, Group.id == group_students.c.group_id)
                     .where(group_students.c.student_id == student.id)
                     .where(Group.group_type == "MAIN")
-                    .where(Group.is_active == True)  # noqa: E712
+                    .where(Group.is_active == True)
                     .where(Group.id != group_id)
                 )
                 if existing.fetchone() is not None:

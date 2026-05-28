@@ -22,6 +22,17 @@ import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Title, Text } = Typography;
 
+function getApiErrorMessage(error: unknown): string | undefined {
+  if (
+    typeof error === "object" && error !== null && "response" in error &&
+    typeof (error as { response?: unknown }).response === "object" &&
+    (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
+  ) {
+    return (error as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+  }
+  return undefined;
+}
+
 const MAJOR_CODES = [
   "SE", "CS", "BDA", "MCS", "CB", "SST", "IIT", "EE", "ST",
   "DTNPE", "ITM", "ITE", "AIB", "MT", "DJ",
@@ -172,8 +183,8 @@ export default function GroupManagement() {
         message.success(t("groups.created"));
       }
       setModalOpen(false); fetchGroups();
-    } catch (e: any) {
-      message.error(e?.response?.data?.detail || t("common.operationFailed"));
+    } catch (e: unknown) {
+      message.error(getApiErrorMessage(e) || t("common.operationFailed"));
     }
   };
 
@@ -208,7 +219,7 @@ export default function GroupManagement() {
       await addStudentsToGroup(drawerGroup.id, addStudentIds);
       message.success(t("groups.studentsAdded")); setAddStudentIds([]);
       const s = await listGroupStudents(drawerGroup.id); setGroupStudents(s); fetchGroups();
-    } catch (e: any) { message.error(e?.response?.data?.detail || t("groups.addStudentsFailed")); }
+    } catch (e: unknown) { message.error(getApiErrorMessage(e) || t("groups.addStudentsFailed")); }
   };
 
   const handleRemoveStudent = async (sid: number) => {

@@ -1,44 +1,32 @@
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.core.exceptions import BadRequestError, DuplicateError, NotFoundError
+from app.core.exceptions import DuplicateError, NotFoundError
 from app.core.security import hash_password
-from app.models.professor_tag import ProfessorTag, professor_tag_assignments
+from app.models.course import Course, CourseProf
 from app.models.user import Role, User
-from app.schemas.professor import ProfessorCreate, ProfessorOut, ProfessorTagOut, ProfessorUpdate
+from app.schemas.professor import CourseSummaryOut, ProfessorCreate, ProfessorOut, ProfessorUpdate
 
 
-async def _get_or_create_tag(db: AsyncSession, name: str) -> ProfessorTag:
-    name = name.strip()
-    result = await db.execute(select(ProfessorTag).where(ProfessorTag.name == name))
-    tag = result.scalar_one_or_none()
-    if tag is None:
-        tag = ProfessorTag(name=name)
-        db.add(tag)
-        await db.flush()
-    return tag
-
-
-async def _get_professor_tags(db: AsyncSession, professor_id: int) -> list[ProfessorTagOut]:
+async def _get_professor_courses(db: AsyncSession, professor_id: int) -> list[CourseSummaryOut]:
     result = await db.execute(
-        select(ProfessorTag)
-        .join(professor_tag_assignments, ProfessorTag.id == professor_tag_assignments.c.tag_id)
-        .where(professor_tag_assignments.c.professor_id == professor_id)
-        .order_by(ProfessorTag.name)
+        select(Course)
+        .join(CourseProf, Course.id == CourseProf.course_id)
+        .where(CourseProf.professor_id == professor_id)
+        .order_by(Course.name)
     )
-    return [ProfessorTagOut(id=t.id, name=t.name) for t in result.scalars().all()]
+    return [CourseSummaryOut(id=c.id, code=c.code, name=c.name) for c in result.scalars().all()]
 
 
 async def _build_out(db: AsyncSession, professor: User) -> ProfessorOut:
-    tags = await _get_professor_tags(db, professor.id)
+    courses = await _get_professor_courses(db, professor.id)
     return ProfessorOut(
         id=professor.id,
         email=professor.email,
         first_name=professor.first_name,
         last_name=professor.last_name,
         is_active=professor.is_active,
-        tags=tags,
+        courses=courses,
     )
 
 
@@ -72,16 +60,6 @@ class ProfessorService:
             role=Role.PROFESSOR,
         )
         db.add(professor)
-        await db.flush()
-
-        for tag_name in data.tags:
-            tag = await _get_or_create_tag(db, tag_name)
-            await db.execute(
-                professor_tag_assignments.insert().values(
-                    professor_id=professor.id, tag_id=tag.id
-                )
-            )
-
         await db.commit()
         await db.refresh(professor)
         return await _build_out(db, professor)
@@ -99,21 +77,6 @@ class ProfessorService:
         if data.is_active is not None:
             professor.is_active = data.is_active
 
-        if data.tags is not None:
-            # Replace all tags
-            await db.execute(
-                professor_tag_assignments.delete().where(
-                    professor_tag_assignments.c.professor_id == professor_id
-                )
-            )
-            for tag_name in data.tags:
-                tag = await _get_or_create_tag(db, tag_name)
-                await db.execute(
-                    professor_tag_assignments.insert().values(
-                        professor_id=professor_id, tag_id=tag.id
-                    )
-                )
-
         await db.commit()
         await db.refresh(professor)
         return await _build_out(db, professor)
@@ -123,11 +86,6 @@ class ProfessorService:
         professor = await ProfessorService._get_or_404(db, professor_id)
         professor.is_active = False
         await db.commit()
-
-    @staticmethod
-    async def list_all_tags(db: AsyncSession) -> list[ProfessorTagOut]:
-        result = await db.execute(select(ProfessorTag).order_by(ProfessorTag.name))
-        return [ProfessorTagOut(id=t.id, name=t.name) for t in result.scalars().all()]
 
     @staticmethod
     async def _get_or_404(db: AsyncSession, professor_id: int) -> User:

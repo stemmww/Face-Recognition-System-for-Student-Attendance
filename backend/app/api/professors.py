@@ -8,7 +8,7 @@ from app.api.deps import get_current_user
 from app.core.rbac import require_role
 from app.database import get_db
 from app.models.user import Role, User
-from app.schemas.professor import ProfessorCreate, ProfessorOut, ProfessorTagOut, ProfessorUpdate
+from app.schemas.professor import ProfessorCreate, ProfessorOut, ProfessorUpdate
 from app.services.professor_service import ProfessorService
 
 router = APIRouter()
@@ -20,14 +20,6 @@ async def list_professors(
     _: User = Depends(get_current_user),
 ):
     return await ProfessorService.list_professors(db)
-
-
-@router.get("/tags", response_model=list[ProfessorTagOut])
-async def list_tags(
-    db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
-):
-    return await ProfessorService.list_all_tags(db)
 
 
 @router.get("/{professor_id}", response_model=ProfessorOut)
@@ -73,11 +65,7 @@ async def import_professors_csv(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN)),
 ) -> dict:
-    """
-    Import professors from CSV.
-    Required columns: first_name, last_name, email, password
-    Optional: tags (semicolon-separated)
-    """
+    """Import professors from CSV. Required: email, first_name, last_name, password"""
     content = (await file.read()).decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(content))
     created, skipped, errors = 0, 0, []
@@ -100,20 +88,16 @@ async def import_professors_csv(
             skipped += 1
             continue
 
-        tags_raw = r.get("tags", "")
-        tags = [t.strip() for t in tags_raw.split(";") if t.strip()]
-
         try:
             data = ProfessorCreate(
                 email=email,
                 first_name=first_name,
                 last_name=last_name,
                 password=password,
-                tags=tags,
             )
             await ProfessorService.create_professor(db, data)
             created += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(f"Row {i} ({email}): {e}")
             skipped += 1
 

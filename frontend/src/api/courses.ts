@@ -26,6 +26,7 @@ export async function createCourse(payload: {
 export async function updateCourse(
   courseId: number,
   payload: Partial<{
+    code: string;
     name: string;
     description: string | null;
     semester: string;

@@ -61,6 +61,7 @@ class CourseCreate(BaseModel):
 
 
 class CourseUpdate(BaseModel):
+    code: str | None = None
     name: str | None = None
     description: str | None = None
     semester: str | None = None

@@ -2,7 +2,7 @@ import csv
 import io
 from datetime import time
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,7 @@ from app.core.rbac import require_role
 from app.database import get_db
 from app.models.classroom import Classroom
 from app.models.course import Course
+from app.models.enrollment import Enrollment
 from app.models.group import Group
 from app.models.schedule import DAY_OF_WEEK_VALUES
 from app.models.user import Role, User
@@ -41,23 +42,48 @@ async def create_schedule(
 async def list_schedules(
     semester: str | None = None,
     academic_year: str | None = None,
+    course_id: int | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role == Role.ADMIN:
         return await ScheduleService.list_schedules(
-            db, semester=semester, academic_year=academic_year
+            db, semester=semester, academic_year=academic_year, course_id=course_id
         )
-    return await ScheduleService.get_my_schedules(db, current_user)
+
+    if current_user.role == Role.STUDENT and course_id is not None:
+        enrolled = await db.execute(
+            select(Enrollment).where(
+                Enrollment.student_id == current_user.id,
+                Enrollment.course_id == course_id,
+            )
+        )
+        if enrolled.scalar_one_or_none() is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enrolled in this course")
+
+    schedules = await ScheduleService.get_my_schedules(db, current_user)
+    if course_id is not None:
+        schedules = [s for s in schedules if s.course_id == course_id]
+    return schedules
 
 
 @router.get("/{schedule_id}", response_model=ScheduleOut)
 async def get_schedule(
     schedule_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    return await ScheduleService.get_schedule(db, schedule_id)
+    schedule = await ScheduleService.get_schedule(db, schedule_id)
+    if current_user.role == Role.STUDENT:
+        enrolled = await db.execute(
+            select(Enrollment).where(
+                Enrollment.student_id == current_user.id,
+                Enrollment.course_id == schedule.course_id,
+            )
+        )
+        if enrolled.scalar_one_or_none() is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enrolled in this course")
+    return schedule
 
 
 @router.put("/{schedule_id}", response_model=ScheduleOut)

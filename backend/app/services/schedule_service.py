@@ -146,6 +146,7 @@ class ScheduleService:
         *,
         semester: str | None = None,
         academic_year: str | None = None,
+        course_id: int | None = None,
         professor_id: int | None = None,
         group_id: int | None = None,
         allowed_schedule_ids: list[int] | None = None,
@@ -155,6 +156,8 @@ class ScheduleService:
             query = query.where(Schedule.semester == semester)
         if academic_year:
             query = query.where(Schedule.academic_year == academic_year)
+        if course_id is not None:
+            query = query.where(Schedule.course_id == course_id)
         if professor_id is not None:
             query = query.where(Schedule.professor_id == professor_id)
         if group_id is not None:

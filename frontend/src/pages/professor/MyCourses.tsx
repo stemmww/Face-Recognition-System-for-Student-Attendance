@@ -10,6 +10,7 @@ import type { Course, Schedule } from "@/types";
 import { listCourses, getCourseStudents } from "@/api/courses";
 import { listSchedules } from "@/api/schedules";
 import { BRAND_PRIMARY } from "@/styles/theme";
+import { getSemesterLabel } from "@/utils/formatters";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -89,7 +90,7 @@ export default function ProfessorMyCourses() {
                   <span>{course.code}</span>
                 </Space>
               }
-              extra={<Tag>{course.semester} {course.academic_year}</Tag>}
+              extra={<Tag>{getSemesterLabel(course.semester, t)} {course.academic_year}</Tag>}
               style={{ borderRadius: 8, height: "100%" }}
             >
               <Title level={5} style={{ marginTop: 0 }}>{course.name}</Title>

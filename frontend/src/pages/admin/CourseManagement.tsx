@@ -46,7 +46,7 @@ import {
 } from "@/api/courses";
 import { listGroups } from "@/api/groups";
 import { listUsers } from "@/api/users";
-import { formatDateTime } from "@/utils/formatters";
+import { formatDateTime, getSemesterLabel } from "@/utils/formatters";
 import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Title, Text } = Typography;
@@ -326,7 +326,7 @@ export default function CourseManagement() {
   const columns = [
     { title: t("coursesPage.code"), dataIndex: "code", key: "code", width: 100 },
     { title: t("common.name"), dataIndex: "name", key: "name" },
-    { title: t("coursesPage.semester"), dataIndex: "semester", key: "semester", width: 120 },
+    { title: t("coursesPage.semester"), dataIndex: "semester", key: "semester", width: 120, render: (s: string) => getSemesterLabel(s, t) },
     { title: t("coursesPage.academicYear"), dataIndex: "academic_year", key: "academic_year", width: 140 },
     {
       title: t("coursesPage.groups"),

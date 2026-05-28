@@ -138,7 +138,7 @@ export default function Login() {
             <GlobalOutlined />
           </Button>
         </Dropdown>
-        <Tooltip title={isDark ? "Light mode" : "Dark mode"} mouseEnterDelay={0.4}>
+        <Tooltip title={isDark ? t("common.lightMode") : t("common.darkMode")} mouseEnterDelay={0.4}>
           <Button
             type="text"
             onClick={toggleTheme}

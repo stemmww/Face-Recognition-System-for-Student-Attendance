@@ -57,6 +57,8 @@ const en = {
     noData: "No data",
     operationFailed: "Operation failed",
     import: "Import",
+    lightMode: "Light mode",
+    darkMode: "Dark mode",
   },
 
   // Roles
@@ -180,6 +182,21 @@ const en = {
     activeAccounts: "Active Accounts",
     attendanceTrends: "Attendance Trends",
     selectCourseForTrends: "Select a course to view attendance trends",
+    activeBadge: "Active",
+    progress: "Progress",
+    viewAll: "View All",
+    viewCourses: "View Courses",
+    viewSchedule: "View Schedule",
+    userBreakdown: "User Breakdown",
+    distribution: "Distribution",
+    admin: "Admin",
+    daily: "Daily",
+    weekly: "Weekly",
+    monthly: "Monthly",
+    colCode: "Code",
+    colCourseName: "Course Name",
+    colSemester: "Semester",
+    colProgress: "Progress",
 
     // Professor
     welcomeUser: "Welcome, {{name}}!",
@@ -410,6 +427,7 @@ const en = {
     fall: "Fall",
     spring: "Spring",
     summer: "Summer",
+    winter: "Winter",
 
     // Members drawer
     professors: "Professors",

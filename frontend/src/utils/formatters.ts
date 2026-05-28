@@ -15,3 +15,12 @@ export function formatTime(time: string): string {
 export function fullName(firstName: string, lastName: string): string {
   return `${firstName} ${lastName}`;
 }
+
+// Translate a known course-semester value (any casing) via coursesPage.* keys.
+// Free-text values (e.g. typos, year strings) pass through unchanged.
+export function getSemesterLabel(semester: string, t: (key: string) => string): string {
+  const key = { fall: "fall", spring: "spring", summer: "summer", winter: "winter" }[
+    semester?.toLowerCase()
+  ];
+  return key ? t(`coursesPage.${key}`) : semester;
+}

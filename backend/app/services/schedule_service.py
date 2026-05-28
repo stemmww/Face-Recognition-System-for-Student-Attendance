@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import BadRequestError, NotFoundError
-from app.models.group import group_students
+from app.models.course import CourseProf
+from app.models.enrollment import Enrollment
 from app.models.schedule import Schedule, schedule_groups
 from app.models.user import Role, User
 from app.schemas.schedule import ScheduleCreate, ScheduleOut, ScheduleUpdate
@@ -220,22 +221,29 @@ class ScheduleService:
     async def get_my_schedules(db: AsyncSession, user: User) -> list[ScheduleOut]:
         """Return schedules visible to the current user by role."""
         if user.role == Role.PROFESSOR:
-            return await ScheduleService.list_schedules(db, professor_id=user.id)
+            # Courses the professor is assigned to via CourseProf
+            cp_result = await db.execute(
+                select(CourseProf.course_id).where(CourseProf.professor_id == user.id)
+            )
+            course_ids = [r[0] for r in cp_result]
+            if not course_ids:
+                return []
+            sched_result = await db.execute(
+                select(Schedule.id).where(Schedule.course_id.in_(course_ids))
+            )
+            schedule_ids = list({r[0] for r in sched_result})
+            return await ScheduleService.list_schedules(db, allowed_schedule_ids=schedule_ids)
 
         if user.role == Role.STUDENT:
-            # Find groups where student is a member
-            result = await db.execute(
-                select(group_students.c.group_id).where(group_students.c.student_id == user.id)
+            # Courses the student is enrolled in
+            enroll_result = await db.execute(
+                select(Enrollment.course_id).where(Enrollment.student_id == user.id)
             )
-            gids = [r[0] for r in result]
-            if not gids:
+            course_ids = [r[0] for r in enroll_result]
+            if not course_ids:
                 return []
-
-            # Get schedule IDs linked to any of those groups
             sched_result = await db.execute(
-                select(schedule_groups.c.schedule_id).where(
-                    schedule_groups.c.group_id.in_(gids)
-                )
+                select(Schedule.id).where(Schedule.course_id.in_(course_ids))
             )
             schedule_ids = list({r[0] for r in sched_result})
             return await ScheduleService.list_schedules(db, allowed_schedule_ids=schedule_ids)

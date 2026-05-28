@@ -9,9 +9,16 @@
 
 import type { CSSProperties } from "react";
 
-export const BRAND_PRIMARY = "rgb(64, 169, 255)";
-export const BRAND_PRIMARY_RGB = "64, 169, 255";
-export const BRAND_PRIMARY_DARK = "rgb(38, 139, 220)";
+export const BRAND_PRIMARY = "rgb(1, 123, 223)";
+export const BRAND_PRIMARY_RGB = "1, 123, 223";
+export const BRAND_PRIMARY_DARK = "rgb(1, 101, 184)";
+
+// Sync the brand color into CSS so plain stylesheets (global.css) can use
+// var(--brand-primary) without duplicating the literal. Keeps theme.ts the
+// single source of truth.
+export function applyBrandCssVars(): void {
+  document.documentElement.style.setProperty("--brand-primary", BRAND_PRIMARY);
+}
 
 // ---------------------------------------------------------------------------
 // Color palette — call with isDark to get the right variant

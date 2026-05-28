@@ -3,7 +3,7 @@
 /* Brand color — value is set at runtime from theme.ts (BRAND_PRIMARY).
    The literal here is only a fallback for the first paint. */
 :root {
-  --brand-primary: rgb(1, 112, 203);
+  --brand-primary: rgb(1, 123, 223);
 }
 
 /* Ant Design tables: horizontal scroll on narrow screens */

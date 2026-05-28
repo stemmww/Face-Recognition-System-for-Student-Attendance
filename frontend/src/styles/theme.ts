@@ -9,9 +9,9 @@
 
 import type { CSSProperties } from "react";
 
-export const BRAND_PRIMARY = "rgb(1, 112, 203)";
-export const BRAND_PRIMARY_RGB = "1, 112, 203";
-export const BRAND_PRIMARY_DARK = "rgb(1, 92, 168)";
+export const BRAND_PRIMARY = "rgb(1, 123, 223)";
+export const BRAND_PRIMARY_RGB = "1, 123, 223";
+export const BRAND_PRIMARY_DARK = "rgb(1, 101, 184)";
 
 // Sync the brand color into CSS so plain stylesheets (global.css) can use
 // var(--brand-primary) without duplicating the literal. Keeps theme.ts the

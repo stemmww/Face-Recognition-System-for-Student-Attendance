@@ -9,7 +9,7 @@ from app.api import attend as attend_api
 from app.core.security import hash_password
 from app.models.course import Course
 from app.models.enrollment import Enrollment
-from app.models.schedule import ClassType, DayOfWeek, Schedule
+from app.models.schedule import Schedule
 from app.models.user import Role, User
 from app.services.face_service import FrameAssessment
 from tests.conftest import auth_header
@@ -64,11 +64,11 @@ async def _create_course(db: AsyncSession, *, code: str) -> Course:
 async def _create_schedule(db: AsyncSession, course_id: int) -> Schedule:
     schedule = Schedule(
         course_id=course_id,
-        day_of_week=DayOfWeek.MONDAY,
+        day_of_week="MONDAY",
         start_time=time(9, 0),
         end_time=time(10, 0),
         room="A-101",
-        class_type=ClassType.LECTURE,
+        lesson_type="LECTURE",
     )
     db.add(schedule)
     await db.commit()

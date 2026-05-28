@@ -1,5 +1,11 @@
 /* ===== Global responsive styles ===== */
 
+/* Brand color — value is set at runtime from theme.ts (BRAND_PRIMARY).
+   The literal here is only a fallback for the first paint. */
+:root {
+  --brand-primary: rgb(1, 112, 203);
+}
+
 /* Ant Design tables: horizontal scroll on narrow screens */
 @media (max-width: 767px) {
   .ant-table-wrapper {
@@ -152,16 +158,16 @@ body.dark .notification-scroll::-webkit-scrollbar-thumb:hover {
 
 /* Mark all as read button */
 .mark-all-read-btn:hover {
-  color: rgb(64, 169, 255) !important;
+  color: var(--brand-primary) !important;
   filter: brightness(1.2);
 }
 
 body.dark .mark-all-read-btn {
-  color: rgb(64, 169, 255) !important;
+  color: var(--brand-primary) !important;
 }
 
 body.dark .mark-all-read-btn:hover {
-  color: rgb(64, 169, 255) !important;
+  color: var(--brand-primary) !important;
   filter: none;
 }
 

@@ -57,6 +57,8 @@ const ru = {
     noData: "Нет данных",
     operationFailed: "Операция не удалась",
     import: "Импорт",
+    lightMode: "Светлая тема",
+    darkMode: "Тёмная тема",
   },
 
   // Roles
@@ -179,6 +181,21 @@ const ru = {
     activeAccounts: "Активные аккаунты",
     attendanceTrends: "Тренды посещаемости",
     selectCourseForTrends: "Выберите курс для просмотра трендов посещаемости",
+    activeBadge: "Активно",
+    progress: "Прогресс",
+    viewAll: "Показать все",
+    viewCourses: "Показать курсы",
+    viewSchedule: "Показать расписание",
+    userBreakdown: "Разбивка пользователей",
+    distribution: "Распределение",
+    admin: "Администратор",
+    daily: "Ежедневно",
+    weekly: "Еженедельно",
+    monthly: "Ежемесячно",
+    colCode: "Код",
+    colCourseName: "Название курса",
+    colSemester: "Семестр",
+    colProgress: "Прогресс",
 
     welcomeUser: "Добро пожаловать, {{name}}!",
     myCoursesCount: "Мои курсы",
@@ -405,6 +422,7 @@ const ru = {
     fall: "Осень",
     spring: "Весна",
     summer: "Лето",
+    winter: "Зима",
 
     professors: "Преподаватели",
     enrolledStudents: "Зачисленные студенты",

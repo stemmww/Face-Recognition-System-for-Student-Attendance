@@ -12,6 +12,7 @@ import { getCourseTrends } from "@/api/statistics";
 import type { User, Course, SessionTrendPoint } from "@/types";
 import { useThemeStore } from "@/stores/themeStore";
 import { BRAND_PRIMARY } from "@/styles/theme";
+import { getSemesterLabel } from "@/utils/formatters";
 
 function tv(isDark: boolean) {
   return {
@@ -47,6 +48,7 @@ interface StatCardProps {
 }
 
 function StatCard({ label, value, badge, progress, linkLabel, onLinkClick, loading, c }: StatCardProps) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -94,7 +96,7 @@ function StatCard({ label, value, badge, progress, linkLabel, onLinkClick, loadi
       {progress !== undefined ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: c.textMuted }}>
-            <span>Progress</span>
+            <span>{t("dashboard.progress")}</span>
             <span>{progress}%</span>
           </div>
           <div style={{ height: 6, background: c.surface3, borderRadius: 3, overflow: "hidden" }}>
@@ -155,14 +157,14 @@ function CoursesTable({ courses, loading, c }: { courses: Course[]; loading: boo
             fontWeight: 500,
           }}
         >
-          {t("common.viewAll", "View All")} →
+          {t("dashboard.viewAll")} →
         </button>
       </div>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              {["Code", "Course Name", "Semester", "Progress", ""].map((h, i) => (
+              {[t("dashboard.colCode"), t("dashboard.colCourseName"), t("dashboard.colSemester"), t("dashboard.colProgress"), ""].map((h, i) => (
                 <th
                   key={i}
                   style={{
@@ -237,7 +239,7 @@ function CoursesTable({ courses, loading, c }: { courses: Course[]; loading: boo
                         </div>
                       </td>
                       <td style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}`, fontSize: 13, color: c.textMuted }}>
-                        {course.semester} · {course.academic_year}
+                        {getSemesterLabel(course.semester, t)} · {course.academic_year}
                       </td>
                       <td style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -315,7 +317,11 @@ export default function AdminDashboard() {
   const activeCount = users.filter((u) => u.is_active).length;
   const activeProgress = users.length > 0 ? Math.round((activeCount / users.length) * 100) : 0;
 
-  const tabs = ["Daily", "Weekly", "Monthly"] as const;
+  const tabs = [
+    { key: "daily", label: t("dashboard.daily") },
+    { key: "weekly", label: t("dashboard.weekly") },
+    { key: "monthly", label: t("dashboard.monthly") },
+  ] as const;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -325,7 +331,7 @@ export default function AdminDashboard() {
         <StatCard
           label={t("dashboard.totalUsers")}
           value={users.length}
-          badge="+ Active"
+          badge={`+ ${t("dashboard.activeBadge")}`}
           progress={activeProgress}
           loading={loading}
           c={c}
@@ -367,8 +373,8 @@ export default function AdminDashboard() {
               <div style={{ display: "flex", background: c.surface3, borderRadius: 8, padding: 3, gap: 2 }}>
                 {tabs.map((tab) => (
                   <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab.toLowerCase() as typeof activeTab)}
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
                     style={{
                       padding: "5px 14px",
                       fontSize: 12,
@@ -377,12 +383,12 @@ export default function AdminDashboard() {
                       cursor: "pointer",
                       fontWeight: 500,
                       transition: "all 0.15s",
-                      background: activeTab === tab.toLowerCase() ? c.surface : "transparent",
-                      color: activeTab === tab.toLowerCase() ? c.text : c.textMuted,
-                      boxShadow: activeTab === tab.toLowerCase() ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+                      background: activeTab === tab.key ? c.surface : "transparent",
+                      color: activeTab === tab.key ? c.text : c.textMuted,
+                      boxShadow: activeTab === tab.key ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
                     }}
                   >
-                    {tab}
+                    {tab.label}
                   </button>
                 ))}
               </div>
@@ -399,7 +405,7 @@ export default function AdminDashboard() {
 
           {trendLoading ? (
             <div style={{ height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: c.textFaint }}>
-              Loading...
+              {t("common.loading")}
             </div>
           ) : trendData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -427,35 +433,14 @@ export default function AdminDashboard() {
         {/* Right: Users Breakdown */}
         <div style={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: 16, padding: 20, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: c.text }}>User Breakdown</span>
-            <span
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 12,
-                color: c.textMuted,
-              }}
-            >
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: c.green,
-                  boxShadow: `0 0 0 3px ${c.greenSoft}`,
-                }}
-              />
-              {activeCount} Online
-            </span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: c.text }}>{t("dashboard.userBreakdown")}</span>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
             {[
               { label: t("dashboard.students"), count: studentCount, color: c.accent, soft: c.accentSoft, initials: "ST" },
               { label: t("dashboard.professors"), count: professorCount, color: c.blue, soft: c.surface3, initials: "PR" },
-              { label: "Admin", count: users.filter((u) => u.role === "admin").length, color: c.orange, soft: c.orangeSoft, initials: "AD" },
+              { label: t("dashboard.admin"), count: users.filter((u) => u.role === "admin").length, color: c.orange, soft: c.orangeSoft, initials: "AD" },
             ].map((item) => (
               <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div
@@ -477,7 +462,7 @@ export default function AdminDashboard() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 13.5, color: c.text }}>{item.label}</div>
-                  <div style={{ fontSize: 11.5, color: c.textMuted }}>{item.count} users</div>
+                  <div style={{ fontSize: 11.5, color: c.textMuted }}>{item.count} {t("common.users")}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div
@@ -499,7 +484,7 @@ export default function AdminDashboard() {
           {/* Breakdown bar */}
           <div style={{ marginTop: 20, paddingTop: 20, borderTop: `1px solid ${c.border}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, marginBottom: 10, color: c.text }}>
-              <span>Distribution</span>
+              <span>{t("dashboard.distribution")}</span>
             </div>
             <div style={{ display: "flex", height: 12, borderRadius: 6, overflow: "hidden", gap: 2, marginBottom: 10 }}>
               <div style={{ background: c.accent, width: users.length ? `${(studentCount / users.length) * 100}%` : "0%", transition: "width 0.5s" }} />
@@ -509,7 +494,7 @@ export default function AdminDashboard() {
             <div style={{ display: "flex", gap: 14, fontSize: 11, color: c.textMuted, flexWrap: "wrap" }}>
               <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: c.accent, marginRight: 5, verticalAlign: "middle" }} />{t("dashboard.students")}</span>
               <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: c.blue, marginRight: 5, verticalAlign: "middle" }} />{t("dashboard.professors")}</span>
-              <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: c.surface3, border: `1px solid ${c.borderStrong}`, marginRight: 5, verticalAlign: "middle" }} />Admin</span>
+              <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: c.surface3, border: `1px solid ${c.borderStrong}`, marginRight: 5, verticalAlign: "middle" }} />{t("dashboard.admin")}</span>
             </div>
           </div>
         </div>

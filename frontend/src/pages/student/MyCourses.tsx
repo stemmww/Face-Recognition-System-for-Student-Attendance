@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import type { Course, Schedule } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSchedules } from "@/api/schedules";
+import { getSemesterLabel } from "@/utils/formatters";
 import { BRAND_PRIMARY } from "@/styles/theme";
 
 const { Title, Text, Paragraph } = Typography;
@@ -82,7 +83,7 @@ export default function StudentMyCourses() {
               style={{ borderRadius: 8, height: "100%" }}
             >
               <Title level={5} style={{ marginTop: 0 }}>{course.name}</Title>
-              <Tag>{course.semester} {course.academic_year}</Tag>
+              <Tag>{getSemesterLabel(course.semester, t)} {course.academic_year}</Tag>
               {course.description && (
                 <Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ marginTop: 8 }}>
                   {course.description}

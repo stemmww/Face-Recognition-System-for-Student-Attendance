@@ -148,6 +148,9 @@ def upgrade() -> None:
     # 6.  FIX GROUPS.group_type  (grouptype enum → VARCHAR, rename values)   #
     # ===================================================================== #
     if _col_exists("groups", "group_type"):
+        # Drop the old enum-typed default first — otherwise the 'official'::grouptype
+        # default expression keeps depending on the grouptype enum and blocks DROP TYPE.
+        op.execute("ALTER TABLE groups ALTER COLUMN group_type DROP DEFAULT")
         dtype = _col_data_type("groups", "group_type")
         if dtype == "USER-DEFINED":
             op.execute(
@@ -162,6 +165,8 @@ def upgrade() -> None:
             "UPDATE groups SET group_type = 'MAIN' "
             "WHERE group_type NOT IN ('MAIN','ELECTIVE') OR group_type IS NULL"
         )
+        # Re-establish the default, now as a plain VARCHAR value
+        op.execute("ALTER TABLE groups ALTER COLUMN group_type SET DEFAULT 'MAIN'")
     if _enum_exists("grouptype"):
         op.execute("DROP TYPE IF EXISTS grouptype")
 

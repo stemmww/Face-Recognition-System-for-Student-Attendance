@@ -188,7 +188,7 @@ async def self_enroll_face(
             reason=reason,
             message=detail,
         )
-    except Exception as exc:
+    except Exception:
         logger.exception("Face pipeline error during self-enrollment for user %d", current_user.id)
         _update_status(current_user, "FAILED")
         await db.commit()

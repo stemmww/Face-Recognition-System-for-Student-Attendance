@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Avatar, Button, Card, Descriptions, Form, Input, Tag, Typography, message, Spin } from "antd";
 import { CameraOutlined, DeleteOutlined, LockOutlined, LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { changePassword, uploadProfilePhoto, deleteProfilePhoto } from "@/api/users";
 import { formatDateTime } from "@/utils/formatters";
@@ -24,6 +25,7 @@ export default function Profile() {
   const [photoLoading, setPhotoLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
+  const location = useLocation();
 
   if (!user) return null;
 
@@ -84,7 +86,9 @@ export default function Profile() {
 
   const handleLogout = () => {
     logout();
-    window.location.href = "/login";
+    window.location.href = location.pathname.startsWith("/student-app")
+      ? "/student-app/login"
+      : "/login";
   };
 
   return (

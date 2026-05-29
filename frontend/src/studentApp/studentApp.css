@@ -1,0 +1,274 @@
+.student-app-root {
+  min-height: 100vh;
+  background: #e2e8f0;
+  display: flex;
+  justify-content: center;
+}
+
+.student-app-frame {
+  width: 100%;
+  max-width: 520px;
+  min-height: 100vh;
+  background: #f8fafc;
+  position: relative;
+  box-shadow: 0 0 40px rgba(15, 23, 42, 0.14);
+}
+
+.student-app-dark .student-app-frame,
+.student-app-dark {
+  background: rgb(12, 12, 12);
+}
+
+.student-app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 64px;
+  padding: 12px 16px 10px;
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.student-app-dark .student-app-topbar {
+  background: rgba(33, 33, 33, 0.92);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.student-app-eyebrow {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.student-app-title.ant-typography {
+  margin: 2px 0 0;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.student-app-dark .student-app-title.ant-typography {
+  color: #e2e8f0;
+}
+
+.student-app-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.student-app-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 18px;
+  color: #475569;
+}
+
+.student-app-dark .student-app-icon-btn {
+  color: rgb(64, 169, 255);
+}
+
+.student-app-content {
+  min-height: calc(100vh - 136px);
+  padding: 16px 14px 92px;
+}
+
+.student-app-content .ant-card {
+  border-radius: 14px;
+}
+
+.student-app-content .ant-typography {
+  letter-spacing: 0;
+}
+
+.student-app-bottom-nav {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 30;
+  width: 100%;
+  max-width: 520px;
+  transform: translateX(-50%);
+  min-height: 72px;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.student-app-dark .student-app-bottom-nav {
+  background: rgba(33, 33, 33, 0.96);
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.student-app-nav-item {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  min-width: 0;
+  border-radius: 14px;
+  padding: 7px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.student-app-nav-item.active {
+  color: rgb(64, 169, 255);
+  background: rgba(64, 169, 255, 0.12);
+}
+
+.student-app-nav-item.primary {
+  color: #ffffff;
+  background: rgb(64, 169, 255);
+  box-shadow: 0 10px 24px rgba(64, 169, 255, 0.3);
+}
+
+.student-app-nav-item.primary.active {
+  color: #ffffff;
+  background: rgb(38, 139, 220);
+}
+
+.student-app-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.student-app-nav-label {
+  max-width: 100%;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-login-page,
+.student-app-loading {
+  min-height: 100vh;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+body.dark .student-login-page,
+body.dark .student-app-loading {
+  background: rgb(12, 12, 12);
+}
+
+.student-login-toolbar {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  padding: 4px;
+  display: flex;
+  gap: 2px;
+  backdrop-filter: blur(16px);
+}
+
+body.dark .student-login-toolbar {
+  background: rgba(33, 33, 33, 0.86);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.student-login-card {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  padding: 28px 24px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+}
+
+body.dark .student-login-card {
+  background: rgb(33, 33, 33);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.36);
+}
+
+.student-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.student-login-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  background: rgb(64, 169, 255);
+  font-size: 24px;
+  box-shadow: 0 10px 24px rgba(64, 169, 255, 0.28);
+}
+
+.student-forgot-link {
+  padding: 0;
+  margin: -2px 0 20px;
+}
+
+.student-login-submit {
+  height: 46px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.student-more-list {
+  margin-bottom: 16px;
+}
+
+.student-more-item {
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px !important;
+  margin-bottom: 8px;
+}
+
+.student-app-dark .student-more-item {
+  background: rgb(33, 33, 33);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 640px) {
+  .student-app-frame {
+    max-width: none;
+    box-shadow: none;
+  }
+
+  .student-app-bottom-nav {
+    max-width: none;
+  }
+}

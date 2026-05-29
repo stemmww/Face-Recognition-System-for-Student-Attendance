@@ -13,6 +13,9 @@ export interface User {
   photo_url: string | null;
   is_active: boolean;
   created_at: string;
+  can_self_enroll_face?: boolean;
+  face_enrollment_status?: string | null;
+  face_enrolled_at?: string | null;
 }
 
 export interface Course {
@@ -366,4 +369,33 @@ export interface CsvImportResult {
   created: number;
   skipped: number;
   errors: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Face self-enrollment
+// ---------------------------------------------------------------------------
+
+export type FaceEnrollmentStatus =
+  | "NOT_STARTED"
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "FAILED";
+
+export interface FaceEnrollmentMeResponse {
+  can_self_enroll_face: boolean;
+  has_face_embedding: boolean;
+  embedding_count: number;
+  face_enrollment_status: FaceEnrollmentStatus | null;
+  face_enrolled_at: string | null;
+  max_photos: number;
+}
+
+export interface FaceEnrollmentUploadResponse {
+  success: boolean;
+  status: FaceEnrollmentStatus;
+  message: string;
+  reason?: string;
+  has_face_embedding?: boolean;
+  embedding_count?: number;
 }

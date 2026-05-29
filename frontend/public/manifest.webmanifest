@@ -1,0 +1,19 @@
+{
+  "name": "Student Attendance",
+  "short_name": "Attendance",
+  "description": "Student attendance app with QR, face verification, schedule, courses, appeals, and notifications.",
+  "start_url": "/student-app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#40a9ff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/student-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

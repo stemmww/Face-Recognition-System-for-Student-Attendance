@@ -27,6 +27,12 @@ class User(Base):
     token_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=func.now())
 
+    # Face self-enrollment fields
+    can_self_enroll_face: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
+    face_enrollment_status: Mapped[str | None] = mapped_column(String(30), default="NOT_STARTED", nullable=True, server_default="NOT_STARTED")
+    face_enrolled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    face_enrollment_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     enrollments = relationship("Enrollment", back_populates="student")
     face_embeddings = relationship("FaceEmbedding", back_populates="user")
     notifications = relationship("Notification", back_populates="user")

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Alert,
   Card,
@@ -51,6 +51,8 @@ export default function StudentDashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const studentBasePath = location.pathname.startsWith("/student-app") ? "/student-app" : "";
   const [summary, setSummary] = useState<CourseAttendanceSummary[]>([]);
   const [unread, setUnread] = useState(0);
   const [trends, setTrends] = useState<StudentTrendPoint[]>([]);
@@ -151,7 +153,7 @@ export default function StudentDashboard() {
             banner
             message={msg}
             style={{ marginBottom: 12, cursor: "pointer", borderRadius: 8 }}
-            onClick={() => navigate("/attend")}
+            onClick={() => navigate(`${studentBasePath}/attend`)}
           />
         );
       })}

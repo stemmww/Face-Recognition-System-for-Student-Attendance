@@ -6,6 +6,7 @@ import { useThemeStore } from "@/stores/themeStore";
 import AppLayout from "@/components/Layout/AppLayout";
 import ProtectedRoute from "@/components/Layout/ProtectedRoute";
 import Login from "@/pages/Login";
+import StudentApp from "@/studentApp/StudentApp";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -35,6 +36,7 @@ import AttendanceHistory from "@/pages/student/AttendanceHistory";
 import Appeals from "@/pages/student/Appeals";
 import NotificationsPage from "@/pages/student/Notifications";
 import Attend from "@/pages/student/Attend";
+import FaceEnrollment from "@/pages/student/FaceEnrollment";
 
 // Shared pages
 import Profile from "@/pages/Profile";
@@ -230,6 +232,14 @@ function AuthenticatedApp() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/student/face-enrollment"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <FaceEnrollment />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
@@ -308,6 +318,7 @@ export default function App() {
     >
       <BrowserRouter>
         <Routes>
+          <Route path="/student-app/*" element={<StudentApp />} />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route

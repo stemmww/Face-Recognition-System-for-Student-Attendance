@@ -33,6 +33,7 @@ class UserUpdate(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     is_active: bool | None = None
+    can_self_enroll_face: bool | None = None
 
     @field_validator("password")
     @classmethod
@@ -61,6 +62,9 @@ class UserOut(BaseModel):
     photo_url: str | None
     is_active: bool
     created_at: datetime
+    can_self_enroll_face: bool = False
+    face_enrollment_status: str | None = None
+    face_enrolled_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

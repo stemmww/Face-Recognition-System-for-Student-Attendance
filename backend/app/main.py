@@ -166,3 +166,8 @@ app.include_router(professors.router, prefix="/api/professors", tags=["Professor
 from app.api import professor_availability  # noqa: E402
 
 app.include_router(professor_availability.router, prefix="/api/availability", tags=["Availability"])
+
+# --- Phase 9: Face self-enrollment ---
+from app.api import face_enrollment  # noqa: E402
+
+app.include_router(face_enrollment.router, prefix="/api/face-enrollment", tags=["Face Self-Enrollment"])

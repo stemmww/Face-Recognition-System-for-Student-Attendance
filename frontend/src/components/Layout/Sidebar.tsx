@@ -14,6 +14,7 @@ import {
   ApartmentOutlined,
   HomeOutlined,
   ScheduleOutlined,
+  CameraOutlined,
 } from "@ant-design/icons";
 import type { Role } from "@/types";
 import { useThemeStore } from "@/stores/themeStore";
@@ -26,6 +27,7 @@ interface Props {
   isMobile: boolean;
   mobileOpen: boolean;
   onMobileClose: () => void;
+  canSelfEnrollFace?: boolean;
 }
 
 interface NavItem {
@@ -39,7 +41,7 @@ interface NavSection {
   items: NavItem[];
 }
 
-function useNavSections(role: Role): NavSection[] {
+function useNavSections(role: Role, canSelfEnrollFace?: boolean): NavSection[] {
   const { t } = useTranslation();
 
   if (role === "admin") {
@@ -90,15 +92,25 @@ function useNavSections(role: Role): NavSection[] {
     ];
   }
 
+  const studentMainItems = [
+    { key: "/dashboard", icon: <DashboardOutlined />, label: t("nav.dashboard") },
+    { key: "/my-schedule", icon: <ScheduleOutlined />, label: t("nav.mySchedule") },
+    { key: "/attend", icon: <ScanOutlined />, label: t("nav.attend") },
+    { key: "/courses", icon: <BookOutlined />, label: t("nav.myCourses") },
+  ];
+
+  if (canSelfEnrollFace) {
+    studentMainItems.push({
+      key: "/student/face-enrollment",
+      icon: <CameraOutlined />,
+      label: t("nav.faceEnrollment"),
+    });
+  }
+
   return [
     {
       label: "student-main",
-      items: [
-        { key: "/dashboard", icon: <DashboardOutlined />, label: t("nav.dashboard") },
-        { key: "/my-schedule", icon: <ScheduleOutlined />, label: t("nav.mySchedule") },
-        { key: "/attend", icon: <ScanOutlined />, label: t("nav.attend") },
-        { key: "/courses", icon: <BookOutlined />, label: t("nav.myCourses") },
-      ],
+      items: studentMainItems,
     },
     {
       label: "student-extra",
@@ -116,14 +128,16 @@ function SidebarContent({
   collapsed,
   onItemClick,
   currentPath,
+  canSelfEnrollFace,
 }: {
   role: Role;
   collapsed: boolean;
   onItemClick: (key: string) => void;
   currentPath: string;
+  canSelfEnrollFace?: boolean;
 }) {
   const isDark = useThemeStore((s) => s.isDark);
-  const sections = useNavSections(role);
+  const sections = useNavSections(role, canSelfEnrollFace);
 
   const surface = isDark ? "rgb(33, 33, 33)" : "#ffffff";
   const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
@@ -225,6 +239,7 @@ export default function Sidebar({
   isMobile,
   mobileOpen,
   onMobileClose,
+  canSelfEnrollFace,
 }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -253,6 +268,7 @@ export default function Sidebar({
           collapsed={false}
           onItemClick={handleClick}
           currentPath={location.pathname}
+          canSelfEnrollFace={canSelfEnrollFace}
         />
       </Drawer>
     );
@@ -276,6 +292,7 @@ export default function Sidebar({
         collapsed={collapsed}
         onItemClick={handleClick}
         currentPath={location.pathname}
+        canSelfEnrollFace={canSelfEnrollFace}
       />
       {/* Collapse toggle */}
       <div

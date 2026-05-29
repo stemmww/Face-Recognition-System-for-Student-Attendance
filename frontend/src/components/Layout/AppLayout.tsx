@@ -33,6 +33,7 @@ export default function AppLayout({ user, onLogout }: Props) {
         isMobile={isMobile}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
+        canSelfEnrollFace={user.can_self_enroll_face === true}
       />
       <Layout
         style={{

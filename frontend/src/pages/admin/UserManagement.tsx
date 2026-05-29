@@ -10,13 +10,18 @@ import {
   Popconfirm,
   Select,
   Space,
+  Switch,
   Table,
   Tag,
+  Tooltip,
   Typography,
   Upload,
   message,
 } from "antd";
 import {
+  CameraOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
   DeleteOutlined,
   EditOutlined,
   InboxOutlined,
@@ -26,6 +31,7 @@ import {
 } from "@ant-design/icons";
 import type { User, Role, BulkImportResult } from "@/types";
 import { createUser, deactivateUser, importStudentsCSV, listUsers, updateUser } from "@/api/users";
+import { adminResetFaceData, adminSetEnrollmentPermission } from "@/api/faceEnrollment";
 import { formatDateTime } from "@/utils/formatters";
 import { BRAND_PRIMARY } from "@/styles/theme";
 
@@ -182,6 +188,28 @@ export default function UserManagement() {
     }
   };
 
+  const handleToggleEnrollPermission = async (userId: number, allowed: boolean) => {
+    try {
+      await adminSetEnrollmentPermission(userId, allowed);
+      message.success(
+        allowed ? t("usersPage.faceEnrollEnabled") : t("usersPage.faceEnrollDisabled")
+      );
+      fetchUsers();
+    } catch {
+      message.error(t("usersPage.faceEnrollToggleFailed"));
+    }
+  };
+
+  const handleResetFaceData = async (userId: number) => {
+    try {
+      await adminResetFaceData(userId);
+      message.success(t("usersPage.faceDataReset"));
+      fetchUsers();
+    } catch {
+      message.error(t("usersPage.faceDataResetFailed"));
+    }
+  };
+
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
       searchText === "" ||
@@ -225,6 +253,50 @@ export default function UserManagement() {
       dataIndex: "created_at",
       key: "created_at",
       render: (d: string) => formatDateTime(d),
+    },
+    {
+      title: t("usersPage.faceEnrollment"),
+      key: "face_enrollment",
+      render: (_: unknown, record: User) => {
+        if (record.role !== "student") return <span style={{ color: "#ccc" }}>—</span>;
+        const enrolled = record.face_enrollment_status === "APPROVED";
+        return (
+          <Space direction="vertical" size={4}>
+            <Space size={4}>
+              <Tooltip title={t("usersPage.faceEnrollPermission")}>
+                <Switch
+                  size="small"
+                  checked={record.can_self_enroll_face === true}
+                  onChange={(val) => handleToggleEnrollPermission(record.id, val)}
+                  checkedChildren={<CameraOutlined />}
+                />
+              </Tooltip>
+              {enrolled ? (
+                <Tag icon={<CheckCircleOutlined />} color="success" style={{ margin: 0 }}>
+                  {t("usersPage.faceEnrolled")}
+                </Tag>
+              ) : (
+                <Tag icon={<CloseCircleOutlined />} color="default" style={{ margin: 0 }}>
+                  {t("usersPage.faceNotEnrolled")}
+                </Tag>
+              )}
+            </Space>
+            {enrolled && (
+              <Popconfirm
+                title={t("usersPage.resetFaceTitle")}
+                description={t("usersPage.resetFaceDesc")}
+                onConfirm={() => handleResetFaceData(record.id)}
+                okText={t("common.delete")}
+                okButtonProps={{ danger: true }}
+              >
+                <Button type="link" size="small" danger style={{ padding: 0, height: "auto" }}>
+                  {t("usersPage.resetFaceData")}
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: t("common.actions"),

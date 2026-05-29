@@ -36,6 +36,7 @@ import AttendanceHistory from "@/pages/student/AttendanceHistory";
 import Appeals from "@/pages/student/Appeals";
 import NotificationsPage from "@/pages/student/Notifications";
 import Attend from "@/pages/student/Attend";
+import FaceEnrollment from "@/pages/student/FaceEnrollment";
 
 // Shared pages
 import Profile from "@/pages/Profile";
@@ -224,6 +225,14 @@ function AuthenticatedApp() {
           element={
             <ProtectedRoute allowedRoles={["student"]}>
               <NotificationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/face-enrollment"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <FaceEnrollment />
             </ProtectedRoute>
           }
         />

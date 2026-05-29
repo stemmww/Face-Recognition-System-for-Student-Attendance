@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Button,
   Card,
@@ -34,6 +34,8 @@ export default function AttendanceHistory() {
   const { t } = useTranslation();
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const studentBasePath = location.pathname.startsWith("/student-app") ? "/student-app" : "";
   const [course, setCourse] = useState<Course | null>(null);
   const [records, setRecords] = useState<StudentCourseRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +134,7 @@ export default function AttendanceHistory() {
       <Button
         type="link"
         icon={<ArrowLeftOutlined />}
-        onClick={() => navigate("/courses")}
+        onClick={() => navigate(`${studentBasePath}/courses`)}
         style={{ padding: 0, marginBottom: 8 }}
       >
         {t("attendance.backToMyCourses")}

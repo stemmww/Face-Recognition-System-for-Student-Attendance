@@ -6,6 +6,7 @@ import { useThemeStore } from "@/stores/themeStore";
 import AppLayout from "@/components/Layout/AppLayout";
 import ProtectedRoute from "@/components/Layout/ProtectedRoute";
 import Login from "@/pages/Login";
+import StudentApp from "@/studentApp/StudentApp";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -304,6 +305,7 @@ export default function App() {
     >
       <BrowserRouter>
         <Routes>
+          <Route path="/student-app/*" element={<StudentApp />} />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route

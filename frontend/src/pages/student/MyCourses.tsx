@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, Col, Empty, Row, Space, Tag, Typography, message } from "antd";
 import { BookOutlined, CalendarOutlined, RightOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
@@ -30,6 +30,8 @@ interface CourseWithSchedule {
 export default function StudentMyCourses() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const studentBasePath = location.pathname.startsWith("/student-app") ? "/student-app" : "";
   const [data, setData] = useState<CourseWithSchedule[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +73,7 @@ export default function StudentMyCourses() {
             <Card
               loading={loading}
               hoverable
-              onClick={() => navigate(`/courses/${course.id}/attendance`)}
+              onClick={() => navigate(`${studentBasePath}/courses/${course.id}/attendance`)}
               title={
                 <Space>
                   <BookOutlined />

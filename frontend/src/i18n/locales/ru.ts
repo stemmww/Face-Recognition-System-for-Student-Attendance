@@ -88,6 +88,22 @@ const ru = {
     classrooms: "Аудитории",
     mySchedule: "Моё расписание",
     faceEnrollment: "Регистрация лица",
+    qrAccess: "QR-доступ",
+  },
+
+  qrAccess: {
+    title: "QR-код — Доступ к сайту",
+    description: "Покажите этот QR-код студентам, чтобы они открыли сайт на своих телефонах.",
+    urlLabel: "URL сайта (ngrok или Railway)",
+    resetTooltip: "Сбросить на текущий URL",
+    copyTooltip: "Скопировать URL",
+    copied: "URL скопирован!",
+    copyFailed: "Не удалось скопировать",
+    invalidUrl: "Введите корректный URL, начинающийся с http:// или https://",
+    enterValidUrl: "Введите URL выше",
+    showFullscreen: "Показать на весь экран (для проектора)",
+    clickToClose: "Нажмите в любом месте для закрытия",
+    hint: "Обновляйте URL при каждом перезапуске ngrok. Нажмите «На весь экран» для показа через проектор.",
   },
 
   // Login

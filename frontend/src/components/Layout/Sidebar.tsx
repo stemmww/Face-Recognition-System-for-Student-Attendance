@@ -15,6 +15,7 @@ import {
   HomeOutlined,
   ScheduleOutlined,
   CameraOutlined,
+  QrcodeOutlined,
 } from "@ant-design/icons";
 import type { Role } from "@/types";
 import { useThemeStore } from "@/stores/themeStore";
@@ -63,6 +64,7 @@ function useNavSections(role: Role, canSelfEnrollFace?: boolean): NavSection[] {
         items: [
           { key: "/admin/faces", icon: <ScanOutlined />, label: t("nav.faceRegistry") },
           { key: "/admin/attendance", icon: <BarChartOutlined />, label: t("nav.attendance") },
+          { key: "/admin/qr-access", icon: <QrcodeOutlined />, label: t("nav.qrAccess") },
           { key: "/profile", icon: <UserOutlined />, label: t("nav.profile") },
         ],
       },

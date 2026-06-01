@@ -1,0 +1,57 @@
+name: mobile_student_app
+description: Student attendance mobile app for Face Recognition System.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # HTTP client
+  dio: ^5.4.3
+
+  # Secure token storage
+  flutter_secure_storage: ^9.2.2
+
+  # Navigation
+  go_router: ^14.2.7
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Image picker (gallery + camera)
+  image_picker: ^1.1.2
+
+  # Date/time formatting
+  intl: ^0.19.0
+
+  # Localization
+  easy_localization: ^3.0.7
+
+  # QR code scanner
+  mobile_scanner: ^5.2.3
+
+  # Camera (for multi-frame liveness capture)
+  camera: ^0.11.0+2
+
+  # Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/translations/
+
+  # Uncomment if you add launcher icons or splash images:
+  # - assets/images/

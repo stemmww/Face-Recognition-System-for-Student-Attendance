@@ -315,11 +315,14 @@ class AttendanceRecordService:
     @staticmethod
     async def get_student_records(db: AsyncSession, student_id: int) -> list[dict]:
         result = await db.execute(
-            select(AttendanceRecord)
+            select(AttendanceRecord, AttendanceSession, Course)
+            .join(AttendanceSession, AttendanceRecord.session_id == AttendanceSession.id)
+            .join(Schedule, AttendanceSession.schedule_id == Schedule.id)
+            .join(Course, Schedule.course_id == Course.id)
             .where(AttendanceRecord.student_id == student_id)
             .order_by(AttendanceRecord.updated_at.desc())
         )
-        rows = result.scalars().all()
+        rows = result.all()
         return [
             {
                 "id": r.id,
@@ -332,8 +335,10 @@ class AttendanceRecordService:
                 "student_name": None,
                 "student_email": None,
                 "override_reason": r.override_reason,
+                "course_name": course.name,
+                "session_date": str(session.date),
             }
-            for r in rows
+            for r, session, course in rows
         ]
 
     @staticmethod

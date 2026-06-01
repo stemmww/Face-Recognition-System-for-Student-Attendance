@@ -18,6 +18,7 @@ import ClassroomManagement from "@/pages/admin/ClassroomManagement";
 import ScheduleManagement from "@/pages/admin/ScheduleManagement";
 import FaceRegistry from "@/pages/admin/FaceRegistry";
 import AttendanceOverview from "@/pages/admin/AttendanceOverview";
+import QrAccess from "@/pages/admin/QrAccess";
 
 // Professor pages
 import ProfessorDashboard from "@/pages/professor/Dashboard";
@@ -141,6 +142,14 @@ function AuthenticatedApp() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AttendanceOverview />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/qr-access"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <QrAccess />
             </ProtectedRoute>
           }
         />

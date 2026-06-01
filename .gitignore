@@ -68,3 +68,21 @@ coverage.xml
 
 # Alembic
 *.pyc
+
+# Flutter / Dart
+mobile_student_app/.dart_tool/
+mobile_student_app/.flutter-plugins
+mobile_student_app/.flutter-plugins-dependencies
+mobile_student_app/build/
+mobile_student_app/.packages
+mobile_student_app/pubspec.lock
+mobile_student_app/android/.gradle/
+mobile_student_app/android/app/debug/
+mobile_student_app/android/app/profile/
+mobile_student_app/android/app/release/
+mobile_student_app/android/local.properties
+mobile_student_app/ios/Flutter/flutter_export_environment.sh
+mobile_student_app/ios/.symlinks/
+mobile_student_app/ios/Pods/
+mobile_student_app/*.apk
+mobile_student_app/*.aab

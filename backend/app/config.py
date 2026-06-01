@@ -15,7 +15,17 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://10.0.2.2:3000",   # Android emulator → host
+    ]
+    # Extra origins added at runtime (e.g., ngrok URL, Railway frontend).
+    # Set EXTRA_CORS_ORIGINS=https://abc.ngrok.io in .env or environment.
+    EXTRA_CORS_ORIGINS: list[str] = []
+
+    PORT: int = 8000
+    ENVIRONMENT: str = "development"
 
     AI_MODEL_PATH: str = "./models"
     RECOGNITION_THRESHOLD: float = 0.5

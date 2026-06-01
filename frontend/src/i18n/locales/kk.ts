@@ -90,6 +90,22 @@ const kk = {
     classrooms: "Аудиториялар",
     mySchedule: "Менің кестем",
     faceEnrollment: "Бетті тіркеу",
+    qrAccess: "QR-қол жеткізу",
+  },
+
+  qrAccess: {
+    title: "QR-код — Сайтқа кіру",
+    description: "Студенттер телефондарында сайтты ашу үшін осы QR-кодты көрсетіңіз.",
+    urlLabel: "Сайт URL (ngrok немесе Railway)",
+    resetTooltip: "Ағымдағы URL-ге қайтару",
+    copyTooltip: "URL көшіру",
+    copied: "URL көшірілді!",
+    copyFailed: "Көшіру сәтсіз аяқталды",
+    invalidUrl: "http:// немесе https:// басталатын дұрыс URL енгізіңіз",
+    enterValidUrl: "Жоғарыда URL енгізіңіз",
+    showFullscreen: "Толық экранда көрсету (проектор үшін)",
+    clickToClose: "Жабу үшін кез келген жерді басыңыз",
+    hint: "ngrok қайта іске қосылған сайын URL жаңартыңыз. Проектор арқылы көрсету үшін «Толық экран» басыңыз.",
   },
 
   // Login

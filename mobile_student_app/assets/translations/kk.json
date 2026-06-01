@@ -1,0 +1,116 @@
+{
+  "auth": {
+    "login": "Кіру",
+    "logout": "Шығу",
+    "email": "Email",
+    "password": "Құпиясөз",
+    "student_portal": "Студент порталы",
+    "invalid_email": "Дұрыс email енгізіңіз",
+    "password_required": "Құпиясөзді енгізіңіз",
+    "invalid_credentials": "Email немесе құпиясөз қате",
+    "students_only": "Бұл мобильді қосымша тек студенттерге арналған."
+  },
+  "nav": {
+    "dashboard": "Басты бет",
+    "schedule": "Сабақ кестесі",
+    "attendance": "Қатысу",
+    "subjects": "Пәндер",
+    "profile": "Профиль",
+    "face_enrollment": "Бетті тіркеу",
+    "notifications": "Хабарламалар",
+    "appeals": "Апелляциялар",
+    "attendance_history": "Қатысу тарихы"
+  },
+  "dashboard": {
+    "hello": "Сәлем",
+    "active_sessions": "Белсенді сабақтар",
+    "today_schedule": "Бүгінгі кесте"
+  },
+  "schedule": {
+    "no_classes_today": "Бүгін сабақ жоқ",
+    "monday": "Дүйсенбі",
+    "tuesday": "Сейсенбі",
+    "wednesday": "Сәрсенбі",
+    "thursday": "Бейсенбі",
+    "friday": "Жұма",
+    "saturday": "Сенбі",
+    "sunday": "Жексенбі"
+  },
+  "subjects": {
+    "no_subjects": "Пәндер табылмады"
+  },
+  "attendance": {
+    "active": "Белсенді",
+    "no_active_sessions": "Қазір белсенді сабақтар жоқ",
+    "verify_attendance": "Қатысуды растау",
+    "face_verify_info": "Бетті верификациялау веб-порталда қол жетімді. Браузер арқылы кіріңіз немесе оқытушыңызға хабарласыңыз.",
+    "no_records": "Қатысу жазбалары табылмады",
+    "unknown_course": "Белгісіз пән",
+    "check_in": "Тіркелу уақыты",
+    "present_window": "Қазір белгілеу",
+    "late_window": "Кешігу терезесі — белгілеу",
+    "late": "Кешікті",
+    "scan_qr": "QR-кодты сканерлеу",
+    "point_at_qr": "Камераны оқытушының QR-кодына бағыттаңыз",
+    "scan_and_verify": "QR сканерлеу және растау",
+    "challenge_failed": "Верификация тапсырмасын алу сәтсіз аяқталды",
+    "look_at_camera": "Тікелей камераға қараңыз",
+    "start_capture": "Бастау — дайынмын",
+    "verifying": "Тексеруде...",
+    "status": {
+      "PRESENT": "Қатысты",
+      "LATE": "Кешікті",
+      "ABSENT": "Болмады"
+    }
+  },
+  "face_enrollment": {
+    "status": "Тіркеу күйі",
+    "has_embedding": "Бет деректері сақталды",
+    "no_permission": "Бетті тіркеуге рұқсатыңыз жоқ.",
+    "enrolled": "Бет тіркелді",
+    "not_enrolled": "Бет тіркелмеген",
+    "photo_count": "{} / {} фото",
+    "select_photo": "Фото таңдаңыз",
+    "upload_photo": "Фото жүктеу",
+    "take_photo": "Фото түсіру",
+    "consent": "Мен қатысуды тексеру үшін бет деректерімді сақтауға келісемін",
+    "submit": "Жіберу",
+    "success": "Бет сәтті тіркелді",
+    "failed": "Бетті тіркеу сәтсіз аяқталды",
+    "no_face": "Бет анықталмады",
+    "multiple_faces": "Бірнеше бет анықталды",
+    "too_blurry": "Сурет өте бұлдыр",
+    "liveness_failed": "Тірілік тексерісі сәтсіз аяқталды",
+    "max_reached": "Максималды фото саны жетті (5/5)",
+    "hints": "Жарық жерде · Тікелей камераға қараңыз · Тек бір бет"
+  },
+  "notifications": {
+    "empty": "Хабарламалар жоқ",
+    "mark_all_read": "Барлығын оқылды деп белгілеу"
+  },
+  "appeals": {
+    "no_appeals": "Апелляциялар жоқ",
+    "create": "Апелляция жасау",
+    "select_absence": "Болмаған жазбаны таңдаңыз",
+    "absence": "Болмаған жағдай",
+    "reason": "Себеп",
+    "no_absences": "Болмаған жазбалар жоқ",
+    "unknown_course": "Белгісіз пән"
+  },
+  "profile": {
+    "role": "Рөл",
+    "language": "Тіл"
+  },
+  "error": {
+    "generic": "Бірдеңе дұрыс емес",
+    "load_failed": "Деректерді жүктеу қатесі",
+    "upload_failed": "Жүктеу қатесі",
+    "submit_failed": "Жіберу қатесі"
+  },
+  "retry": "Қайталау",
+  "submit": "Жіберу",
+  "close": "Жабу",
+  "all": "Барлығы",
+  "yes": "Иә",
+  "no": "Жоқ"
+}

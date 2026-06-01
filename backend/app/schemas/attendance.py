@@ -38,6 +38,8 @@ class AttendanceRecordOut(BaseModel):
     student_name: str | None = None
     student_email: str | None = None
     override_reason: str | None = None
+    course_name: str | None = None
+    session_date: str | None = None
 
     model_config = {"from_attributes": True}
 

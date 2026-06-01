@@ -1,0 +1,48 @@
+workflows:
+  # ── Android APK ──────────────────────────────────────────────────────────────
+  android-debug:
+    name: Android Debug APK
+    max_build_duration: 30
+    environment:
+      flutter: stable
+      vars:
+        API_BASE_URL: $API_BASE_URL   # set in Codemagic environment variables
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Analyze
+        script: flutter analyze --no-fatal-infos
+      - name: Build APK
+        script: |
+          flutter build apk --debug \
+            --dart-define=API_BASE_URL=$API_BASE_URL
+    artifacts:
+      - build/app/outputs/flutter-apk/app-debug.apk
+
+  # ── iOS IPA (requires Apple Developer account) ───────────────────────────────
+  ios-debug:
+    name: iOS Debug IPA
+    max_build_duration: 45
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        API_BASE_URL: $API_BASE_URL
+      # Add your Apple signing credentials in Codemagic UI:
+      # ios_signing:
+      #   distribution_type: development
+      #   bundle_identifier: com.attendance.mobileStudentApp
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Pod install
+        script: find . -name "Podfile" -execdir pod install \;
+      - name: Build IPA
+        script: |
+          flutter build ipa --debug \
+            --dart-define=API_BASE_URL=$API_BASE_URL \
+            --no-codesign
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log

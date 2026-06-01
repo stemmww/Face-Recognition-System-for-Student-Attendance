@@ -1,0 +1,116 @@
+{
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "student_portal": "Student Portal",
+    "invalid_email": "Enter a valid email",
+    "password_required": "Password is required",
+    "invalid_credentials": "Invalid email or password",
+    "students_only": "This mobile app is available only for students."
+  },
+  "nav": {
+    "dashboard": "Home",
+    "schedule": "Schedule",
+    "attendance": "Attendance",
+    "subjects": "Subjects",
+    "profile": "Profile",
+    "face_enrollment": "Face Enrollment",
+    "notifications": "Notifications",
+    "appeals": "Appeals",
+    "attendance_history": "Attendance History"
+  },
+  "dashboard": {
+    "hello": "Hello",
+    "active_sessions": "Active Sessions",
+    "today_schedule": "Today's Schedule"
+  },
+  "schedule": {
+    "no_classes_today": "No classes today",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
+  },
+  "subjects": {
+    "no_subjects": "No subjects found"
+  },
+  "attendance": {
+    "active": "Active",
+    "no_active_sessions": "No active attendance sessions right now",
+    "verify_attendance": "Verify Attendance",
+    "face_verify_info": "Face verification requires the web portal. Please use a browser or ask your professor for manual marking.",
+    "no_records": "No attendance records found",
+    "unknown_course": "Unknown course",
+    "check_in": "Check-in",
+    "present_window": "Mark present now",
+    "late_window": "Late window — mark attendance",
+    "late": "Late",
+    "scan_qr": "Scan QR Code",
+    "point_at_qr": "Point camera at professor's QR code",
+    "scan_and_verify": "Scan QR & Verify",
+    "challenge_failed": "Failed to get verification challenge",
+    "look_at_camera": "Look straight at the camera",
+    "start_capture": "Start — I'm ready",
+    "verifying": "Verifying...",
+    "status": {
+      "PRESENT": "Present",
+      "LATE": "Late",
+      "ABSENT": "Absent"
+    }
+  },
+  "face_enrollment": {
+    "status": "Enrollment Status",
+    "has_embedding": "Face Data Saved",
+    "no_permission": "You don't have permission to enroll your face.",
+    "enrolled": "Face enrolled",
+    "not_enrolled": "Face not enrolled",
+    "photo_count": "{} / {} photos",
+    "select_photo": "Select a photo",
+    "upload_photo": "Upload photo",
+    "take_photo": "Take photo",
+    "consent": "I consent to my face data being stored for attendance verification",
+    "submit": "Submit",
+    "success": "Face successfully registered",
+    "failed": "Face registration failed",
+    "no_face": "No face detected",
+    "multiple_faces": "Multiple faces detected",
+    "too_blurry": "Image is too blurry",
+    "liveness_failed": "Liveness check failed",
+    "max_reached": "Maximum photos reached (5/5)",
+    "hints": "Use good lighting · Look directly at the camera · One face only"
+  },
+  "notifications": {
+    "empty": "No notifications",
+    "mark_all_read": "Mark all read"
+  },
+  "appeals": {
+    "no_appeals": "No appeals submitted",
+    "create": "Create Appeal",
+    "select_absence": "Select an absence record",
+    "absence": "Absence",
+    "reason": "Reason",
+    "no_absences": "No absence records to appeal",
+    "unknown_course": "Unknown course"
+  },
+  "profile": {
+    "role": "Role",
+    "language": "Language"
+  },
+  "error": {
+    "generic": "Something went wrong",
+    "load_failed": "Failed to load data",
+    "upload_failed": "Upload failed",
+    "submit_failed": "Submit failed"
+  },
+  "retry": "Retry",
+  "submit": "Submit",
+  "close": "Close",
+  "all": "All",
+  "yes": "Yes",
+  "no": "No"
+}

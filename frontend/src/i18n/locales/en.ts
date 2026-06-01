@@ -90,6 +90,22 @@ const en = {
     classrooms: "Classrooms",
     mySchedule: "My Schedule",
     faceEnrollment: "Face Enrollment",
+    qrAccess: "QR Access",
+  },
+
+  qrAccess: {
+    title: "QR Code — Site Access",
+    description: "Show this QR code to students so they can open the site on their phones.",
+    urlLabel: "Site URL (ngrok or Railway)",
+    resetTooltip: "Reset to current URL",
+    copyTooltip: "Copy URL",
+    copied: "URL copied!",
+    copyFailed: "Failed to copy",
+    invalidUrl: "Enter a valid URL starting with http:// or https://",
+    enterValidUrl: "Enter a URL above",
+    showFullscreen: "Show fullscreen (for projector)",
+    clickToClose: "Click anywhere to close",
+    hint: "Update the URL whenever ngrok restarts. Click 'Fullscreen' to display on a projector.",
   },
 
   // Login

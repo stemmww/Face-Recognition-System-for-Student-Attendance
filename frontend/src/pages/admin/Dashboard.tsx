@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Select, message } from "antd";
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
@@ -14,9 +16,40 @@ import { useThemeStore } from "@/stores/themeStore";
 import { BRAND_PRIMARY_RGB, surfaceColors } from "@/styles/theme";
 import { getSemesterLabel } from "@/utils/formatters";
 
+dayjs.extend(isoWeek);
+
+type TrendPeriod = "daily" | "weekly" | "monthly";
+
 // Local alias: dashboard colors come from the shared surface palette so the
 // brand blue and surfaces stay in sync with the rest of the app.
 type DashColors = ReturnType<typeof surfaceColors>;
+
+// Collapse per-session trend points into buckets by day/week/month, summing
+// present/late/absent. The raw data has one point per session, so multiple
+// sessions on the same day (or week/month) get merged into a single bar.
+function aggregateTrends(data: SessionTrendPoint[], period: TrendPeriod) {
+  const bucketKey = (date: string) => {
+    const d = dayjs(date);
+    if (period === "weekly") return d.startOf("isoWeek").format("YYYY-MM-DD");
+    if (period === "monthly") return d.format("YYYY-MM");
+    return d.format("YYYY-MM-DD");
+  };
+
+  const buckets = new Map<string, { date: string; present: number; late: number; absent: number }>();
+  for (const point of data) {
+    const key = bucketKey(point.date);
+    const existing = buckets.get(key);
+    if (existing) {
+      existing.present += point.present;
+      existing.late += point.late;
+      existing.absent += point.absent;
+    } else {
+      buckets.set(key, { date: key, present: point.present, late: point.late, absent: point.absent });
+    }
+  }
+
+  return Array.from(buckets.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
 
 // ── Stat Card ────────────────────────────────────────────────────────────────
 interface StatCardProps {
@@ -282,7 +315,9 @@ export default function AdminDashboard() {
   const [trendCourse, setTrendCourse] = useState<number | undefined>(undefined);
   const [trendData, setTrendData] = useState<SessionTrendPoint[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [activeTab, setActiveTab] = useState<TrendPeriod>("daily");
+
+  const chartData = useMemo(() => aggregateTrends(trendData, activeTab), [trendData, activeTab]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -419,15 +454,23 @@ export default function AdminDashboard() {
             <div style={{ height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: c.textFaint }}>
               {t("common.loading")}
             </div>
-          ) : trendData.length > 0 ? (
+          ) : chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={trendData} margin={{ top: 4, right: 8, left: -20, bottom: 4 }}>
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={c.border} vertical={false} />
-                <XAxis dataKey="date" fontSize={11} tick={{ fill: c.textFaint }} axisLine={false} tickLine={false} />
+                <XAxis
+                  dataKey="date"
+                  fontSize={11}
+                  tick={{ fill: c.textFaint }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: string) => dayjs(v).format(activeTab === "monthly" ? "MMM YYYY" : "MMM D")}
+                />
                 <YAxis fontSize={11} tick={{ fill: c.textFaint }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: 10, fontSize: 12 }}
                   cursor={{ fill: c.surface3 }}
+                  labelFormatter={(v: string) => dayjs(v).format(activeTab === "monthly" ? "MMMM YYYY" : "MMM D, YYYY")}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="present" name={t("common.present")} fill={c.green} stackId="a" radius={[0, 0, 0, 0]} />

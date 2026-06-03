@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ConfigProvider, Spin, theme } from "antd";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,15 +54,23 @@ function DashboardRouter() {
 
 function AuthenticatedApp() {
   const { user, isLoading, fetchUser, logout } = useAuth();
+  const [bootstrapped, setBootstrapped] = useState(false);
 
   useEffect(() => {
     // Run only once on mount — authoritative auth bootstrap.
     // Including `user`/`fetchUser` in deps would re-fetch on every store update.
-    if (!user) fetchUser();
+    if (user) {
+      setBootstrapped(true);
+    } else {
+      fetchUser().finally(() => setBootstrapped(true));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (isLoading) {
+  // Until the bootstrap fetch resolves, show a spinner. Without this, the
+  // first render (user still null, isLoading still false) would hit the
+  // redirect below and lose the current URL on a hard refresh.
+  if (!bootstrapped || isLoading) {
     return (
       <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Spin size="large" />

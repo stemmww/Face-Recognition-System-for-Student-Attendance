@@ -26,16 +26,12 @@ type DashColors = ReturnType<typeof surfaceColors>;
 
 // A student is "at risk" when their attendance for a course falls below this.
 // Surfaced as a badge so admins can see which courses have students in danger
-// of falling short, not just the headline average.
+// of falling short.
 const AT_RISK_THRESHOLD = 70;
 
-// Per-course derived stats shown in the courses table. `undefined` entry means
-// the course's stats failed to load / haven't loaded yet (renders "—").
-interface CourseStat {
-  rate: number;        // avg attendance rate (0–100)
-  atRisk: number;      // # of enrolled students below AT_RISK_THRESHOLD
-  enrolled: number;    // total enrolled (for context)
-}
+// courseId → number of at-risk students, or undefined while loading / when the
+// course's stats failed to load (renders "—").
+type AtRiskMap = Record<number, number | undefined>;
 
 // Collapse per-session trend points into buckets by day/week/month, summing
 // present/late/absent. The raw data has one point per session, so multiple
@@ -154,14 +150,12 @@ function StatCard({ label, value, badge, progress, linkLabel, onLinkClick, loadi
 function CoursesTable({
   courses,
   loading,
-  stats,
+  atRisk,
   c,
 }: {
   courses: Course[];
   loading: boolean;
-  // courseId → derived stats, or undefined while loading / when the course's
-  // stats failed to load (renders "—").
-  stats: Record<number, CourseStat | undefined>;
+  atRisk: AtRiskMap;
   c: DashColors;
 }) {
   const { t } = useTranslation();
@@ -203,7 +197,7 @@ function CoursesTable({
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              {[t("dashboard.colCode"), t("dashboard.colCourseName"), t("dashboard.colSemester"), t("dashboard.colProgress"), t("dashboard.colAtRisk"), ""].map((h, i) => (
+              {[t("dashboard.colCode"), t("dashboard.colCourseName"), t("dashboard.colSemester"), t("dashboard.colAtRisk"), ""].map((h, i) => (
                 <th
                   key={i}
                   style={{
@@ -227,7 +221,7 @@ function CoursesTable({
             {loading
               ? Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 5 }).map((_, j) => (
                       <td key={j} style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
                         <div style={{ height: 14, background: c.surface3, borderRadius: 4, width: "70%" }} />
                       </td>
@@ -236,8 +230,8 @@ function CoursesTable({
                 ))
               : courses.map((course, i) => {
                   const pair = colorPairs[i % colorPairs.length];
-                  const stat = stats[course.id];
-                  const hasStat = stat !== undefined;
+                  const riskCount = atRisk[course.id];
+                  const hasStat = riskCount !== undefined;
                   return (
                     <tr
                       key={course.id}
@@ -282,21 +276,11 @@ function CoursesTable({
                         {getSemesterLabel(course.semester, t)} · {course.academic_year}
                       </td>
                       <td style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div style={{ flex: 1, maxWidth: 130, height: 6, background: c.surface3, borderRadius: 3, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${hasStat ? stat.rate : 0}%`, background: c.accent, borderRadius: 3, transition: "width 0.5s ease" }} />
-                          </div>
-                          <span style={{ fontSize: 12, color: c.textMuted, minWidth: 32 }}>
-                            {hasStat ? `${Math.round(stat.rate)}%` : "—"}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
                         {!hasStat ? (
                           <span style={{ fontSize: 12, color: c.textMuted }}>—</span>
-                        ) : stat.atRisk > 0 ? (
+                        ) : riskCount > 0 ? (
                           <span
-                            title={t("dashboard.atRiskTooltip", { count: stat.atRisk, threshold: AT_RISK_THRESHOLD })}
+                            title={t("dashboard.atRiskTooltip", { count: riskCount, threshold: AT_RISK_THRESHOLD })}
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
@@ -311,7 +295,7 @@ function CoursesTable({
                             }}
                           >
                             <span style={{ fontSize: 11 }}>⚠</span>
-                            {t("dashboard.atRiskCount", { count: stat.atRisk })}
+                            {t("dashboard.atRiskCount", { count: riskCount })}
                           </span>
                         ) : (
                           <span
@@ -364,7 +348,7 @@ export default function AdminDashboard() {
 
   const [users, setUsers] = useState<User[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [stats, setStats] = useState<Record<number, CourseStat | undefined>>({});
+  const [atRisk, setAtRisk] = useState<AtRiskMap>({});
   const [loading, setLoading] = useState(true);
   const [trendCourse, setTrendCourse] = useState<number | undefined>(undefined);
   const [trendData, setTrendData] = useState<SessionTrendPoint[]>([]);
@@ -380,24 +364,25 @@ export default function AdminDashboard() {
       setCourses(co);
       if (co.length > 0) setTrendCourse(co[0].id);
 
-      // Fetch each course's stats in parallel and derive the rate + at-risk
-      // count from the same response (no extra requests). A failed/empty
-      // course stays absent from the map (renders "—"), so one bad course
-      // never blocks the rest.
+      // Fetch each course's stats in parallel and derive the at-risk count
+      // from the response (no extra requests). A failed/empty course stays
+      // absent from the map (renders "—"), so one bad course never blocks
+      // the rest. Students with no records are excluded — their rate is
+      // meaningless and would otherwise read as a false positive/negative.
       const entries = await Promise.all(
-        co.map(async (course): Promise<[number, CourseStat | undefined]> => {
+        co.map(async (course): Promise<[number, number | undefined]> => {
           try {
             const s = await getCourseStatistics(course.id);
-            const atRisk = s.students.filter(
+            const count = s.students.filter(
               (st) => st.total_sessions > 0 && st.attendance_rate < AT_RISK_THRESHOLD,
             ).length;
-            return [course.id, { rate: s.avg_attendance_rate, atRisk, enrolled: s.total_enrolled }];
+            return [course.id, count];
           } catch {
             return [course.id, undefined];
           }
         }),
       );
-      setStats(Object.fromEntries(entries));
+      setAtRisk(Object.fromEntries(entries));
     } catch {
       message.error(t("dashboard.failedToLoad"));
     } finally {
@@ -614,7 +599,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Courses Table ── */}
-      <CoursesTable courses={courses} loading={loading} stats={stats} c={c} />
+      <CoursesTable courses={courses} loading={loading} atRisk={atRisk} c={c} />
 
     </div>
   );

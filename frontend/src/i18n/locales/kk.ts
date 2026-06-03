@@ -212,7 +212,6 @@ const kk = {
     colCode: "Коды",
     colCourseName: "Курс атауы",
     colSemester: "Семестр",
-    colProgress: "Қатысу",
     colAtRisk: "Қауіп тобы",
     atRiskCount: "{{count}} қауіпте",
     atRiskTooltip: "{{count}} студенттің қатысуы {{threshold}}%-дан төмен",

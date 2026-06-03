@@ -46,6 +46,34 @@ export function themeColors(isDark: boolean) {
 }
 
 // ---------------------------------------------------------------------------
+// Surface palette — richer token set for card-based pages (dashboards).
+// Single source of truth so the brand blue and surface colors stay
+// consistent with themeColors() instead of being re-hardcoded per page.
+// ---------------------------------------------------------------------------
+
+export function surfaceColors(isDark: boolean) {
+  return {
+    surface: isDark ? "rgb(33, 33, 33)" : "#ffffff",
+    surface3: isDark ? "rgba(255,255,255,0.06)" : "#f1f5f9",
+    hover: isDark ? "rgba(255,255,255,0.05)" : "#f8fafc",
+    border: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+    borderStrong: isDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.1)",
+    text: isDark ? "#e2e8f0" : "#1e293b",
+    textMuted: isDark ? "#94a3b8" : "#64748b",
+    textFaint: isDark ? "#64748b" : "#94a3b8",
+    accent: BRAND_PRIMARY,
+    accentSoft: isDark ? `rgba(${BRAND_PRIMARY_RGB},0.18)` : `rgba(${BRAND_PRIMARY_RGB},0.08)`,
+    blue: BRAND_PRIMARY,
+    green: isDark ? "#34d399" : "#10b981",
+    greenSoft: isDark ? "#064e3b" : "#d1fae5",
+    orange: isDark ? "#fbbf24" : "#f59e0b",
+    orangeSoft: isDark ? "rgba(251,191,36,0.15)" : "#fef3c7",
+    red: isDark ? "#f87171" : "#ef4444",
+    chartBar: isDark ? "rgba(255,255,255,0.08)" : "#e2e8f0",
+  } as const;
+}
+
+// ---------------------------------------------------------------------------
 // Reusable style objects for auth pages (Login, ResetPassword)
 // ---------------------------------------------------------------------------
 

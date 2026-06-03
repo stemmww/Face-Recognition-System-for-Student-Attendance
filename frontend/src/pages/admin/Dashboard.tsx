@@ -8,32 +8,15 @@ import {
 } from "recharts";
 import { listUsers } from "@/api/users";
 import { listCourses } from "@/api/courses";
-import { getCourseTrends } from "@/api/statistics";
+import { getCourseStatistics, getCourseTrends } from "@/api/statistics";
 import type { User, Course, SessionTrendPoint } from "@/types";
 import { useThemeStore } from "@/stores/themeStore";
-import { BRAND_PRIMARY } from "@/styles/theme";
+import { BRAND_PRIMARY_RGB, surfaceColors } from "@/styles/theme";
 import { getSemesterLabel } from "@/utils/formatters";
 
-function tv(isDark: boolean) {
-  return {
-    surface: isDark ? "rgb(33, 33, 33)" : "#ffffff",
-    border: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-    borderStrong: isDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.1)",
-    text: isDark ? "#e2e8f0" : "#1e293b",
-    textMuted: isDark ? "#94a3b8" : "#64748b",
-    textFaint: isDark ? "#64748b" : "#94a3b8",
-    accent: BRAND_PRIMARY,
-    accentSoft: isDark ? "rgba(64,169,255,0.15)" : "rgba(64,169,255,0.08)",
-    green: isDark ? "#34d399" : "#10b981",
-    greenSoft: isDark ? "#064e3b" : "#d1fae5",
-    orange: isDark ? "#fbbf24" : "#f59e0b",
-    orangeSoft: isDark ? "rgba(251,191,36,0.15)" : "#fef3c7",
-    blue: BRAND_PRIMARY,
-    surface3: isDark ? "rgba(255,255,255,0.06)" : "#f1f5f9",
-    hover: isDark ? "rgba(255,255,255,0.05)" : "#f8fafc",
-    chartBar: isDark ? "rgba(255,255,255,0.08)" : "#e2e8f0",
-  };
-}
+// Local alias: dashboard colors come from the shared surface palette so the
+// brand blue and surfaces stay in sync with the rest of the app.
+type DashColors = ReturnType<typeof surfaceColors>;
 
 // ── Stat Card ────────────────────────────────────────────────────────────────
 interface StatCardProps {
@@ -44,7 +27,7 @@ interface StatCardProps {
   linkLabel?: string;
   onLinkClick?: () => void;
   loading?: boolean;
-  c: ReturnType<typeof tv>;
+  c: DashColors;
 }
 
 function StatCard({ label, value, badge, progress, linkLabel, onLinkClick, loading, c }: StatCardProps) {
@@ -122,7 +105,19 @@ function StatCard({ label, value, badge, progress, linkLabel, onLinkClick, loadi
 }
 
 // ── Courses Table ─────────────────────────────────────────────────────────────
-function CoursesTable({ courses, loading, c }: { courses: Course[]; loading: boolean; c: ReturnType<typeof tv> }) {
+function CoursesTable({
+  courses,
+  loading,
+  rates,
+  c,
+}: {
+  courses: Course[];
+  loading: boolean;
+  // courseId → average attendance rate (0–100), or undefined while loading /
+  // when the course has no sessions yet.
+  rates: Record<number, number | undefined>;
+  c: DashColors;
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -130,15 +125,13 @@ function CoursesTable({ courses, loading, c }: { courses: Course[]; loading: boo
     { bg: "#fde68a", color: "#b45309" },
     { bg: "#bbf7d0", color: "#166534" },
     { bg: "#fecaca", color: "#991b1b" },
-    { bg: "rgba(64,169,255,0.14)", color: BRAND_PRIMARY },
+    { bg: `rgba(${BRAND_PRIMARY_RGB},0.14)`, color: c.accent },
     { bg: "#fbcfe8", color: "#9d174d" },
     { bg: "#a7f3d0", color: "#065f46" },
     { bg: "#ddd6fe", color: "#5b21b6" },
     { bg: "#fed7aa", color: "#9a3412" },
     { bg: "#cffafe", color: "#155e75" },
   ];
-
-  const fakeProgress = [60, 75, 85, 60, 75, 85, 70, 80, 65];
 
   return (
     <div style={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: 16, overflow: "hidden" }}>
@@ -197,7 +190,8 @@ function CoursesTable({ courses, loading, c }: { courses: Course[]; loading: boo
                 ))
               : courses.map((course, i) => {
                   const pair = colorPairs[i % colorPairs.length];
-                  const prog = fakeProgress[i % fakeProgress.length];
+                  const rate = rates[course.id];
+                  const hasRate = rate !== undefined;
                   return (
                     <tr
                       key={course.id}
@@ -244,9 +238,11 @@ function CoursesTable({ courses, loading, c }: { courses: Course[]; loading: boo
                       <td style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{ flex: 1, maxWidth: 130, height: 6, background: c.surface3, borderRadius: 3, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${prog}%`, background: c.accent, borderRadius: 3 }} />
+                            <div style={{ height: "100%", width: `${hasRate ? rate : 0}%`, background: c.accent, borderRadius: 3, transition: "width 0.5s ease" }} />
                           </div>
-                          <span style={{ fontSize: 12, color: c.textMuted, minWidth: 32 }}>{prog}%</span>
+                          <span style={{ fontSize: 12, color: c.textMuted, minWidth: 32 }}>
+                            {hasRate ? `${Math.round(rate)}%` : "—"}
+                          </span>
                         </div>
                       </td>
                       <td style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
@@ -277,10 +273,11 @@ export default function AdminDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isDark = useThemeStore((s) => s.isDark);
-  const c = tv(isDark);
+  const c = surfaceColors(isDark);
 
   const [users, setUsers] = useState<User[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [rates, setRates] = useState<Record<number, number | undefined>>({});
   const [loading, setLoading] = useState(true);
   const [trendCourse, setTrendCourse] = useState<number | undefined>(undefined);
   const [trendData, setTrendData] = useState<SessionTrendPoint[]>([]);
@@ -293,6 +290,21 @@ export default function AdminDashboard() {
       setUsers(u);
       setCourses(co);
       if (co.length > 0) setTrendCourse(co[0].id);
+
+      // Fetch each course's real average attendance rate in parallel. A
+      // failed/empty course just stays absent from the map (renders "—"),
+      // so one bad course never blocks the rest.
+      const entries = await Promise.all(
+        co.map(async (course): Promise<[number, number | undefined]> => {
+          try {
+            const stats = await getCourseStatistics(course.id);
+            return [course.id, stats.avg_attendance_rate];
+          } catch {
+            return [course.id, undefined];
+          }
+        }),
+      );
+      setRates(Object.fromEntries(entries));
     } catch {
       message.error(t("dashboard.failedToLoad"));
     } finally {
@@ -420,7 +432,7 @@ export default function AdminDashboard() {
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="present" name={t("common.present")} fill={c.green} stackId="a" radius={[0, 0, 0, 0]} />
                 <Bar dataKey="late" name={t("common.late")} fill={c.orange} stackId="a" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="absent" name={t("common.absent")} fill={isDark ? "#f87171" : "#ef4444"} stackId="a" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="absent" name={t("common.absent")} fill={c.red} stackId="a" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -501,7 +513,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Courses Table ── */}
-      <CoursesTable courses={courses} loading={loading} c={c} />
+      <CoursesTable courses={courses} loading={loading} rates={rates} c={c} />
 
     </div>
   );

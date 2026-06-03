@@ -2,13 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Button,
-  Card,
-  Col,
   Empty,
   Progress,
-  Row,
   Space,
-  Statistic,
   Table,
   Tag,
   Tooltip,
@@ -27,14 +23,21 @@ import dayjs from "dayjs";
 import { getCourse } from "@/api/courses";
 import type { Course, StudentCourseRecord } from "@/types";
 import { getMyCourseAttendance } from "@/api/attendance";
+import { useThemeStore } from "@/stores/themeStore";
+import { surfaceColors } from "@/styles/theme";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
+import StatTile from "@/components/dashboard/StatTile";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function AttendanceHistory() {
   const { t } = useTranslation();
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const isDark = useThemeStore((s) => s.isDark);
+  const cc = surfaceColors(isDark);
   const studentBasePath = location.pathname.startsWith("/student-app") ? "/student-app" : "";
   const [course, setCourse] = useState<Course | null>(null);
   const [records, setRecords] = useState<StudentCourseRecord[]>([]);
@@ -130,77 +133,51 @@ export default function AttendanceHistory() {
   ];
 
   return (
-    <>
-      <Button
-        type="link"
-        icon={<ArrowLeftOutlined />}
-        onClick={() => navigate(`${studentBasePath}/courses`)}
-        style={{ padding: 0, marginBottom: 8 }}
-      >
-        {t("attendance.backToMyCourses")}
-      </Button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={course ? `${course.code} — ${course.name}` : t("attendance.attendanceHistory")}
+        extra={
+          <Button
+            type="link"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(`${studentBasePath}/courses`)}
+            style={{ padding: 0 }}
+          >
+            {t("attendance.backToMyCourses")}
+          </Button>
+        }
+      />
 
-      <Title level={4}>
-        {course ? `${course.code} — ${course.name}` : t("attendance.attendanceHistory")}
-      </Title>
-
-      {/* Summary cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={6}>
-          <Card loading={loading} size="small">
-            <Statistic
-              title={t("attendance.attendanceRate")}
-              value={rate}
-              suffix="%"
-              valueStyle={{ color: rate >= 75 ? "#52c41a" : rate >= 50 ? "#fa8c16" : "#ff4d4f" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card loading={loading} size="small">
-            <Statistic
-              title={<><CheckCircleOutlined /> {t("common.present")}</>}
-              value={present}
-              valueStyle={{ color: "#52c41a" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card loading={loading} size="small">
-            <Statistic
-              title={<><ClockCircleOutlined /> {t("common.late")}</>}
-              value={late}
-              valueStyle={{ color: "#fa8c16" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card loading={loading} size="small">
-            <Statistic
-              title={<><CloseCircleOutlined /> {t("common.absent")}</>}
-              value={absent}
-              valueStyle={{ color: "#ff4d4f" }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      {/* Summary tiles */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+        <StatTile
+          label={t("attendance.attendanceRate")}
+          value={`${rate}%`}
+          accent={rate >= 75 ? cc.green : rate >= 50 ? cc.orange : cc.red}
+          loading={loading}
+        />
+        <StatTile label={t("common.present")} value={present} icon={<CheckCircleOutlined />} accent={cc.green} loading={loading} />
+        <StatTile label={t("common.late")} value={late} icon={<ClockCircleOutlined />} accent={cc.orange} loading={loading} />
+        <StatTile label={t("common.absent")} value={absent} icon={<CloseCircleOutlined />} accent={cc.red} loading={loading} />
+      </div>
 
       {total > 0 && (
         <Progress
           percent={rate}
           status={rate >= 75 ? "success" : rate >= 50 ? "normal" : "exception"}
-          style={{ marginBottom: 24 }}
         />
       )}
 
-      <Table
-        dataSource={records}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 20, showTotal: (total) => t("attendance.sessionCount", { count: total }) }}
-        locale={{ emptyText: <Empty description={t("attendance.noRecordsForCourse")} /> }}
-      />
-    </>
+      <Panel flush>
+        <Table
+          dataSource={records}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 20, showTotal: (total) => t("attendance.sessionCount", { count: total }) }}
+          locale={{ emptyText: <Empty description={t("attendance.noRecordsForCourse")} /> }}
+        />
+      </Panel>
+    </div>
   );
 }

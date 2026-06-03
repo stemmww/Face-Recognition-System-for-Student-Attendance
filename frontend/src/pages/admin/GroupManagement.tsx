@@ -19,8 +19,10 @@ import {
 import { listCourses } from "@/api/courses";
 import { listUsers } from "@/api/users";
 import { BRAND_PRIMARY } from "@/styles/theme";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 function getApiErrorMessage(error: unknown): string | undefined {
   if (
@@ -310,17 +312,21 @@ export default function GroupManagement() {
   ];
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("nav.groups")}</Title>
-        <Space>
-          <Button icon={<UploadOutlined />} onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}>{t("groups.importCSV")}</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>{t("groups.addGroup")}</Button>
-        </Space>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("nav.groups")}
+        extra={
+          <>
+            <Button icon={<UploadOutlined />} onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}>{t("groups.importCSV")}</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>{t("groups.addGroup")}</Button>
+          </>
+        }
+      />
 
-      <Table dataSource={groups} columns={columns} rowKey="id" loading={loading}
-        pagination={{ pageSize: 25, showTotal: (t) => `${t} ${t}` }} />
+      <Panel flush>
+        <Table dataSource={groups} columns={columns} rowKey="id" loading={loading}
+          pagination={{ pageSize: 25, showTotal: (n) => `${n} ${t("common.total")}` }} />
+      </Panel>
 
       {/* Create / Edit modal */}
       <Modal title={editing ? t("groups.editGroup") : t("groups.createGroup")}
@@ -462,6 +468,6 @@ export default function GroupManagement() {
             },
           ]} />
       </Drawer>
-    </>
+    </div>
   );
 }

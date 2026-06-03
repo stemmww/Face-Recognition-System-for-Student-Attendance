@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, Col, Empty, Row, Space, Tag, Typography, message } from "antd";
+import { Empty, Space, Tag, Typography, message } from "antd";
 import {
   BookOutlined,
   CalendarOutlined,
@@ -11,8 +11,10 @@ import { listCourses, getCourseStudents } from "@/api/courses";
 import { listSchedules } from "@/api/schedules";
 import { BRAND_PRIMARY } from "@/styles/theme";
 import { getSemesterLabel } from "@/utils/formatters";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
 const classTypeColors: Record<string, string> = {
   LECTURE: BRAND_PRIMARY, PRACTICE: "green",
@@ -69,58 +71,55 @@ export default function ProfessorMyCourses() {
 
   if (!loading && details.length === 0) {
     return (
-      <>
-        <Title level={4}>{t("coursesPage.title")}</Title>
-        <Empty description={t("coursesPage.notAssigned")} />
-      </>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <PageHeader title={t("coursesPage.title")} />
+        <Panel><Empty description={t("coursesPage.notAssigned")} /></Panel>
+      </div>
     );
   }
 
   return (
-    <>
-      <Title level={4}>{t("coursesPage.title")}</Title>
-      <Row gutter={[16, 16]}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader title={t("coursesPage.title")} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
         {details.map(({ course, schedules, studentCount }) => (
-          <Col xs={24} md={12} xl={8} key={course.id}>
-            <Card
-              loading={loading}
-              title={
-                <Space>
-                  <BookOutlined />
-                  <span>{course.code}</span>
-                </Space>
-              }
-              extra={<Tag>{getSemesterLabel(course.semester, t)} {course.academic_year}</Tag>}
-              style={{ borderRadius: 8, height: "100%" }}
-            >
-              <Title level={5} style={{ marginTop: 0 }}>{course.name}</Title>
-              {course.description && (
-                <Paragraph type="secondary" ellipsis={{ rows: 2 }}>{course.description}</Paragraph>
-              )}
+          <Panel
+            key={course.id}
+            title={
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <BookOutlined />
+                {course.code}
+              </span>
+            }
+            extra={<Tag>{getSemesterLabel(course.semester, t)} {course.academic_year}</Tag>}
+          >
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{course.name}</div>
+            {course.description && (
+              <Paragraph type="secondary" ellipsis={{ rows: 2 }}>{course.description}</Paragraph>
+            )}
 
-              <Space direction="vertical" style={{ width: "100%", marginTop: 8 }}>
-                <Space>
-                  <TeamOutlined />
-                  <Text>{t("coursesPage.studentsEnrolled", { count: studentCount })}</Text>
-                </Space>
-
-                {schedules.length > 0 && (
-                  <div>
-                    <CalendarOutlined /> <Text strong>{t("coursesPage.scheduleLabel")}:</Text>
-                    {schedules.map((s) => (
-                      <div key={s.id} style={{ marginLeft: 20, marginTop: 4 }}>
-                        <Tag color={classTypeColors[s.lesson_type]}>{s.lesson_type}</Tag>
-                        {capitalize(s.day_of_week)} {formatTime(s.start_time)}–{formatTime(s.end_time)}
-                        <Text type="secondary"> ({s.classroom_name ?? s.room})</Text>
-                      </div>
-                    ))}
-                  </div>
-                )}
+            <Space direction="vertical" style={{ width: "100%", marginTop: 8 }}>
+              <Space>
+                <TeamOutlined />
+                <Text>{t("coursesPage.studentsEnrolled", { count: studentCount })}</Text>
               </Space>
-            </Card>
-          </Col>
+
+              {schedules.length > 0 && (
+                <div>
+                  <CalendarOutlined /> <Text strong>{t("coursesPage.scheduleLabel")}:</Text>
+                  {schedules.map((s) => (
+                    <div key={s.id} style={{ marginLeft: 20, marginTop: 4 }}>
+                      <Tag color={classTypeColors[s.lesson_type]}>{s.lesson_type}</Tag>
+                      {capitalize(s.day_of_week)} {formatTime(s.start_time)}–{formatTime(s.end_time)}
+                      <Text type="secondary"> ({s.classroom_name ?? s.room})</Text>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Space>
+          </Panel>
         ))}
-      </Row>
-    </>
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Button, Card, Input, Space, Typography, Tooltip, message } from "antd";
+import { Button, Input, Space, Typography, Tooltip, message } from "antd";
 import {
   QrcodeOutlined,
   CopyOutlined,
@@ -8,8 +8,10 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function QrAccess() {
   const { t } = useTranslation();
@@ -74,17 +76,18 @@ export default function QrAccess() {
   }
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", padding: "8px 0" }}>
-      <Card>
+    <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <QrcodeOutlined />
+            {t("qrAccess.title")}
+          </span>
+        }
+        subtitle={t("qrAccess.description")}
+      />
+      <Panel>
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          <div>
-            <Title level={4} style={{ marginBottom: 4 }}>
-              <QrcodeOutlined style={{ marginRight: 8 }} />
-              {t("qrAccess.title")}
-            </Title>
-            <Text type="secondary">{t("qrAccess.description")}</Text>
-          </div>
-
           {/* URL input */}
           <div>
             <Text strong style={{ display: "block", marginBottom: 6 }}>
@@ -174,7 +177,7 @@ export default function QrAccess() {
             {t("qrAccess.hint")}
           </Text>
         </Space>
-      </Card>
+      </Panel>
     </div>
   );
 }

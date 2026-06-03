@@ -212,7 +212,10 @@ const ru = {
     colCode: "Код",
     colCourseName: "Название курса",
     colSemester: "Семестр",
-    colProgress: "Прогресс",
+    colAtRisk: "В зоне риска",
+    atRiskCount: "{{count}} в зоне риска",
+    atRiskTooltip: "{{count}} студент(ов) с посещаемостью ниже {{threshold}}%",
+    allOnTrack: "В норме",
 
     welcomeUser: "Добро пожаловать, {{name}}!",
     myCoursesCount: "Мои курсы",

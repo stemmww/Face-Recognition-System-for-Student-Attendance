@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Avatar, Button, Card, Descriptions, Form, Input, Tag, Typography, message, Spin } from "antd";
+import { Avatar, Button, Descriptions, Form, Input, Tag, message, Spin } from "antd";
 import { CameraOutlined, DeleteOutlined, LockOutlined, LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -8,8 +8,8 @@ import { changePassword, uploadProfilePhoto, deleteProfilePhoto } from "@/api/us
 import { formatDateTime } from "@/utils/formatters";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BRAND_PRIMARY } from "@/styles/theme";
-
-const { Title } = Typography;
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
 const roleColors: Record<string, string> = {
   admin: "red",
@@ -92,8 +92,8 @@ export default function Profile() {
   };
 
   return (
-    <div style={{ width: "100%" }}>
-      <Title level={4}>{t("profilePage.title")}</Title>
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader title={t("profilePage.title")} />
       <div
         style={{
           display: "grid",
@@ -102,8 +102,8 @@ export default function Profile() {
           alignItems: "stretch",
         }}
       >
-        <Card styles={{ body: { height: "100%", display: "flex", flexDirection: "column" } }}>
-          <div style={{ flex: 1 }}>
+        <Panel>
+          <div>
             <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 24 }}>
               <div style={{ position: "relative", display: "inline-block" }}>
                 <Spin spinning={photoLoading}>
@@ -139,9 +139,9 @@ export default function Profile() {
                 </div>
               </div>
               <div>
-                <Title level={4} style={{ margin: 0 }}>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>
                   {user.first_name} {user.last_name}
-                </Title>
+                </div>
                 {user.photo_url && (
                   <Button
                     type="link"
@@ -173,16 +173,19 @@ export default function Profile() {
               </Descriptions.Item>
             </Descriptions>
           </div>
-          <Button danger icon={<LogoutOutlined />} onClick={handleLogout} style={{ marginTop: 16, alignSelf: "flex-start" }}>
+          <Button danger icon={<LogoutOutlined />} onClick={handleLogout} style={{ marginTop: 16 }}>
             {t("common.logout")}
           </Button>
-        </Card>
+        </Panel>
 
-        <Card styles={{ body: { height: "100%" } }}>
-          <Title level={5} style={{ marginBottom: 16 }}>
-            <LockOutlined style={{ marginRight: 8 }} />
-            {t("profilePage.changePassword")}
-          </Title>
+        <Panel
+          title={
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <LockOutlined />
+              {t("profilePage.changePassword")}
+            </span>
+          }
+        >
           <Form
             form={form}
             layout="vertical"
@@ -228,7 +231,7 @@ export default function Profile() {
               </Button>
             </Form.Item>
           </Form>
-        </Card>
+        </Panel>
       </div>
     </div>
   );

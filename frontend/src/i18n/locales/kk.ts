@@ -212,7 +212,10 @@ const kk = {
     colCode: "Коды",
     colCourseName: "Курс атауы",
     colSemester: "Семестр",
-    colProgress: "Прогресс",
+    colAtRisk: "Қауіп тобы",
+    atRiskCount: "{{count}} қауіпте",
+    atRiskTooltip: "{{count}} студенттің қатысуы {{threshold}}%-дан төмен",
+    allOnTrack: "Жақсы",
 
     welcomeUser: "Қош келдіңіз, {{name}}!",
     myCoursesCount: "Менің курстарым",

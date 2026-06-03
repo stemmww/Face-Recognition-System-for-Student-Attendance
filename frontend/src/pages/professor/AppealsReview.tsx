@@ -8,15 +8,14 @@ import {
   Space,
   Table,
   Tag,
-  Typography,
   message,
 } from "antd";
 import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { Appeal } from "@/types";
 import { listAppeals, reviewAppeal } from "@/api/appeals";
-
-const { Title } = Typography;
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
 const statusColors: Record<string, string> = {
   pending: "orange",
@@ -132,33 +131,36 @@ export default function AppealsReview() {
   ];
 
   return (
-    <>
-      <Title level={4}>{t("appeals.reviewTitle")}</Title>
-
-      <Space style={{ marginBottom: 16 }}>
-        <Select
-          placeholder={t("appeals.filterByStatus")}
-          value={filter}
-          onChange={setFilter}
-          allowClear
-          style={{ width: 200 }}
-          options={[
-            { value: "pending", label: t("common.pending") },
-            { value: "approved", label: t("common.approved") },
-            { value: "rejected", label: t("common.rejected") },
-          ]}
-        />
-      </Space>
-
-      <Table
-        dataSource={appeals}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 15 }}
-        scroll={{ x: "max-content" }}
-        locale={{ emptyText: <Empty description={t("appeals.noAppealsFound")} /> }}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("appeals.reviewTitle")}
+        extra={
+          <Select
+            placeholder={t("appeals.filterByStatus")}
+            value={filter}
+            onChange={setFilter}
+            allowClear
+            style={{ width: 200 }}
+            options={[
+              { value: "pending", label: t("common.pending") },
+              { value: "approved", label: t("common.approved") },
+              { value: "rejected", label: t("common.rejected") },
+            ]}
+          />
+        }
       />
-    </>
+
+      <Panel flush>
+        <Table
+          dataSource={appeals}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 15 }}
+          scroll={{ x: "max-content" }}
+          locale={{ emptyText: <Empty description={t("appeals.noAppealsFound")} /> }}
+        />
+      </Panel>
+    </div>
   );
 }

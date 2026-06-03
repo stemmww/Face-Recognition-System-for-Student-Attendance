@@ -48,8 +48,10 @@ import { listGroups } from "@/api/groups";
 import { listUsers } from "@/api/users";
 import { formatDateTime, getSemesterLabel } from "@/utils/formatters";
 import { BRAND_PRIMARY } from "@/styles/theme";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const GROUP_TYPE_COLORS: Record<string, string> = { MAIN: BRAND_PRIMARY, ELECTIVE: "orange" };
 
@@ -373,17 +375,21 @@ export default function CourseManagement() {
   ];
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("coursesPage.managementTitle")}</Title>
-        <Space>
-          <Button icon={<UploadOutlined />} onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}>{t("coursesPage.importCSV")}</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>{t("coursesPage.createCourse")}</Button>
-        </Space>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("coursesPage.managementTitle")}
+        extra={
+          <>
+            <Button icon={<UploadOutlined />} onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}>{t("coursesPage.importCSV")}</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>{t("coursesPage.createCourse")}</Button>
+          </>
+        }
+      />
 
-      <Table dataSource={courses} columns={columns} rowKey="id" loading={loading}
-        pagination={{ pageSize: 10, showTotal: (total) => `${total} ${t("common.courses")}` }} />
+      <Panel flush>
+        <Table dataSource={courses} columns={columns} rowKey="id" loading={loading}
+          pagination={{ pageSize: 10, showTotal: (total) => `${total} ${t("common.courses")}` }} />
+      </Panel>
 
       {/* Create/Edit Modal */}
       <Modal
@@ -568,6 +574,6 @@ export default function CourseManagement() {
           />
         )}
       </Modal>
-    </>
+    </div>
   );
 }

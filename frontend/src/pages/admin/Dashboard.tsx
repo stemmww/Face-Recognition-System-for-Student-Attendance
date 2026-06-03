@@ -24,6 +24,15 @@ type TrendPeriod = "daily" | "weekly" | "monthly";
 // brand blue and surfaces stay in sync with the rest of the app.
 type DashColors = ReturnType<typeof surfaceColors>;
 
+// A student is "at risk" when their attendance for a course falls below this.
+// Surfaced as a badge so admins can see which courses have students in danger
+// of falling short.
+const AT_RISK_THRESHOLD = 70;
+
+// courseId → number of at-risk students, or undefined while loading / when the
+// course's stats failed to load (renders "—").
+type AtRiskMap = Record<number, number | undefined>;
+
 // Collapse per-session trend points into buckets by day/week/month, summing
 // present/late/absent. The raw data has one point per session, so multiple
 // sessions on the same day (or week/month) get merged into a single bar.
@@ -98,12 +107,12 @@ function StatCard({ label, value, badge, progress, linkLabel, onLinkClick, loadi
 
       <div
         style={{
-          fontSize: 42,
-          fontWeight: 800,
+          fontSize: 34,
+          fontWeight: 700,
           color: loading ? c.textFaint : c.text,
           lineHeight: 1,
           marginBottom: 14,
-          letterSpacing: "-0.03em",
+          letterSpacing: "-0.02em",
         }}
       >
         {loading ? "—" : value}
@@ -141,14 +150,12 @@ function StatCard({ label, value, badge, progress, linkLabel, onLinkClick, loadi
 function CoursesTable({
   courses,
   loading,
-  rates,
+  atRisk,
   c,
 }: {
   courses: Course[];
   loading: boolean;
-  // courseId → average attendance rate (0–100), or undefined while loading /
-  // when the course has no sessions yet.
-  rates: Record<number, number | undefined>;
+  atRisk: AtRiskMap;
   c: DashColors;
 }) {
   const { t } = useTranslation();
@@ -190,7 +197,7 @@ function CoursesTable({
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              {[t("dashboard.colCode"), t("dashboard.colCourseName"), t("dashboard.colSemester"), t("dashboard.colProgress"), ""].map((h, i) => (
+              {[t("dashboard.colCode"), t("dashboard.colCourseName"), t("dashboard.colSemester"), t("dashboard.colAtRisk"), ""].map((h, i) => (
                 <th
                   key={i}
                   style={{
@@ -223,8 +230,8 @@ function CoursesTable({
                 ))
               : courses.map((course, i) => {
                   const pair = colorPairs[i % colorPairs.length];
-                  const rate = rates[course.id];
-                  const hasRate = rate !== undefined;
+                  const riskCount = atRisk[course.id];
+                  const hasStat = riskCount !== undefined;
                   return (
                     <tr
                       key={course.id}
@@ -269,14 +276,45 @@ function CoursesTable({
                         {getSemesterLabel(course.semester, t)} · {course.academic_year}
                       </td>
                       <td style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div style={{ flex: 1, maxWidth: 130, height: 6, background: c.surface3, borderRadius: 3, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${hasRate ? rate : 0}%`, background: c.accent, borderRadius: 3, transition: "width 0.5s ease" }} />
-                          </div>
-                          <span style={{ fontSize: 12, color: c.textMuted, minWidth: 32 }}>
-                            {hasRate ? `${Math.round(rate)}%` : "—"}
+                        {!hasStat ? (
+                          <span style={{ fontSize: 12, color: c.textMuted }}>—</span>
+                        ) : riskCount > 0 ? (
+                          <span
+                            title={t("dashboard.atRiskTooltip", { count: riskCount, threshold: AT_RISK_THRESHOLD })}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              background: c.orangeSoft,
+                              color: c.orange,
+                              fontSize: 12,
+                              fontWeight: 700,
+                              padding: "3px 9px",
+                              borderRadius: 6,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <span style={{ fontSize: 11 }}>⚠</span>
+                            {t("dashboard.atRiskCount", { count: riskCount })}
                           </span>
-                        </div>
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              background: c.greenSoft,
+                              color: c.green,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              padding: "3px 9px",
+                              borderRadius: 6,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {t("dashboard.allOnTrack")}
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: "14px 16px", borderBottom: `1px solid ${c.border}` }}>
                         <button
@@ -310,7 +348,7 @@ export default function AdminDashboard() {
 
   const [users, setUsers] = useState<User[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [rates, setRates] = useState<Record<number, number | undefined>>({});
+  const [atRisk, setAtRisk] = useState<AtRiskMap>({});
   const [loading, setLoading] = useState(true);
   const [trendCourse, setTrendCourse] = useState<number | undefined>(undefined);
   const [trendData, setTrendData] = useState<SessionTrendPoint[]>([]);
@@ -326,20 +364,25 @@ export default function AdminDashboard() {
       setCourses(co);
       if (co.length > 0) setTrendCourse(co[0].id);
 
-      // Fetch each course's real average attendance rate in parallel. A
-      // failed/empty course just stays absent from the map (renders "—"),
-      // so one bad course never blocks the rest.
+      // Fetch each course's stats in parallel and derive the at-risk count
+      // from the response (no extra requests). A failed/empty course stays
+      // absent from the map (renders "—"), so one bad course never blocks
+      // the rest. Students with no records are excluded — their rate is
+      // meaningless and would otherwise read as a false positive/negative.
       const entries = await Promise.all(
         co.map(async (course): Promise<[number, number | undefined]> => {
           try {
-            const stats = await getCourseStatistics(course.id);
-            return [course.id, stats.avg_attendance_rate];
+            const s = await getCourseStatistics(course.id);
+            const count = s.students.filter(
+              (st) => st.total_sessions > 0 && st.attendance_rate < AT_RISK_THRESHOLD,
+            ).length;
+            return [course.id, count];
           } catch {
             return [course.id, undefined];
           }
         }),
       );
-      setRates(Object.fromEntries(entries));
+      setAtRisk(Object.fromEntries(entries));
     } catch {
       message.error(t("dashboard.failedToLoad"));
     } finally {
@@ -556,7 +599,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Courses Table ── */}
-      <CoursesTable courses={courses} loading={loading} rates={rates} c={c} />
+      <CoursesTable courses={courses} loading={loading} atRisk={atRisk} c={c} />
 
     </div>
   );

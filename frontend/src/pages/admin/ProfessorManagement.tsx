@@ -11,8 +11,10 @@ import {
   listProfessors, updateProfessor,
 } from "@/api/professors";
 import { BRAND_PRIMARY } from "@/styles/theme";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function ProfessorManagement() {
   const { t } = useTranslation();
@@ -158,29 +160,33 @@ export default function ProfessorManagement() {
   ];
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("professorsPage.title")}</Title>
-        <Space>
-          <Button
-            icon={<UploadOutlined />}
-            onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}
-          >
-            {t("professorsPage.importCSV")}
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            {t("professorsPage.addProfessor")}
-          </Button>
-        </Space>
-      </div>
-
-      <Table
-        dataSource={professors}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 20, showTotal: (n) => `${n} ${t("common.total")}` }}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("professorsPage.title")}
+        extra={
+          <>
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}
+            >
+              {t("professorsPage.importCSV")}
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              {t("professorsPage.addProfessor")}
+            </Button>
+          </>
+        }
       />
+
+      <Panel flush>
+        <Table
+          dataSource={professors}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 20, showTotal: (n) => `${n} ${t("common.total")}` }}
+        />
+      </Panel>
 
       {/* Create / Edit modal */}
       <Modal
@@ -264,6 +270,6 @@ export default function ProfessorManagement() {
           />
         )}
       </Modal>
-    </>
+    </div>
   );
 }

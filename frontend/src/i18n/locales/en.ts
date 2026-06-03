@@ -213,7 +213,10 @@ const en = {
     colCode: "Code",
     colCourseName: "Course Name",
     colSemester: "Semester",
-    colProgress: "Progress",
+    colAtRisk: "At Risk",
+    atRiskCount: "{{count}} at risk",
+    atRiskTooltip: "{{count}} student(s) below {{threshold}}% attendance",
+    allOnTrack: "On track",
 
     // Professor
     welcomeUser: "Welcome, {{name}}!",

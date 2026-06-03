@@ -8,7 +8,6 @@ import {
   Modal,
   Table,
   Tag,
-  Typography,
   message,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
@@ -16,8 +15,9 @@ import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import type { Appeal } from "@/types";
 import { createAppeal, getMyAppeals } from "@/api/appeals";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title } = Typography;
 const { TextArea } = Input;
 
 const statusColors: Record<string, string> = {
@@ -98,22 +98,26 @@ export default function Appeals() {
   ];
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("appeals.title")}</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-          {t("appeals.newAppeal")}
-        </Button>
-      </div>
-
-      <Table
-        dataSource={appeals}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 15 }}
-        locale={{ emptyText: <Empty description={t("appeals.noAppeals")} /> }}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("appeals.title")}
+        extra={
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+            {t("appeals.newAppeal")}
+          </Button>
+        }
       />
+
+      <Panel flush>
+        <Table
+          dataSource={appeals}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 15 }}
+          locale={{ emptyText: <Empty description={t("appeals.noAppeals")} /> }}
+        />
+      </Panel>
 
       <Modal
         title={t("appeals.submitAppeal")}
@@ -144,6 +148,6 @@ export default function Appeals() {
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Card, Col, Empty, Row, Space, Tag, Typography, message } from "antd";
+import { Empty, Tag, Typography, message } from "antd";
 import { BookOutlined, CalendarOutlined, RightOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import type { Course, Schedule } from "@/types";
@@ -8,8 +8,10 @@ import { listCourses } from "@/api/courses";
 import { listSchedules } from "@/api/schedules";
 import { getSemesterLabel } from "@/utils/formatters";
 import { BRAND_PRIMARY } from "@/styles/theme";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
 const classTypeColors: Record<string, string> = {
   LECTURE: BRAND_PRIMARY, PRACTICE: "green",
@@ -57,34 +59,33 @@ export default function StudentMyCourses() {
 
   if (!loading && data.length === 0) {
     return (
-      <>
-        <Title level={4}>{t("coursesPage.title")}</Title>
-        <Empty description={t("coursesPage.notEnrolled")} />
-      </>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <PageHeader title={t("coursesPage.title")} />
+        <Panel><Empty description={t("coursesPage.notEnrolled")} /></Panel>
+      </div>
     );
   }
 
   return (
-    <>
-      <Title level={4}>{t("coursesPage.title")}</Title>
-      <Paragraph type="secondary">{t("coursesPage.clickToView")}</Paragraph>
-      <Row gutter={[16, 16]}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader title={t("coursesPage.title")} subtitle={t("coursesPage.clickToView")} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
         {data.map(({ course, schedules }) => (
-          <Col xs={24} md={12} xl={8} key={course.id}>
-            <Card
-              loading={loading}
-              hoverable
-              onClick={() => navigate(`${studentBasePath}/courses/${course.id}/attendance`)}
+          <div
+            key={course.id}
+            onClick={() => navigate(`${studentBasePath}/courses/${course.id}/attendance`)}
+            style={{ cursor: "pointer" }}
+          >
+            <Panel
               title={
-                <Space>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                   <BookOutlined />
-                  <span>{course.code}</span>
-                </Space>
+                  {course.code}
+                </span>
               }
               extra={<RightOutlined />}
-              style={{ borderRadius: 8, height: "100%" }}
             >
-              <Title level={5} style={{ marginTop: 0 }}>{course.name}</Title>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{course.name}</div>
               <Tag>{getSemesterLabel(course.semester, t)} {course.academic_year}</Tag>
               {course.description && (
                 <Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ marginTop: 8 }}>
@@ -104,10 +105,10 @@ export default function StudentMyCourses() {
                   ))}
                 </div>
               )}
-            </Card>
-          </Col>
+            </Panel>
+          </div>
         ))}
-      </Row>
-    </>
+      </div>
+    </div>
   );
 }

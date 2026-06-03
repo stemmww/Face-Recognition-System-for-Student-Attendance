@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  Button, Form, Popconfirm, Select, Table, Tag, TimePicker, Typography, message,
+  Button, Form, Popconfirm, Select, Table, Tag, TimePicker, message,
 } from "antd";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import type { ProfessorAvailability } from "@/types";
 import { addAvailabilitySlot, deleteAvailabilitySlot, getMyAvailability } from "@/api/availability";
 import { BRAND_PRIMARY } from "@/styles/theme";
-
-const { Title, Text } = Typography;
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
 const DAY_OPTIONS = [
   { value: "MONDAY", label: "Monday" },
@@ -106,36 +106,38 @@ export default function Availability() {
   ];
 
   return (
-    <>
-      <Title level={4} style={{ marginBottom: 4 }}>My Availability</Title>
-      <Text type="secondary" style={{ display: "block", marginBottom: 20 }}>
-        Mark the time slots when you are available to teach. Admin will use this when building the schedule.
-      </Text>
-
-      {/* Add slot form */}
-      <Form form={form} layout="inline" style={{ marginBottom: 20 }}>
-        <Form.Item name="day_of_week" rules={[{ required: true }]}>
-          <Select options={DAY_OPTIONS} placeholder="Day" style={{ width: 150 }} />
-        </Form.Item>
-        <Form.Item name="start_time" rules={[{ required: true }]}>
-          <TimePicker format="HH:mm" minuteStep={30} placeholder="From" />
-        </Form.Item>
-        <Form.Item name="end_time" rules={[{ required: true }]}>
-          <TimePicker format="HH:mm" minuteStep={30} placeholder="To" />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>Add slot</Button>
-        </Form.Item>
-      </Form>
-
-      <Table
-        dataSource={sorted}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={false}
-        style={{ maxWidth: 480 }}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title="My Availability"
+        subtitle="Mark the time slots when you are available to teach. Admin will use this when building the schedule."
       />
-    </>
+
+      <Panel>
+        {/* Add slot form */}
+        <Form form={form} layout="inline" style={{ marginBottom: 20 }}>
+          <Form.Item name="day_of_week" rules={[{ required: true }]}>
+            <Select options={DAY_OPTIONS} placeholder="Day" style={{ width: 150 }} />
+          </Form.Item>
+          <Form.Item name="start_time" rules={[{ required: true }]}>
+            <TimePicker format="HH:mm" minuteStep={30} placeholder="From" />
+          </Form.Item>
+          <Form.Item name="end_time" rules={[{ required: true }]}>
+            <TimePicker format="HH:mm" minuteStep={30} placeholder="To" />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>Add slot</Button>
+          </Form.Item>
+        </Form>
+
+        <Table
+          dataSource={sorted}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={false}
+          style={{ maxWidth: 480 }}
+        />
+      </Panel>
+    </div>
   );
 }

@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import {
   Alert,
   Button,
-  Card,
   Checkbox,
   Descriptions,
   Popconfirm,
@@ -31,8 +30,10 @@ import {
   submitFaceEnrollment,
 } from "@/api/faceEnrollment";
 import type { FaceEnrollmentMeResponse, FaceEnrollmentUploadResponse } from "@/types";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 const REJECTION_REASON_KEY: Record<string, string> = {
   NO_FACE_DETECTED: "faceEnrollment.rejectNoFace",
@@ -174,15 +175,12 @@ export default function FaceEnrollment() {
   const rejectionMsg = rejectionI18nKey ? t(rejectionI18nKey) : lastResult?.message ?? "";
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto" }}>
-      <Title level={4} style={{ marginBottom: 4 }}>{t("faceEnrollment.pageTitle")}</Title>
-      <Paragraph type="secondary" style={{ marginBottom: 24 }}>
-        {t("faceEnrollment.pageDesc")}
-      </Paragraph>
+    <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader title={t("faceEnrollment.pageTitle")} subtitle={t("faceEnrollment.pageDesc")} />
 
-      {/* Status card */}
+      {/* Status panel */}
       {statusData && (
-        <Card style={{ marginBottom: 24 }}>
+        <Panel>
           <Descriptions size="small" column={1} title={t("faceEnrollment.statusTitle")}>
             <Descriptions.Item label={t("faceEnrollment.permissionLabel")}>
               <Tag color="green">{t("faceEnrollment.permissionGranted")}</Tag>
@@ -237,7 +235,7 @@ export default function FaceEnrollment() {
               </Descriptions.Item>
             )}
           </Descriptions>
-        </Card>
+        </Panel>
       )}
 
       {/* Last upload result */}
@@ -264,7 +262,7 @@ export default function FaceEnrollment() {
           style={{ marginBottom: 24 }}
         />
       ) : (
-        <Card>
+        <Panel>
           {/* Consent */}
           <div style={{ marginBottom: 20 }}>
             <Checkbox
@@ -323,7 +321,7 @@ export default function FaceEnrollment() {
               </Button>
             )}
           </Space>
-        </Card>
+        </Panel>
       )}
 
       {/* Tips */}

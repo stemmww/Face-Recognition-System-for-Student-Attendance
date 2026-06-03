@@ -13,8 +13,10 @@ import dayjs from "dayjs";
 import type { Notification } from "@/types";
 import { listNotifications, markRead, markAllRead } from "@/api/notifications";
 import { useThemeStore } from "@/stores/themeStore";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
@@ -50,49 +52,56 @@ export default function NotificationsPage() {
   const unread = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          {t("notifications.title")} {unread > 0 && <Tag color="red">{t("notifications.unread", { count: unread })}</Tag>}
-        </Title>
-        {unread > 0 && (
-          <Button icon={<CheckOutlined />} onClick={handleMarkAllRead}>
-            {t("notifications.markAllRead")}
-          </Button>
-        )}
-      </div>
-
-      <List
-        loading={loading}
-        dataSource={notifications}
-        locale={{ emptyText: <Empty description={t("notifications.noNotifications")} /> }}
-        renderItem={(n) => (
-          <List.Item
-            style={{
-              background: n.is_read
-                ? (isDark ? "transparent" : "#fff")
-                : (isDark ? "rgba(35,35,206,0.15)" : "#f0f5ff"),
-              padding: "12px 16px",
-              borderRadius: 6,
-              marginBottom: 4,
-            }}
-            actions={
-              !n.is_read
-                ? [
-                    <Button size="small" type="link" onClick={() => handleMarkRead(n.id)}>
-                      {t("notifications.markRead")}
-                    </Button>,
-                  ]
-                : undefined
-            }
-          >
-            <List.Item.Meta
-              title={<Text strong={!n.is_read}>{n.message}</Text>}
-              description={dayjs(n.created_at).format("YYYY-MM-DD HH:mm")}
-            />
-          </List.Item>
-        )}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            {t("notifications.title")}
+            {unread > 0 && <Tag color="red">{t("notifications.unread", { count: unread })}</Tag>}
+          </span>
+        }
+        extra={
+          unread > 0 ? (
+            <Button icon={<CheckOutlined />} onClick={handleMarkAllRead}>
+              {t("notifications.markAllRead")}
+            </Button>
+          ) : undefined
+        }
       />
-    </>
+
+      <Panel>
+        <List
+          loading={loading}
+          dataSource={notifications}
+          locale={{ emptyText: <Empty description={t("notifications.noNotifications")} /> }}
+          renderItem={(n) => (
+            <List.Item
+              style={{
+                background: n.is_read
+                  ? (isDark ? "transparent" : "#fff")
+                  : (isDark ? "rgba(35,35,206,0.15)" : "#f0f5ff"),
+                padding: "12px 16px",
+                borderRadius: 6,
+                marginBottom: 4,
+              }}
+              actions={
+                !n.is_read
+                  ? [
+                      <Button size="small" type="link" onClick={() => handleMarkRead(n.id)}>
+                        {t("notifications.markRead")}
+                      </Button>,
+                    ]
+                  : undefined
+              }
+            >
+              <List.Item.Meta
+                title={<Text strong={!n.is_read}>{n.message}</Text>}
+                description={dayjs(n.created_at).format("YYYY-MM-DD HH:mm")}
+              />
+            </List.Item>
+          )}
+        />
+      </Panel>
+    </div>
   );
 }

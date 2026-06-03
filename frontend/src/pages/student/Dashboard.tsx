@@ -1,18 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  Alert,
-  Card,
-  Col,
-  Empty,
-  Progress,
-  Row,
-  Space,
-  Statistic,
-  Typography,
-  message,
-} from "antd";
+import { Alert, Empty, Progress, message } from "antd";
 import {
   BookOutlined,
   CheckCircleOutlined,
@@ -37,9 +26,10 @@ import { getMyAttendanceSummary } from "@/api/attendance";
 import { getUnreadCount } from "@/api/notifications";
 import { getMyTrends } from "@/api/statistics";
 import { getStudentActiveSessions } from "@/api/sessions";
-import { BRAND_PRIMARY } from "@/styles/theme";
-
-const { Title, Text } = Typography;
+import { useThemeStore } from "@/stores/themeStore";
+import { BRAND_PRIMARY, surfaceColors } from "@/styles/theme";
+import Panel from "@/components/dashboard/Panel";
+import StatTile from "@/components/dashboard/StatTile";
 
 function formatCountdown(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -52,6 +42,8 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const isDark = useThemeStore((s) => s.isDark);
+  const c = surfaceColors(isDark);
   const studentBasePath = location.pathname.startsWith("/student-app") ? "/student-app" : "";
   const [summary, setSummary] = useState<CourseAttendanceSummary[]>([]);
   const [unread, setUnread] = useState(0);
@@ -111,14 +103,18 @@ export default function StudentDashboard() {
     null,
   );
 
+  const rateColor = (rate: number) => (rate >= 75 ? c.green : rate >= 50 ? c.orange : c.red);
+
   return (
-    <>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginBottom: 4 }}>
-        <Title level={4} style={{ marginBottom: 0 }}>{t("dashboard.welcomeUser", { name: user?.first_name })}</Title>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: c.text, margin: 0 }}>
+          {t("dashboard.welcomeUser", { name: user?.first_name })}
+        </h2>
         {bestStreakCourse && bestStreakCourse.current_streak > 0 && (
-          <Text style={{ color: "#fa541c", fontSize: 15 }}>
+          <span style={{ color: "#fa541c", fontSize: 15 }}>
             <FireOutlined /> {t("dashboard.streakWithCourse", { count: bestStreakCourse.current_streak, course: bestStreakCourse.course_code })}
-          </Text>
+          </span>
         )}
       </div>
 
@@ -152,41 +148,33 @@ export default function StudentDashboard() {
             showIcon
             banner
             message={msg}
-            style={{ marginBottom: 12, cursor: "pointer", borderRadius: 8 }}
+            style={{ cursor: "pointer", borderRadius: 12 }}
             onClick={() => navigate(`${studentBasePath}/attend`)}
           />
         );
       })}
 
-      {/* Overview cards */}
-      <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
-          <Statistic title={t("nav.courses")} value={summary.length} prefix={<BookOutlined />} />
-        </Card>
-        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
-          <Statistic
-            title={t("dashboard.overallRate")}
-            value={overallRate}
-            suffix="%"
-            valueStyle={{ color: overallRate >= 75 ? "#52c41a" : overallRate >= 50 ? "#fa8c16" : "#ff4d4f" }}
-          />
-        </Card>
-        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
-          <Statistic title={t("dashboard.totalSessions")} value={totalSessions} />
-        </Card>
-        <Card loading={loading} style={{ flex: "1 1 0", minWidth: 140 }}>
-          <Statistic
-            title={t("dashboard.unreadAlerts")}
-            value={unread}
-            valueStyle={{ color: unread > 0 ? "#ff4d4f" : undefined }}
-          />
-        </Card>
+      {/* Overview tiles */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+        <StatTile label={t("nav.courses")} value={summary.length} icon={<BookOutlined />} loading={loading} />
+        <StatTile
+          label={t("dashboard.overallRate")}
+          value={`${overallRate}%`}
+          accent={rateColor(overallRate)}
+          loading={loading}
+        />
+        <StatTile label={t("dashboard.totalSessions")} value={totalSessions} loading={loading} />
+        <StatTile
+          label={t("dashboard.unreadAlerts")}
+          value={unread}
+          accent={unread > 0 ? c.red : undefined}
+          loading={loading}
+        />
       </div>
 
       {/* Attendance trend chart */}
       {trends.length > 0 && (
-        <Card style={{ marginBottom: 24 }} loading={loading}>
-          <Title level={5} style={{ marginTop: 0 }}>{t("dashboard.attendanceTrend")}</Title>
+        <Panel title={t("dashboard.attendanceTrend")}>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart
               data={(() => {
@@ -214,94 +202,92 @@ export default function StudentDashboard() {
               })()}
               margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="date" fontSize={12} />
-              <YAxis domain={[0, 100]} fontSize={12} tickFormatter={(v) => `${v}%`} />
-              <Tooltip formatter={(value: number, name: string) => name === "rate" ? `${value}%` : value} />
-              <Legend />
+              <CartesianGrid strokeDasharray="3 3" stroke={c.border} vertical={false} />
+              <XAxis dataKey="date" fontSize={12} tick={{ fill: c.textFaint }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} fontSize={12} tick={{ fill: c.textFaint }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+              <Tooltip
+                contentStyle={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: 10, fontSize: 12 }}
+                cursor={{ fill: c.surface3 }}
+                formatter={(value: number, name: string) => name === "rate" ? `${value}%` : value}
+              />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
               <Area type="monotone" dataKey="rate" name={t("dashboard.attendanceRate")} stroke={BRAND_PRIMARY} fill={BRAND_PRIMARY} fillOpacity={0.15} strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
-        </Card>
+        </Panel>
       )}
 
       {/* Per-course breakdown */}
-      <Title level={5}>{t("dashboard.courseAttendance")}</Title>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: c.text, margin: "4px 0 0" }}>{t("dashboard.courseAttendance")}</h3>
       {!loading && summary.length === 0 ? (
-        <Card>
+        <Panel>
           <Empty description={t("dashboard.notEnrolled")} />
-        </Card>
+        </Panel>
       ) : (
-        <Row gutter={[16, 16]}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
           {summary.map((course) => (
-            <Col xs={24} md={12} xl={8} key={course.course_id}>
-              <Card
-                loading={loading}
-                title={
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Space>
-                      <BookOutlined />
-                      <span>{course.course_code}</span>
-                    </Space>
-                    {(course.current_streak > 0 || course.longest_streak > 0) && (
-                      <Space size={12}>
-                        {course.current_streak > 0 && (
-                          <Text style={{ color: "#fa541c", fontSize: 13, fontWeight: "normal" }}>
-                            <FireOutlined /> {t("dashboard.currentStreak", { count: course.current_streak })}
-                          </Text>
-                        )}
-                        {course.longest_streak > 0 && (
-                          <Text style={{ color: "#faad14", fontSize: 13, fontWeight: "normal" }}>
-                            <TrophyOutlined /> {t("dashboard.longestStreak", { count: course.longest_streak })}
-                          </Text>
-                        )}
-                      </Space>
+            <Panel
+              key={course.course_id}
+              title={
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <BookOutlined />
+                  {course.course_code}
+                </span>
+              }
+              extra={
+                (course.current_streak > 0 || course.longest_streak > 0) ? (
+                  <span style={{ display: "inline-flex", gap: 12 }}>
+                    {course.current_streak > 0 && (
+                      <span style={{ color: "#fa541c", fontSize: 13 }}>
+                        <FireOutlined /> {t("dashboard.currentStreak", { count: course.current_streak })}
+                      </span>
                     )}
+                    {course.longest_streak > 0 && (
+                      <span style={{ color: "#faad14", fontSize: 13 }}>
+                        <TrophyOutlined /> {t("dashboard.longestStreak", { count: course.longest_streak })}
+                      </span>
+                    )}
+                  </span>
+                ) : undefined
+              }
+            >
+              <div style={{ fontSize: 15, fontWeight: 600, color: c.text, marginBottom: 12 }}>{course.course_name}</div>
+
+              <Progress
+                percent={course.attendance_rate}
+                status={course.attendance_rate >= 75 ? "success" : course.attendance_rate >= 50 ? "normal" : "exception"}
+                format={(p) => `${p}%`}
+                style={{ marginBottom: 16 }}
+              />
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: c.textMuted, marginBottom: 2 }}>
+                    <CheckCircleOutlined /> {t("common.present")}
                   </div>
-                }
-                style={{ borderRadius: 8 }}
-              >
-                <Title level={5} style={{ marginTop: 0 }}>{course.course_name}</Title>
-
-                <Progress
-                  percent={course.attendance_rate}
-                  status={course.attendance_rate >= 75 ? "success" : course.attendance_rate >= 50 ? "normal" : "exception"}
-                  format={(p) => `${p}%`}
-                  style={{ marginBottom: 16 }}
-                />
-
-                <Row gutter={8}>
-                  <Col span={8}>
-                    <Statistic
-                      title={<Text style={{ fontSize: 12 }}><CheckCircleOutlined /> {t("common.present")}</Text>}
-                      value={course.present_count}
-                      valueStyle={{ color: "#52c41a", fontSize: 20 }}
-                    />
-                  </Col>
-                  <Col span={8}>
-                    <Statistic
-                      title={<Text style={{ fontSize: 12 }}><ClockCircleOutlined /> {t("common.late")}</Text>}
-                      value={course.late_count}
-                      valueStyle={{ color: "#fa8c16", fontSize: 20 }}
-                    />
-                  </Col>
-                  <Col span={8}>
-                    <Statistic
-                      title={<Text style={{ fontSize: 12 }}><CloseCircleOutlined /> {t("common.absent")}</Text>}
-                      value={course.absent_count}
-                      valueStyle={{ color: "#ff4d4f", fontSize: 20 }}
-                    />
-                  </Col>
-                </Row>
-
-                <div style={{ marginTop: 12 }}>
-                  <Text type="secondary">{t("dashboard.sessionsRecorded", { count: course.total_sessions })}</Text>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: c.green }}>{course.present_count}</div>
                 </div>
-              </Card>
-            </Col>
+                <div>
+                  <div style={{ fontSize: 12, color: c.textMuted, marginBottom: 2 }}>
+                    <ClockCircleOutlined /> {t("common.late")}
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: c.orange }}>{course.late_count}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: c.textMuted, marginBottom: 2 }}>
+                    <CloseCircleOutlined /> {t("common.absent")}
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: c.red }}>{course.absent_count}</div>
+                </div>
+              </div>
+
+              <span style={{ fontSize: 12, color: c.textMuted }}>
+                {t("dashboard.sessionsRecorded", { count: course.total_sessions })}
+              </span>
+            </Panel>
           ))}
-        </Row>
+        </div>
       )}
-    </>
+    </div>
   );
 }

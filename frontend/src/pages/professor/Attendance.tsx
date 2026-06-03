@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Button,
-  Card,
   Input,
   Popover,
   Segmented,
@@ -30,8 +29,10 @@ import { listCourses } from "@/api/courses";
 import { getSession, listSessions } from "@/api/sessions";
 import { exportCourseCSV, exportSessionCSV, getSessionAttendance, updateAttendanceStatus } from "@/api/attendance";
 import { BRAND_PRIMARY } from "@/styles/theme";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function ProfessorAttendance() {
   const { t } = useTranslation();
@@ -197,36 +198,39 @@ export default function ProfessorAttendance() {
   ];
 
   return (
-    <>
-      <Title level={4}>{t("attendance.title")}</Title>
-
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Select
-          showSearch
-          optionFilterProp="label"
-          placeholder={t("common.selectCourse")}
-          value={selectedCourse}
-          onChange={(v) => setSelectedCourse(v)}
-          allowClear
-          style={{ width: 300 }}
-          options={courses.map((c) => ({
-            value: c.id,
-            label: `${c.code} — ${c.name}`,
-          }))}
-        />
-        <Select
-          placeholder={t("common.selectSession")}
-          value={selectedSession}
-          onChange={setSelectedSession}
-          allowClear
-          disabled={!selectedCourse}
-          style={{ width: 300 }}
-          options={sessions.map((s) => ({
-            value: s.id,
-            label: `${s.date} (${s.status === "active" ? t("common.active") : t("common.completed")})`,
-          }))}
-        />
-      </Space>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("attendance.title")}
+        extra={
+          <>
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder={t("common.selectCourse")}
+              value={selectedCourse}
+              onChange={(v) => setSelectedCourse(v)}
+              allowClear
+              style={{ width: 280 }}
+              options={courses.map((c) => ({
+                value: c.id,
+                label: `${c.code} — ${c.name}`,
+              }))}
+            />
+            <Select
+              placeholder={t("common.selectSession")}
+              value={selectedSession}
+              onChange={setSelectedSession}
+              allowClear
+              disabled={!selectedCourse}
+              style={{ width: 240 }}
+              options={sessions.map((s) => ({
+                value: s.id,
+                label: `${s.date} (${s.status === "active" ? t("common.active") : t("common.completed")})`,
+              }))}
+            />
+          </>
+        }
+      />
 
       {selectedSession && records.length > 0 && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
@@ -266,16 +270,18 @@ export default function ProfessorAttendance() {
       )}
 
       {viewMode === "table" ? (
-        <Table
-          dataSource={records}
-          columns={columns}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 20, showTotal: (total) => `${total} ${t("common.total")}` }}
-          locale={{ emptyText: selectedSession ? t("attendance.noRecords") : t("attendance.selectCourseAndSession") }}
-        />
+        <Panel flush>
+          <Table
+            dataSource={records}
+            columns={columns}
+            rowKey="id"
+            loading={loading}
+            pagination={{ pageSize: 20, showTotal: (total) => `${total} ${t("common.total")}` }}
+            locale={{ emptyText: selectedSession ? t("attendance.noRecords") : t("attendance.selectCourseAndSession") }}
+          />
+        </Panel>
       ) : (
-        <Card loading={loading}>
+        <Panel>
           {records.length === 0 ? (
             <Text type="secondary">{selectedSession ? t("attendance.noRecords") : t("attendance.selectCourseAndSession")}</Text>
           ) : (
@@ -365,8 +371,8 @@ export default function ProfessorAttendance() {
               })()}
             />
           )}
-        </Card>
+        </Panel>
       )}
-    </>
+    </div>
   );
 }

@@ -2,14 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Button,
-  Card,
-  Col,
   Empty,
   Progress,
-  Row,
   Select,
-  Space,
-  Statistic,
   Table,
   Tag,
   Typography,
@@ -25,11 +20,18 @@ import type { Course, CourseStatistics, StudentAttendanceStat } from "@/types";
 import { listCourses } from "@/api/courses";
 import { getCourseStatistics } from "@/api/statistics";
 import { exportCourseCSV } from "@/api/attendance";
+import { useThemeStore } from "@/stores/themeStore";
+import { surfaceColors } from "@/styles/theme";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
+import StatTile from "@/components/dashboard/StatTile";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function Statistics() {
   const { t } = useTranslation();
+  const isDark = useThemeStore((s) => s.isDark);
+  const cc = surfaceColors(isDark);
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<number | undefined>(undefined);
@@ -58,7 +60,7 @@ export default function Statistics() {
   };
 
   const rateColor = (rate: number) =>
-    rate >= 75 ? "#52c41a" : rate >= 50 ? "#fa8c16" : "#ff4d4f";
+    rate >= 75 ? cc.green : rate >= 50 ? cc.orange : cc.red;
 
   const columns = [
     {
@@ -110,101 +112,83 @@ export default function Statistics() {
   ];
 
   return (
-    <>
-      <Title level={4}>{t("stats.title")}</Title>
-
-      <Space style={{ marginBottom: 24 }} wrap>
-        <Select
-          placeholder={t("stats.selectCourse")}
-          value={selectedCourse}
-          onChange={handleCourseChange}
-          style={{ width: 350 }}
-          options={courses.map((c) => ({
-            value: c.id,
-            label: `${c.code} — ${c.name}`,
-          }))}
-        />
-        {selectedCourse && (
-          <Button
-            icon={<DownloadOutlined />}
-            onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error(t("attendance.exportFailed")))}
-          >
-            {t("attendance.exportCSV")}
-          </Button>
-        )}
-      </Space>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("stats.title")}
+        extra={
+          <>
+            <Select
+              placeholder={t("stats.selectCourse")}
+              value={selectedCourse}
+              onChange={handleCourseChange}
+              style={{ width: 320 }}
+              options={courses.map((c) => ({
+                value: c.id,
+                label: `${c.code} — ${c.name}`,
+              }))}
+            />
+            {selectedCourse && (
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error(t("attendance.exportFailed")))}
+              >
+                {t("attendance.exportCSV")}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {!selectedCourse && (
-        <Card>
+        <Panel>
           <Empty description={t("stats.selectCourseToView")} />
-        </Card>
+        </Panel>
       )}
 
       {stats && (
         <>
-          {/* Summary cards */}
-          <Row gutter={16} style={{ marginBottom: 24 }}>
-            <Col xs={12} sm={6}>
-              <Card loading={loading}>
-                <Statistic
-                  title={t("stats.enrolledStudents")}
-                  value={stats.total_enrolled}
-                  prefix={<TeamOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={12} sm={6}>
-              <Card loading={loading}>
-                <Statistic
-                  title={t("stats.totalSessions")}
-                  value={stats.total_sessions}
-                  prefix={<CalendarOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col xs={12} sm={6}>
-              <Card loading={loading}>
-                <Statistic
-                  title={t("stats.avgRate")}
-                  value={stats.avg_attendance_rate}
-                  suffix="%"
-                  prefix={<BarChartOutlined />}
-                  valueStyle={{ color: rateColor(stats.avg_attendance_rate) }}
-                />
-              </Card>
-            </Col>
-            <Col xs={12} sm={6}>
-              <Card loading={loading}>
-                <Statistic
-                  title={t("stats.course")}
-                  value={stats.course_code}
-                />
-              </Card>
-            </Col>
-          </Row>
+          {/* Summary tiles */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+            <StatTile label={t("stats.enrolledStudents")} value={stats.total_enrolled} icon={<TeamOutlined />} loading={loading} />
+            <StatTile label={t("stats.totalSessions")} value={stats.total_sessions} icon={<CalendarOutlined />} loading={loading} />
+            <StatTile
+              label={t("stats.avgRate")}
+              value={`${stats.avg_attendance_rate}%`}
+              icon={<BarChartOutlined />}
+              accent={rateColor(stats.avg_attendance_rate)}
+              loading={loading}
+            />
+            <StatTile label={t("stats.course")} value={stats.course_code} loading={loading} />
+          </div>
 
-          {/* Attendance distribution bar */}
-          <Card style={{ marginBottom: 24 }} loading={loading}>
-            <Title level={5}>{t("stats.distribution")}</Title>
+          {/* Attendance distribution */}
+          <Panel title={t("stats.distribution")}>
             {(() => {
               const totalP = stats.students.reduce((s, st) => s + st.present_count, 0);
               const totalL = stats.students.reduce((s, st) => s + st.late_count, 0);
               const totalA = stats.students.reduce((s, st) => s + st.absent_count, 0);
               const total = totalP + totalL + totalA;
               if (total === 0) return <Text type="secondary">{t("stats.noDataYet")}</Text>;
+              const cell = (label: string, val: number, color: string) => (
+                <div>
+                  <div style={{ fontSize: 13, color: cc.textMuted, marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color }}>
+                    {val} <span style={{ fontSize: 14, fontWeight: 500, color: cc.textMuted }}>({Math.round(val / total * 100)}%)</span>
+                  </div>
+                </div>
+              );
               return (
-                <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
-                  <Statistic title={t("common.present")} value={totalP} suffix={`(${Math.round(totalP / total * 100)}%)`} valueStyle={{ color: "#52c41a" }} />
-                  <Statistic title={t("common.late")} value={totalL} suffix={`(${Math.round(totalL / total * 100)}%)`} valueStyle={{ color: "#fa8c16" }} />
-                  <Statistic title={t("common.absent")} value={totalA} suffix={`(${Math.round(totalA / total * 100)}%)`} valueStyle={{ color: "#ff4d4f" }} />
+                <div style={{ display: "flex", gap: 40, flexWrap: "wrap" }}>
+                  {cell(t("common.present"), totalP, cc.green)}
+                  {cell(t("common.late"), totalL, cc.orange)}
+                  {cell(t("common.absent"), totalA, cc.red)}
                 </div>
               );
             })()}
-          </Card>
+          </Panel>
 
           {/* Per-student table */}
-          <Card loading={loading}>
-            <Title level={5}>{t("stats.perStudent")}</Title>
+          <Panel title={t("stats.perStudent")} flush>
             <Table
               dataSource={stats.students}
               columns={columns}
@@ -213,9 +197,9 @@ export default function Statistics() {
               size="middle"
               locale={{ emptyText: <Empty description={t("stats.noStudents")} /> }}
             />
-          </Card>
+          </Panel>
         </>
       )}
-    </>
+    </div>
   );
 }

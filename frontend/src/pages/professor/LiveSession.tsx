@@ -42,8 +42,10 @@ import {
   getEnrolledStudentsForSession,
   getSessionAttendance,
 } from "@/api/attendance";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -277,22 +279,24 @@ export default function LiveSession() {
   const absentCount = sessionRecords.filter((r) => r.status === "absent").length;
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("session.title")}</Title>
-        {!activeSession ? (
-          <Button type="primary" icon={<PlayCircleOutlined />} onClick={() => setStartModalOpen(true)}>
-            {t("session.startSession")}
-          </Button>
-        ) : (
-          <Button danger icon={<StopOutlined />} onClick={handleStop}>
-            {t("session.stopSession")}
-          </Button>
-        )}
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("session.title")}
+        extra={
+          !activeSession ? (
+            <Button type="primary" icon={<PlayCircleOutlined />} onClick={() => setStartModalOpen(true)}>
+              {t("session.startSession")}
+            </Button>
+          ) : (
+            <Button danger icon={<StopOutlined />} onClick={handleStop}>
+              {t("session.stopSession")}
+            </Button>
+          )
+        }
+      />
 
       {!activeSession ? (
-        <Card>
+        <Panel>
           <Empty description={t("session.noActiveSession")} />
           {sessions.length > 0 && (
             <Alert
@@ -306,7 +310,7 @@ export default function LiveSession() {
               }
             />
           )}
-        </Card>
+        </Panel>
       ) : (
         <Tabs
           defaultActiveKey="qr"
@@ -319,7 +323,7 @@ export default function LiveSession() {
               children: (
                 <Row gutter={[16, 16]}>
                   <Col xs={24} lg={16}>
-                    <Card
+                    <Panel
                       title={t("session.recognizedStudents")}
                       extra={
                         <Space>
@@ -360,7 +364,7 @@ export default function LiveSession() {
                           }}
                         />
                       )}
-                    </Card>
+                    </Panel>
                   </Col>
 
                   <Col xs={24} lg={8}>
@@ -442,7 +446,7 @@ export default function LiveSession() {
                 <span><OrderedListOutlined /> {t("session.manualRollCall")}</span>
               ),
               children: (
-                <Card
+                <Panel
                   title={t("session.manualRollCall")}
                   extra={
                     <Button
@@ -500,7 +504,7 @@ export default function LiveSession() {
                       />
                     </>
                   )}
-                </Card>
+                </Panel>
               ),
             },
           ]}
@@ -615,6 +619,6 @@ export default function LiveSession() {
           />
         </Space>
       </Modal>
-    </>
+    </div>
   );
 }

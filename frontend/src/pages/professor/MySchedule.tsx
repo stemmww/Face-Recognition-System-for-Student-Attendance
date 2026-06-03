@@ -5,8 +5,10 @@ import type { Schedule } from "@/types";
 import { getMySchedule } from "@/api/schedules";
 import { BRAND_PRIMARY } from "@/styles/theme";
 import { useThemeStore } from "@/stores/themeStore";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 const DAY_ORDER: Record<string, number> = Object.fromEntries(DAYS.map((d, i) => [d, i]));
@@ -183,39 +185,43 @@ export default function MySchedule() {
   }));
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("schedulesPage.myScheduleTitle")}</Title>
-        <Space>
-          <Select
-            value={semester}
-            onChange={setSemester}
-            allowClear
-            placeholder={t("schedulesPage.allSemesters")}
-            style={{ width: 160 }}
-            options={semesterOptions}
-          />
-          <Select
-            value={view}
-            onChange={setView}
-            style={{ width: 130 }}
-            options={[
-              { value: "week", label: t("schedulesPage.weekView") },
-              { value: "table", label: t("schedulesPage.tableView") },
-            ]}
-          />
-        </Space>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("schedulesPage.myScheduleTitle")}
+        extra={
+          <>
+            <Select
+              value={semester}
+              onChange={setSemester}
+              allowClear
+              placeholder={t("schedulesPage.allSemesters")}
+              style={{ width: 160 }}
+              options={semesterOptions}
+            />
+            <Select
+              value={view}
+              onChange={setView}
+              style={{ width: 130 }}
+              options={[
+                { value: "week", label: t("schedulesPage.weekView") },
+                { value: "table", label: t("schedulesPage.tableView") },
+              ]}
+            />
+          </>
+        }
+      />
 
-      {loading ? (
-        <div style={{ textAlign: "center", padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : view === "week" ? (
-        <WeekGrid schedules={filtered} isDark={isDark} t={t} />
-      ) : (
-        <ScheduleTable schedules={filtered} t={t} />
-      )}
-    </>
+      <Panel flush={view === "table"}>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: 48 }}>
+            <Spin size="large" />
+          </div>
+        ) : view === "week" ? (
+          <WeekGrid schedules={filtered} isDark={isDark} t={t} />
+        ) : (
+          <ScheduleTable schedules={filtered} t={t} />
+        )}
+      </Panel>
+    </div>
   );
 }

@@ -40,8 +40,10 @@ import {
   verifyFace,
 } from "@/api/face";
 import { formatDateTime } from "@/utils/formatters";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 const { Dragger } = Upload;
 
 export default function FaceRegistry() {
@@ -157,13 +159,15 @@ export default function FaceRegistry() {
   const student = students.find((s) => s.id === selectedStudent);
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("faces.title")}</Title>
-        <Button icon={<SearchOutlined />} onClick={() => { setVerifyModalOpen(true); setVerifyMatches([]); setVerifyFaceCount(0); }}>
-          {t("faces.verifyFace")}
-        </Button>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("faces.title")}
+        extra={
+          <Button icon={<SearchOutlined />} onClick={() => { setVerifyModalOpen(true); setVerifyMatches([]); setVerifyFaceCount(0); }}>
+            {t("faces.verifyFace")}
+          </Button>
+        }
+      />
 
       {/* Pipeline status */}
       {pipelineStatus && (
@@ -183,7 +187,7 @@ export default function FaceRegistry() {
       <Row gutter={24}>
         {/* Left: Student selector + upload */}
         <Col xs={24} lg={10}>
-          <Card title={t("faces.enrollFace")} style={{ marginBottom: 16 }}>
+          <Panel title={t("faces.enrollFace")}>
             <Space direction="vertical" style={{ width: "100%" }}>
               <Text strong>{t("faces.selectStudent")}</Text>
               <Select
@@ -272,12 +276,12 @@ export default function FaceRegistry() {
                 {t("faces.uploadTip")}
               </Paragraph>
             </Space>
-          </Card>
+          </Panel>
         </Col>
 
         {/* Right: Stored embeddings */}
         <Col xs={24} lg={14}>
-          <Card
+          <Panel
             title={student ? t("faces.embeddingsFor", { name: `${student.first_name} ${student.last_name}` }) : t("faces.storedEmbeddings")}
             extra={
               embeddings.length > 0 && (
@@ -321,7 +325,7 @@ export default function FaceRegistry() {
                 )}
               />
             )}
-          </Card>
+          </Panel>
         </Col>
       </Row>
 
@@ -380,6 +384,6 @@ export default function FaceRegistry() {
           )}
         </Space>
       </Modal>
-    </>
+    </div>
   );
 }

@@ -10,8 +10,10 @@ import {
   createClassroom, deleteClassroom, importClassroomsCSV,
   listClassrooms, updateClassroom,
 } from "@/api/classrooms";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const ROOM_TYPE_COLOR: Record<string, string> = { L: "purple", P: "cyan", K: "default" };
 
@@ -168,29 +170,33 @@ export default function ClassroomManagement() {
   ];
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("classroomsPage.title")}</Title>
-        <Space>
-          <Button
-            icon={<UploadOutlined />}
-            onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}
-          >
-            {t("classroomsPage.importCSV")}
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            {t("classroomsPage.addClassroom")}
-          </Button>
-        </Space>
-      </div>
-
-      <Table
-        dataSource={classrooms}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 25, showTotal: (n) => `${n} ${t("common.total")}` }}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("classroomsPage.title")}
+        extra={
+          <>
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}
+            >
+              {t("classroomsPage.importCSV")}
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              {t("classroomsPage.addClassroom")}
+            </Button>
+          </>
+        }
       />
+
+      <Panel flush>
+        <Table
+          dataSource={classrooms}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 25, showTotal: (n) => `${n} ${t("common.total")}` }}
+        />
+      </Panel>
 
       <Modal
         title={editing ? t("classroomsPage.editClassroom") : t("classroomsPage.addClassroom")}
@@ -283,6 +289,6 @@ export default function ClassroomManagement() {
           </div>
         )}
       </Modal>
-    </>
+    </div>
   );
 }

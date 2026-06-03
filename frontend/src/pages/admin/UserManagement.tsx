@@ -14,7 +14,6 @@ import {
   Table,
   Tag,
   Tooltip,
-  Typography,
   Upload,
   message,
 } from "antd";
@@ -34,8 +33,8 @@ import { createUser, deactivateUser, importStudentsCSV, listUsers, updateUser } 
 import { adminResetFaceData, adminSetEnrollmentPermission } from "@/api/faceEnrollment";
 import { formatDateTime } from "@/utils/formatters";
 import { BRAND_PRIMARY } from "@/styles/theme";
-
-const { Title } = Typography;
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
 const roleColors: Record<Role, string> = {
   admin: "red",
@@ -329,48 +328,52 @@ export default function UserManagement() {
   ];
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("usersPage.title")}</Title>
-        <Space>
-          <Button icon={<UploadOutlined />} onClick={() => { setImportModalOpen(true); setImportResult(null); }}>
-            {t("usersPage.importCSV")}
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-            {t("usersPage.createUser")}
-          </Button>
-        </Space>
-      </div>
-
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Input
-          placeholder={t("usersPage.searchPlaceholder")}
-          prefix={<SearchOutlined />}
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: 280 }}
-          allowClear
-        />
-        <Select
-          value={roleFilter}
-          onChange={setRoleFilter}
-          style={{ width: 160 }}
-          options={[
-            { value: "all", label: t("usersPage.allRoles") },
-            { value: "admin", label: t("roles.admin") },
-            { value: "professor", label: t("roles.professor") },
-            { value: "student", label: t("roles.student") },
-          ]}
-        />
-      </Space>
-
-      <Table
-        dataSource={filteredUsers}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `${total} ${t("common.users")}` }}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("usersPage.title")}
+        extra={
+          <>
+            <Button icon={<UploadOutlined />} onClick={() => { setImportModalOpen(true); setImportResult(null); }}>
+              {t("usersPage.importCSV")}
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+              {t("usersPage.createUser")}
+            </Button>
+          </>
+        }
       />
+
+      <Panel>
+        <Space style={{ marginBottom: 16 }} wrap>
+          <Input
+            placeholder={t("usersPage.searchPlaceholder")}
+            prefix={<SearchOutlined />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280 }}
+            allowClear
+          />
+          <Select
+            value={roleFilter}
+            onChange={setRoleFilter}
+            style={{ width: 160 }}
+            options={[
+              { value: "all", label: t("usersPage.allRoles") },
+              { value: "admin", label: t("roles.admin") },
+              { value: "professor", label: t("roles.professor") },
+              { value: "student", label: t("roles.student") },
+            ]}
+          />
+        </Space>
+
+        <Table
+          dataSource={filteredUsers}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (total) => `${total} ${t("common.users")}` }}
+        />
+      </Panel>
 
       <Modal
         title={editingUser ? t("usersPage.editUser") : t("usersPage.createUser")}
@@ -508,6 +511,6 @@ export default function UserManagement() {
           </div>
         )}
       </Modal>
-    </>
+    </div>
   );
 }

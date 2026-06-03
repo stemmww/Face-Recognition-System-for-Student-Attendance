@@ -20,8 +20,10 @@ import {
 } from "@/api/schedules";
 import { useThemeStore } from "@/stores/themeStore";
 import { BRAND_PRIMARY } from "@/styles/theme";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const DAYS: DayOfWeek[] = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 const TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
@@ -447,75 +449,79 @@ export default function ScheduleManagement() {
   ];
 
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-        <Title level={4} style={{ margin: 0 }}>{t("schedulesPage.title")}</Title>
-        <Space wrap>
-          <Button icon={<UploadOutlined />} onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}>
-            {t("schedulesPage.importCSV")}
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate()}>
-            {t("schedulesPage.addSchedule")}
-          </Button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("schedulesPage.title")}
+        extra={
+          <>
+            <Button icon={<UploadOutlined />} onClick={() => { setCsvFile(null); setCsvResult(null); setCsvModalOpen(true); }}>
+              {t("schedulesPage.importCSV")}
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate()}>
+              {t("schedulesPage.addSchedule")}
+            </Button>
+          </>
+        }
+      />
+
+      <Panel>
+        <Space style={{ marginBottom: 16 }} wrap>
+          <Select
+            value={filterSemester}
+            onChange={setFilterSemester}
+            allowClear
+            placeholder={t("schedulesPage.selectSemester")}
+            style={{ width: 160 }}
+            options={semesterOptions}
+          />
+          <Input
+            value={filterYear}
+            onChange={(e) => setFilterYear(e.target.value || undefined)}
+            placeholder={t("schedulesPage.selectAcademicYear")}
+            style={{ width: 160 }}
+            allowClear
+          />
+          <Space.Compact>
+            <Button
+              icon={<CalendarOutlined />}
+              type={viewMode === "grid" ? "primary" : "default"}
+              onClick={() => setViewMode("grid")}
+            >
+              {t("schedulesPage.gridView")}
+            </Button>
+            <Button
+              icon={<TableOutlined />}
+              type={viewMode === "table" ? "primary" : "default"}
+              onClick={() => setViewMode("table")}
+            >
+              {t("schedulesPage.tableView")}
+            </Button>
+          </Space.Compact>
         </Space>
-      </div>
 
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Select
-          value={filterSemester}
-          onChange={setFilterSemester}
-          allowClear
-          placeholder={t("schedulesPage.selectSemester")}
-          style={{ width: 160 }}
-          options={semesterOptions}
-        />
-        <Input
-          value={filterYear}
-          onChange={(e) => setFilterYear(e.target.value || undefined)}
-          placeholder={t("schedulesPage.selectAcademicYear")}
-          style={{ width: 160 }}
-          allowClear
-        />
-        <Space.Compact>
-          <Button
-            icon={<CalendarOutlined />}
-            type={viewMode === "grid" ? "primary" : "default"}
-            onClick={() => setViewMode("grid")}
-          >
-            {t("schedulesPage.gridView")}
-          </Button>
-          <Button
-            icon={<TableOutlined />}
-            type={viewMode === "table" ? "primary" : "default"}
-            onClick={() => setViewMode("table")}
-          >
-            {t("schedulesPage.tableView")}
-          </Button>
-        </Space.Compact>
-      </Space>
-
-      {loading ? (
-        <div style={{ textAlign: "center", padding: 48, color: "#94a3b8" }}>
-          {t("common.loading")}
-        </div>
-      ) : viewMode === "grid" ? (
-        <WeekGrid
-          schedules={schedules}
-          onCellClick={openCreate}
-          onEdit={openEdit}
-          onDelete={handleDelete}
-          isDark={isDark}
-          t={t}
-        />
-      ) : (
-        <Table
-          dataSource={sortedSchedules}
-          columns={tableColumns}
-          rowKey="id"
-          pagination={{ pageSize: 20, showTotal: (total) => `${total}` }}
-          locale={{ emptyText: t("schedulesPage.noSchedules") }}
-        />
-      )}
+        {loading ? (
+          <div style={{ textAlign: "center", padding: 48, color: "#94a3b8" }}>
+            {t("common.loading")}
+          </div>
+        ) : viewMode === "grid" ? (
+          <WeekGrid
+            schedules={schedules}
+            onCellClick={openCreate}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+            isDark={isDark}
+            t={t}
+          />
+        ) : (
+          <Table
+            dataSource={sortedSchedules}
+            columns={tableColumns}
+            rowKey="id"
+            pagination={{ pageSize: 20, showTotal: (total) => `${total}` }}
+            locale={{ emptyText: t("schedulesPage.noSchedules") }}
+          />
+        )}
+      </Panel>
 
       {/* Create / Edit Modal */}
       <Modal
@@ -657,6 +663,6 @@ export default function ScheduleManagement() {
           </div>
         )}
       </Modal>
-    </>
+    </div>
   );
 }

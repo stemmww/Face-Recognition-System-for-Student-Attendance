@@ -2,15 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Button,
-  Card,
-  Col,
-  Row,
   Select,
-  Space,
-  Statistic,
   Table,
   Tag,
-  Typography,
   message,
 } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
@@ -19,11 +13,16 @@ import type { AttendanceSession, Course } from "@/types";
 import { listCourses } from "@/api/courses";
 import { listSessions } from "@/api/sessions";
 import { exportCourseCSV } from "@/api/attendance";
-
-const { Title } = Typography;
+import { useThemeStore } from "@/stores/themeStore";
+import { surfaceColors } from "@/styles/theme";
+import PageHeader from "@/components/dashboard/PageHeader";
+import Panel from "@/components/dashboard/Panel";
+import StatTile from "@/components/dashboard/StatTile";
 
 export default function AttendanceOverview() {
   const { t } = useTranslation();
+  const isDark = useThemeStore((s) => s.isDark);
+  const cc = surfaceColors(isDark);
   const [courses, setCourses] = useState<Course[]>([]);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<number | undefined>(undefined);
@@ -94,65 +93,55 @@ export default function AttendanceOverview() {
   ];
 
   return (
-    <>
-      <Title level={4}>{t("overview.title")}</Title>
-
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic title={t("overview.totalSessions")} value={sessions.length} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={t("overview.activeNow")}
-              value={activeSessions.length}
-              valueStyle={{ color: activeSessions.length > 0 ? "#52c41a" : undefined }}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={t("overview.title")}
+        extra={
+          <>
+            <Select
+              placeholder={t("common.filterByCourse")}
+              value={selectedCourse}
+              onChange={setSelectedCourse}
+              allowClear
+              style={{ width: 280 }}
+              options={courses.map((c) => ({
+                value: c.id,
+                label: `${c.code} — ${c.name}`,
+              }))}
             />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title={t("overview.completed")} value={completedSessions.length} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title={t("overview.courses")} value={courses.length} />
-          </Card>
-        </Col>
-      </Row>
-
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Select
-          placeholder={t("common.filterByCourse")}
-          value={selectedCourse}
-          onChange={setSelectedCourse}
-          allowClear
-          style={{ width: 300 }}
-          options={courses.map((c) => ({
-            value: c.id,
-            label: `${c.code} — ${c.name}`,
-          }))}
-        />
-        {selectedCourse && (
-          <Button
-            icon={<DownloadOutlined />}
-            onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error(t("attendance.exportFailed")))}
-          >
-            {t("attendance.exportCSV")}
-          </Button>
-        )}
-      </Space>
-
-      <Table
-        dataSource={sessions}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 15, showTotal: (total) => `${total} ${t("common.sessions")}` }}
+            {selectedCourse && (
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => exportCourseCSV(selectedCourse).catch(() => message.error(t("attendance.exportFailed")))}
+              >
+                {t("attendance.exportCSV")}
+              </Button>
+            )}
+          </>
+        }
       />
-    </>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+        <StatTile label={t("overview.totalSessions")} value={sessions.length} loading={loading} />
+        <StatTile
+          label={t("overview.activeNow")}
+          value={activeSessions.length}
+          accent={activeSessions.length > 0 ? cc.green : undefined}
+          loading={loading}
+        />
+        <StatTile label={t("overview.completed")} value={completedSessions.length} loading={loading} />
+        <StatTile label={t("overview.courses")} value={courses.length} loading={loading} />
+      </div>
+
+      <Panel flush>
+        <Table
+          dataSource={sessions}
+          columns={columns}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 15, showTotal: (total) => `${total} ${t("common.sessions")}` }}
+        />
+      </Panel>
+    </div>
   );
 }

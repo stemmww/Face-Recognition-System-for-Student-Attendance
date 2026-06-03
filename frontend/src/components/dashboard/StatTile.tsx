@@ -53,11 +53,11 @@ export default function StatTile({ label, value, icon, accent, loading, onClick 
 
       <div
         style={{
-          fontSize: 42,
-          fontWeight: 800,
+          fontSize: 34,
+          fontWeight: 700,
           color: loading ? c.textFaint : (accent ?? c.text),
           lineHeight: 1,
-          letterSpacing: "-0.03em",
+          letterSpacing: "-0.02em",
         }}
       >
         {loading ? "—" : value}

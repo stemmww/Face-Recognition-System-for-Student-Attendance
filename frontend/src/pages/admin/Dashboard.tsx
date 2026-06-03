@@ -107,12 +107,12 @@ function StatCard({ label, value, badge, progress, linkLabel, onLinkClick, loadi
 
       <div
         style={{
-          fontSize: 42,
-          fontWeight: 800,
+          fontSize: 34,
+          fontWeight: 700,
           color: loading ? c.textFaint : c.text,
           lineHeight: 1,
           marginBottom: 14,
-          letterSpacing: "-0.03em",
+          letterSpacing: "-0.02em",
         }}
       >
         {loading ? "—" : value}

@@ -7,7 +7,6 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   message,
 } from "antd";
 import { CheckOutlined, CloseOutlined } from "@ant-design/icons";
@@ -16,11 +15,12 @@ import type { Appeal } from "@/types";
 import { listAppeals, reviewAppeal } from "@/api/appeals";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
+import SoftTag, { type SoftTagTone } from "@/components/dashboard/SoftTag";
 
-const statusColors: Record<string, string> = {
-  pending: "orange",
-  approved: "green",
-  rejected: "red",
+const statusTones: Record<string, SoftTagTone> = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
 };
 
 export default function AppealsReview() {
@@ -90,7 +90,7 @@ export default function AppealsReview() {
       dataIndex: "status",
       width: 110,
       render: (status: string) => (
-        <Tag color={statusColors[status]}>{statusLabel(status)}</Tag>
+        <SoftTag tone={statusTones[status] ?? "neutral"}>{statusLabel(status)}</SoftTag>
       ),
     },
     {
@@ -104,7 +104,7 @@ export default function AppealsReview() {
       width: 200,
       fixed: "right" as const,
       render: (_: unknown, record: Appeal) => {
-        if (record.status !== "pending") return <Tag>{t("common.reviewed")}</Tag>;
+        if (record.status !== "pending") return <SoftTag tone="neutral">{t("common.reviewed")}</SoftTag>;
         return (
           <Space>
             <Popconfirm

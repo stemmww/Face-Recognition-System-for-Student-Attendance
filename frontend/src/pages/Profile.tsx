@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Avatar, Button, Descriptions, Form, Input, Tag, message, Spin } from "antd";
+import { Avatar, Button, Descriptions, Form, Input, message, Spin } from "antd";
 import { CameraOutlined, DeleteOutlined, LockOutlined, LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -10,11 +10,12 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { BRAND_PRIMARY } from "@/styles/theme";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
+import SoftTag, { type SoftTagTone } from "@/components/dashboard/SoftTag";
 
-const roleColors: Record<string, string> = {
-  admin: "red",
-  professor: BRAND_PRIMARY,
-  student: "green",
+const roleTones: Record<string, SoftTagTone> = {
+  admin: "admin",
+  professor: "professor",
+  student: "student",
 };
 
 export default function Profile() {
@@ -161,12 +162,12 @@ export default function Profile() {
               <Descriptions.Item label={t("profilePage.firstName")}>{user.first_name}</Descriptions.Item>
               <Descriptions.Item label={t("profilePage.lastName")}>{user.last_name}</Descriptions.Item>
               <Descriptions.Item label={t("profilePage.role")}>
-                <Tag bordered={false} color={roleColors[user.role]}>{t(`roles.${user.role}`)}</Tag>
+                <SoftTag tone={roleTones[user.role]}>{t(`roles.${user.role}`)}</SoftTag>
               </Descriptions.Item>
               <Descriptions.Item label={t("common.status")}>
-                <Tag bordered={false} color={user.is_active ? "green" : "default"}>
+                <SoftTag tone={user.is_active ? "active" : "inactive"}>
                   {user.is_active ? t("common.active") : t("common.inactive")}
-                </Tag>
+                </SoftTag>
               </Descriptions.Item>
               <Descriptions.Item label={t("profilePage.accountCreated")}>
                 {formatDateTime(user.created_at)}

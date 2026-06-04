@@ -21,9 +21,9 @@ import Panel from "@/components/dashboard/Panel";
 const { TextArea } = Input;
 
 const statusColors: Record<string, string> = {
-  pending: "#fa8c16",
-  approved: "#52c41a",
-  rejected: "#ff4d4f",
+  pending: "orange",
+  approved: "green",
+  rejected: "red",
 };
 
 export default function Appeals() {

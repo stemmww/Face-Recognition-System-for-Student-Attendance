@@ -18,9 +18,9 @@ import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
 
 const statusColors: Record<string, string> = {
-  pending: "#fa8c16",
-  approved: "#52c41a",
-  rejected: "#ff4d4f",
+  pending: "orange",
+  approved: "green",
+  rejected: "red",
 };
 
 export default function AppealsReview() {

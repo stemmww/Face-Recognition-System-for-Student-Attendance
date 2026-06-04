@@ -37,14 +37,9 @@ import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
 
 const roleColors: Record<Role, string> = {
-  admin: "#ff4d4f",
+  admin: "red",
   professor: BRAND_PRIMARY,
-  student: "#52c41a",
-};
-
-const userStatusColors = {
-  active: "#52c41a",
-  inactive: "#595959",
+  student: "green",
 };
 
 interface UserFormValues {
@@ -249,9 +244,7 @@ export default function UserManagement() {
       dataIndex: "is_active",
       key: "is_active",
       render: (active: boolean) => (
-        <Tag bordered={false} color={active ? userStatusColors.active : userStatusColors.inactive}>
-          {active ? t("common.active") : t("common.inactive")}
-        </Tag>
+        <Tag bordered={false} color={active ? "green" : "default"}>{active ? t("common.active") : t("common.inactive")}</Tag>
       ),
     },
     {
@@ -278,11 +271,11 @@ export default function UserManagement() {
                 />
               </Tooltip>
               {enrolled ? (
-                <Tag icon={<CheckCircleOutlined />} color={userStatusColors.active} style={{ margin: 0 }}>
+                <Tag icon={<CheckCircleOutlined />} color="success" style={{ margin: 0 }}>
                   {t("usersPage.faceEnrolled")}
                 </Tag>
               ) : (
-                <Tag icon={<CloseCircleOutlined />} color={userStatusColors.inactive} style={{ margin: 0 }}>
+                <Tag icon={<CloseCircleOutlined />} color="default" style={{ margin: 0 }}>
                   {t("usersPage.faceNotEnrolled")}
                 </Tag>
               )}

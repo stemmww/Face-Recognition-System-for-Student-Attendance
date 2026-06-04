@@ -705,7 +705,7 @@ const ru = {
     importCSV: "Импорт CSV",
     importTitle: "Импорт групп из CSV",
     import: "Импорт",
-    csvFormat: "Формат CSV: code, group_type, academic_year, semester, student_emails",
+    csvFormat: "Формат CSV: code, group_type, semester, student_emails",
   },
 
   // Professors

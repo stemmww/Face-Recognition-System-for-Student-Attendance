@@ -716,7 +716,7 @@ const en = {
     importCSV: "Import CSV",
     importTitle: "Import Groups from CSV",
     import: "Import",
-    csvFormat: "CSV format: code, group_type, academic_year, semester, student_emails",
+    csvFormat: "CSV format: code, group_type, semester, student_emails",
   },
 
   // Professors

@@ -97,7 +97,6 @@ export default function GroupManagement() {
   const [parsedCode, setParsedCode] = useState<ParsedCode | null>(null);
   const [groupType, setGroupType] = useState<string>("MAIN");
   const [semester, setSemester] = useState<string | undefined>(undefined);
-  const [academicYear, setAcademicYear] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
 
   const [csvModalOpen, setCsvModalOpen] = useState(false);
@@ -156,14 +155,14 @@ export default function GroupManagement() {
 
   const openCreate = () => {
     setEditing(null); setCodeInput(""); setParsedCode(null);
-    setGroupType("MAIN"); setSemester(undefined); setAcademicYear(""); setIsActive(true);
+    setGroupType("MAIN"); setSemester(undefined); setIsActive(true);
     setModalOpen(true);
   };
 
   const openEdit = (g: Group) => {
     setEditing(g); setCodeInput(g.name); setParsedCode(parseGroupCode(g.name));
     setGroupType(g.group_type); setSemester(g.semester ?? undefined);
-    setAcademicYear(g.academic_year ?? ""); setIsActive(g.is_active);
+    setIsActive(g.is_active);
     setModalOpen(true);
   };
 
@@ -174,7 +173,6 @@ export default function GroupManagement() {
         major: parsedCode.major, enrollment_year_short: parsedCode.yearShort,
         group_number: parsedCode.groupNum, group_type: groupType,
         semester: groupType === "ELECTIVE" ? (semester || undefined) : undefined,
-        academic_year: academicYear || undefined,
         ...(editing ? { is_active: isActive } : {}),
       };
       if (editing) {
@@ -367,11 +365,6 @@ export default function GroupManagement() {
             </div>
           )}
 
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>{t("groups.academicYear")}</label>
-            <Input value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} placeholder="e.g. 2025-2026" />
-          </div>
-
           {editing && (
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>{t("common.status")}</label>
@@ -389,7 +382,7 @@ export default function GroupManagement() {
         ]} width={520}>
         <div style={{ marginBottom: 12 }}>
           <Text type="secondary" style={{ display: "block", marginBottom: 4 }}>{t("groups.csvFormat")}</Text>
-          <Text code style={{ fontSize: 12 }}>code, group_type, academic_year, semester, student_emails</Text>
+          <Text code style={{ fontSize: 12 }}>code, group_type, semester, student_emails</Text>
         </div>
         <Upload.Dragger accept=".csv" maxCount={1} beforeUpload={(f) => { setCsvFile(f); return false; }}
           onRemove={() => setCsvFile(null)}

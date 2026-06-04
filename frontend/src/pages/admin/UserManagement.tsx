@@ -12,6 +12,7 @@ import {
   Space,
   Switch,
   Table,
+  Tag,
   Tooltip,
   Upload,
   message,
@@ -31,14 +32,14 @@ import type { User, Role, BulkImportResult } from "@/types";
 import { createUser, deactivateUser, importStudentsCSV, listUsers, updateUser } from "@/api/users";
 import { adminResetFaceData, adminSetEnrollmentPermission } from "@/api/faceEnrollment";
 import { formatDateTime } from "@/utils/formatters";
+import { BRAND_PRIMARY } from "@/styles/theme";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
-import SoftTag, { type SoftTagTone } from "@/components/dashboard/SoftTag";
 
-const roleTones: Record<Role, SoftTagTone> = {
-  admin: "admin",
-  professor: "professor",
-  student: "student",
+const roleColors: Record<Role, string> = {
+  admin: "red",
+  professor: BRAND_PRIMARY,
+  student: "green",
 };
 
 interface UserFormValues {
@@ -235,7 +236,7 @@ export default function UserManagement() {
       dataIndex: "role",
       key: "role",
       render: (role: Role) => (
-        <SoftTag tone={roleTones[role]}>{t(`roles.${role}`)}</SoftTag>
+        <Tag bordered={false} color={roleColors[role]}>{t(`roles.${role}`)}</Tag>
       ),
     },
     {
@@ -243,7 +244,7 @@ export default function UserManagement() {
       dataIndex: "is_active",
       key: "is_active",
       render: (active: boolean) => (
-        <SoftTag tone={active ? "active" : "inactive"}>{active ? t("common.active") : t("common.inactive")}</SoftTag>
+        <Tag bordered={false} color={active ? "green" : "default"}>{active ? t("common.active") : t("common.inactive")}</Tag>
       ),
     },
     {
@@ -270,13 +271,13 @@ export default function UserManagement() {
                 />
               </Tooltip>
               {enrolled ? (
-                <SoftTag icon={<CheckCircleOutlined />} tone="approved">
+                <Tag icon={<CheckCircleOutlined />} color="success" style={{ margin: 0 }}>
                   {t("usersPage.faceEnrolled")}
-                </SoftTag>
+                </Tag>
               ) : (
-                <SoftTag icon={<CloseCircleOutlined />} tone="inactive">
+                <Tag icon={<CloseCircleOutlined />} color="default" style={{ margin: 0 }}>
                   {t("usersPage.faceNotEnrolled")}
-                </SoftTag>
+                </Tag>
               )}
             </Space>
             {enrolled && (

@@ -7,6 +7,7 @@ import {
   InputNumber,
   Modal,
   Table,
+  Tag,
   message,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
@@ -16,14 +17,13 @@ import type { Appeal } from "@/types";
 import { createAppeal, getMyAppeals } from "@/api/appeals";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
-import SoftTag, { type SoftTagTone } from "@/components/dashboard/SoftTag";
 
 const { TextArea } = Input;
 
-const statusTones: Record<string, SoftTagTone> = {
-  pending: "pending",
-  approved: "approved",
-  rejected: "rejected",
+const statusColors: Record<string, string> = {
+  pending: "orange",
+  approved: "green",
+  rejected: "red",
 };
 
 export default function Appeals() {
@@ -86,7 +86,7 @@ export default function Appeals() {
       dataIndex: "status",
       width: 110,
       render: (status: string) => (
-        <SoftTag tone={statusTones[status] ?? "neutral"}>{t(`common.${status}`)}</SoftTag>
+        <Tag color={statusColors[status]}>{t(`common.${status}`)}</Tag>
       ),
     },
     {

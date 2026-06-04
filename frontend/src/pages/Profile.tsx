@@ -13,7 +13,7 @@ import Panel from "@/components/dashboard/Panel";
 
 const roleColors: Record<string, string> = {
   admin: "red",
-  professor: BRAND_PRIMARY,
+  professor: "blue",
   student: "green",
 };
 

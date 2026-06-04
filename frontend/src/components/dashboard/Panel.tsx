@@ -31,6 +31,7 @@ export default function Panel({ title, extra, children, style, flush }: PanelPro
 
   return (
     <div
+      className="app-panel"
       style={{
         background: c.surface,
         border: `1px solid ${c.border}`,
@@ -41,6 +42,7 @@ export default function Panel({ title, extra, children, style, flush }: PanelPro
     >
       {hasHeader && (
         <div
+          className="app-panel-header"
           style={{
             padding: "20px 20px 16px",
             display: "flex",
@@ -50,14 +52,14 @@ export default function Panel({ title, extra, children, style, flush }: PanelPro
           }}
         >
           {title !== undefined ? (
-            <span style={{ fontSize: 15, fontWeight: 700, color: c.text }}>{title}</span>
+            <span className="app-panel-title" style={{ fontSize: 15, fontWeight: 700, color: c.text }}>{title}</span>
           ) : (
             <span />
           )}
-          {extra}
+          {extra && <div className="app-panel-extra">{extra}</div>}
         </div>
       )}
-      <div style={{ padding: flush ? 0 : hasHeader ? "0 20px 20px" : 20 }}>{children}</div>
+      <div className="app-panel-body" style={{ padding: flush ? 0 : hasHeader ? "0 20px 20px" : 20 }}>{children}</div>
     </div>
   );
 }

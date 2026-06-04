@@ -231,6 +231,7 @@ export default function Header({ user, onLogout, isMobile, onMenuClick }: Props)
 
   return (
     <AntHeader
+      className="app-shell-header"
       style={{
         padding: isMobile ? "0 12px" : "0 24px",
         background: isDark ? "rgb(33, 33, 33)" : "#ffffff",

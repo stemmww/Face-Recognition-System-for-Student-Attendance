@@ -24,6 +24,7 @@ export default function PageHeader({ title, extra, subtitle }: PageHeaderProps) 
 
   return (
     <div
+      className="app-page-header"
       style={{
         display: "flex",
         alignItems: subtitle ? "flex-start" : "center",
@@ -32,11 +33,11 @@ export default function PageHeader({ title, extra, subtitle }: PageHeaderProps) 
         flexWrap: "wrap",
       }}
     >
-      <div>
+      <div className="app-page-header-copy">
         <div style={{ fontSize: 20, fontWeight: 700, color: c.text, lineHeight: 1.2 }}>{title}</div>
         {subtitle && <div style={{ fontSize: 13, color: c.textMuted, marginTop: 4 }}>{subtitle}</div>}
       </div>
-      {extra && <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>{extra}</div>}
+      {extra && <div className="app-page-header-extra" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>{extra}</div>}
     </div>
   );
 }

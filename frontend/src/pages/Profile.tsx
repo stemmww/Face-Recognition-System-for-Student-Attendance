@@ -12,9 +12,14 @@ import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
 
 const roleColors: Record<string, string> = {
-  admin: "red",
+  admin: "#ff4d4f",
   professor: BRAND_PRIMARY,
-  student: "green",
+  student: "#52c41a",
+};
+
+const userStatusColors = {
+  active: "#52c41a",
+  inactive: "#595959",
 };
 
 export default function Profile() {
@@ -164,7 +169,7 @@ export default function Profile() {
                 <Tag bordered={false} color={roleColors[user.role]}>{t(`roles.${user.role}`)}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label={t("common.status")}>
-                <Tag bordered={false} color={user.is_active ? "green" : "default"}>
+                <Tag bordered={false} color={user.is_active ? userStatusColors.active : userStatusColors.inactive}>
                   {user.is_active ? t("common.active") : t("common.inactive")}
                 </Tag>
               </Descriptions.Item>

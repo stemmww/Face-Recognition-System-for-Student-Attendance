@@ -156,19 +156,34 @@ export default function StudentDashboard() {
 
       {/* Overview tiles */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-        <StatTile label={t("nav.courses")} value={summary.length} icon={<BookOutlined />} loading={loading} />
+        <StatTile
+          label={t("nav.courses")}
+          value={summary.length}
+          loading={loading}
+          linkLabel={t("dashboard.viewAll", "View All")}
+          onLinkClick={() => navigate(`${studentBasePath}/courses`)}
+        />
         <StatTile
           label={t("dashboard.overallRate")}
           value={`${overallRate}%`}
           accent={rateColor(overallRate)}
+          progress={overallRate}
           loading={loading}
         />
-        <StatTile label={t("dashboard.totalSessions")} value={totalSessions} loading={loading} />
+        <StatTile
+          label={t("dashboard.totalSessions")}
+          value={totalSessions}
+          loading={loading}
+          linkLabel={t("dashboard.viewCourses", "View Courses")}
+          onLinkClick={() => navigate(`${studentBasePath}/courses`)}
+        />
         <StatTile
           label={t("dashboard.unreadAlerts")}
           value={unread}
           accent={unread > 0 ? c.red : undefined}
           loading={loading}
+          linkLabel={t("dashboard.viewAll", "View All")}
+          onLinkClick={() => navigate(`${studentBasePath}/notifications`)}
         />
       </div>
 

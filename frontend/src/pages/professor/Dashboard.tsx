@@ -163,32 +163,32 @@ export default function ProfessorDashboard() {
         <StatTile
           label={t("dashboard.myCoursesCount")}
           value={courses.length}
-          icon={<BookOutlined />}
           loading={loading}
-          onClick={() => navigate("/courses")}
+          linkLabel={t("dashboard.viewCourses", "View Courses")}
+          onLinkClick={() => navigate("/courses")}
         />
         <StatTile
           label={t("dashboard.activeSessions")}
           value={activeSessions.length}
-          icon={<PlayCircleOutlined />}
           accent={activeSessions.length > 0 ? c.green : undefined}
           loading={loading}
-          onClick={() => navigate("/sessions")}
+          linkLabel={t("dashboard.viewAll", "View All")}
+          onLinkClick={() => navigate("/sessions")}
         />
         <StatTile
           label={t("dashboard.totalSessions")}
           value={sessions.length}
-          icon={<CalendarOutlined />}
           loading={loading}
-          onClick={() => navigate("/sessions")}
+          linkLabel={t("dashboard.viewAll", "View All")}
+          onLinkClick={() => navigate("/sessions")}
         />
         <StatTile
           label={t("dashboard.pendingAppeals")}
           value={pendingAppeals}
-          icon={<FileTextOutlined />}
           accent={pendingAppeals > 0 ? c.red : undefined}
           loading={loading}
-          onClick={() => navigate("/appeals-review")}
+          linkLabel={t("dashboard.viewAll", "View All")}
+          onLinkClick={() => navigate("/appeals-review")}
         />
       </div>
 

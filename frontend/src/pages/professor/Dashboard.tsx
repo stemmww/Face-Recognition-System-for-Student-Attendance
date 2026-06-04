@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button, Select, Table, Tag, message } from "antd";
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
 import {
   BookOutlined,
   CalendarOutlined,
@@ -29,6 +31,47 @@ import { surfaceColors } from "@/styles/theme";
 import Panel from "@/components/dashboard/Panel";
 import StatTile from "@/components/dashboard/StatTile";
 
+dayjs.extend(isoWeek);
+
+type TrendPeriod = "daily" | "weekly" | "monthly";
+
+type TrendBucket = Omit<SessionTrendPoint, "session_id"> & {
+  session_count: number;
+};
+
+function aggregateTrends(data: SessionTrendPoint[], period: TrendPeriod): TrendBucket[] {
+  const buckets = new Map<string, TrendBucket>();
+  const bucketKey = (date: string) => {
+    const d = dayjs(date);
+    if (period === "weekly") return d.startOf("isoWeek").format("YYYY-MM-DD");
+    if (period === "monthly") return d.format("YYYY-MM");
+    return d.format("YYYY-MM-DD");
+  };
+
+  for (const point of data) {
+    const key = bucketKey(point.date);
+    const existing = buckets.get(key);
+    if (existing) {
+      existing.present += point.present;
+      existing.late += point.late;
+      existing.absent += point.absent;
+      existing.total += point.total;
+      existing.session_count += 1;
+    } else {
+      buckets.set(key, {
+        date: key,
+        present: point.present,
+        late: point.late,
+        absent: point.absent,
+        total: point.total,
+        session_count: 1,
+      });
+    }
+  }
+
+  return Array.from(buckets.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
 export default function ProfessorDashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -43,6 +86,8 @@ export default function ProfessorDashboard() {
   const [trendCourse, setTrendCourse] = useState<number | undefined>(undefined);
   const [trendData, setTrendData] = useState<SessionTrendPoint[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
+  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>("daily");
+  const chartData = useMemo(() => aggregateTrends(trendData, trendPeriod), [trendData, trendPeriod]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -86,6 +131,11 @@ export default function ProfessorDashboard() {
 
   const activeSessions = sessions.filter((s) => s.status === "active");
   const recentSessions = sessions.slice(0, 5);
+  const trendTabs: Array<{ key: TrendPeriod; label: string }> = [
+    { key: "daily", label: t("dashboard.daily") },
+    { key: "weekly", label: t("dashboard.weekly") },
+    { key: "monthly", label: t("dashboard.monthly") },
+  ];
 
   const sessionColumns = [
     { title: t("common.id"), dataIndex: "id", width: 60 },
@@ -155,19 +205,51 @@ export default function ProfessorDashboard() {
           />
         }
       >
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <div style={{ display: "flex", background: c.surface3, borderRadius: 8, padding: 3, gap: 2 }}>
+            {trendTabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setTrendPeriod(tab.key)}
+                style={{
+                  padding: "5px 14px",
+                  fontSize: 12,
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontWeight: 500,
+                  transition: "all 0.15s",
+                  background: trendPeriod === tab.key ? c.surface : "transparent",
+                  color: trendPeriod === tab.key ? c.text : c.textMuted,
+                  boxShadow: trendPeriod === tab.key ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
         {trendLoading ? (
           <div style={{ height: 280, display: "flex", alignItems: "center", justifyContent: "center", color: c.textFaint }}>
             {t("common.loading")}
           </div>
-        ) : trendData.length > 0 ? (
+        ) : chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={c.border} vertical={false} />
-              <XAxis dataKey="date" fontSize={12} tick={{ fill: c.textFaint }} axisLine={false} tickLine={false} />
+              <XAxis
+                dataKey="date"
+                fontSize={12}
+                tick={{ fill: c.textFaint }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v: string) => dayjs(v).format(trendPeriod === "monthly" ? "MMM YYYY" : "MMM D")}
+              />
               <YAxis fontSize={12} tick={{ fill: c.textFaint }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: 10, fontSize: 12 }}
                 cursor={{ fill: c.surface3 }}
+                labelFormatter={(v: string) => dayjs(v).format(trendPeriod === "monthly" ? "MMMM YYYY" : "MMM D, YYYY")}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="present" name={t("common.present")} fill={c.green} stackId="a" />

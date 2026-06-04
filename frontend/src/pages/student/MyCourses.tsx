@@ -74,9 +74,10 @@ export default function StudentMyCourses() {
           <div
             key={course.id}
             onClick={() => navigate(`${studentBasePath}/courses/${course.id}/attendance`)}
-            style={{ cursor: "pointer" }}
+            style={{ cursor: "pointer", display: "flex" }}
           >
             <Panel
+              style={{ height: "100%", width: "100%" }}
               title={
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                   <BookOutlined />

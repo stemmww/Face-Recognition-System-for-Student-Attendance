@@ -36,6 +36,7 @@ export default function AppLayout({ user, onLogout }: Props) {
         canSelfEnrollFace={user.can_self_enroll_face === true}
       />
       <Layout
+        className="app-main-layout"
         style={{
           marginLeft: sidebarWidth,
           transition: isMobile ? "none" : "margin-left 0.2s",
@@ -50,6 +51,7 @@ export default function AppLayout({ user, onLogout }: Props) {
           onMenuClick={() => setMobileOpen(true)}
         />
         <Content
+          className="app-shell-content"
           style={{
             padding: isMobile ? 16 : 24,
             background: pageBg,

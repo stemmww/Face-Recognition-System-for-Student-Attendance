@@ -27,6 +27,7 @@ export default function StatTile({ label, value, icon, accent, loading, onClick 
 
   return (
     <div
+      className="app-stat-tile"
       onClick={onClick}
       style={{
         background: c.surface,
@@ -52,6 +53,7 @@ export default function StatTile({ label, value, icon, accent, loading, onClick 
       </div>
 
       <div
+        className="app-stat-value"
         style={{
           fontSize: 34,
           fontWeight: 700,

@@ -4,6 +4,11 @@
    The literal here is only a fallback for the first paint. */
 :root {
   --brand-primary: rgb(1, 123, 223);
+  --app-mobile-edge: 12px;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 /* Ant Design tables: horizontal scroll on narrow screens */
@@ -178,4 +183,289 @@ body.dark .mark-all-read-btn:hover {
 
 body.dark .notification-item:hover {
   background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ===== Mobile app shell and page ergonomics ===== */
+
+.app-shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.app-shell-content {
+  width: 100%;
+  max-width: 100%;
+}
+
+.app-page-header-copy,
+.app-panel-title {
+  min-width: 0;
+}
+
+.app-panel-title {
+  overflow-wrap: anywhere;
+}
+
+.app-panel-extra {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.app-shell-content img,
+.app-shell-content video,
+.app-shell-content canvas {
+  max-width: 100%;
+}
+
+.app-shell-content .ant-select,
+.app-shell-content .ant-picker,
+.app-shell-content .ant-input-number,
+.app-shell-content .ant-input-affix-wrapper,
+.app-shell-content .ant-input,
+.app-shell-content .ant-btn {
+  max-width: 100%;
+}
+
+.app-shell-content .ant-table-wrapper {
+  max-width: 100%;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --app-mobile-edge: 12px;
+  }
+
+  .app-main-layout {
+    min-width: 0 !important;
+  }
+
+  .app-shell-header {
+    padding: 0 8px !important;
+    height: 52px !important;
+    line-height: 52px !important;
+  }
+
+  .app-shell-content {
+    padding: var(--app-mobile-edge) !important;
+    min-height: calc(100vh - 52px) !important;
+    overflow-x: hidden;
+  }
+
+  .app-page-header {
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .app-page-header-copy {
+    width: 100%;
+  }
+
+  .app-page-header-copy > div:first-child {
+    font-size: 18px !important;
+    line-height: 1.22 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .app-page-header-extra {
+    width: 100%;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+  }
+
+  .app-page-header-extra > *,
+  .app-page-header-extra .ant-select,
+  .app-page-header-extra .ant-input-affix-wrapper,
+  .app-page-header-extra .ant-picker {
+    flex: 1 1 100%;
+    width: 100% !important;
+  }
+
+  .app-page-header-extra .ant-btn {
+    flex: 1 1 auto;
+    min-height: 38px;
+  }
+
+  .app-panel {
+    border-radius: 12px !important;
+  }
+
+  .app-panel-header {
+    padding: 14px 14px 10px !important;
+    align-items: flex-start !important;
+    flex-wrap: wrap;
+  }
+
+  .app-panel-title {
+    flex: 1 1 100%;
+    font-size: 14px !important;
+    line-height: 1.25;
+  }
+
+  .app-panel-extra {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .app-panel-extra > *,
+  .app-panel-extra .ant-select,
+  .app-panel-extra .ant-input-affix-wrapper,
+  .app-panel-extra .ant-picker {
+    flex: 1 1 100%;
+    width: 100% !important;
+  }
+
+  .app-panel-body {
+    padding: 14px !important;
+  }
+
+  .app-panel-header + .app-panel-body {
+    padding-top: 0 !important;
+  }
+
+  .app-stat-tile {
+    padding: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .app-stat-tile > div:first-child {
+    margin-bottom: 10px !important;
+    font-size: 12px !important;
+    line-height: 1.25;
+  }
+
+  .app-stat-value {
+    font-size: 27px !important;
+    letter-spacing: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  /* Common dashboard grids built with inline styles. */
+  .app-shell-content div[style*="grid-template-columns: repeat(4, 1fr)"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .app-shell-content div[style*="grid-template-columns: 1fr 1fr"],
+  .app-shell-content div[style*="grid-template-columns: 1.6fr 1fr"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .app-shell-content div[style*="repeat(auto-fill, minmax(300px, 1fr))"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .app-shell-content div[style*="grid-template-columns: repeat(3, 1fr)"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .app-shell-content .ant-space {
+    max-width: 100%;
+  }
+
+  .app-shell-content .ant-space-horizontal {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .app-shell-content .ant-space-item {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-shell-content .ant-space-item > .ant-select,
+  .app-shell-content .ant-space-item > .ant-input-affix-wrapper,
+  .app-shell-content .ant-space-item > .ant-picker {
+    width: 100% !important;
+  }
+
+  .app-shell-content .ant-table {
+    min-width: 620px;
+  }
+
+  .app-shell-content .ant-table-cell {
+    padding: 10px 12px !important;
+    white-space: normal;
+  }
+
+  .app-shell-content .ant-card {
+    border-radius: 12px;
+  }
+
+  .app-shell-content .ant-card-body {
+    padding: 14px !important;
+  }
+
+  .app-shell-content .ant-form-item {
+    margin-bottom: 14px;
+  }
+
+  .app-shell-content .ant-upload,
+  .app-shell-content .ant-upload-wrapper,
+  .app-shell-content .ant-upload-drag {
+    max-width: 100%;
+  }
+
+  .app-shell-content .recharts-wrapper,
+  .app-shell-content .recharts-surface {
+    max-width: 100%;
+  }
+
+  .app-shell-content .ant-steps {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .app-shell-content .ant-steps .ant-steps-item-title {
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .app-shell-content #qr-reader {
+    width: 100% !important;
+    max-width: min(100%, 360px) !important;
+    min-height: 260px !important;
+  }
+
+  .app-shell-content #qr-reader video,
+  .app-shell-content #qr-reader canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .notification-dropdown {
+    max-width: calc(100vw - 16px);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-shell-content div[style*="grid-template-columns: repeat(4, 1fr)"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .app-shell-content div[style*="grid-template-columns: repeat(3, 1fr)"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .app-shell-content .ant-space-compact {
+    display: flex;
+    width: 100%;
+  }
+
+  .app-shell-content .ant-space-compact > .ant-input,
+  .app-shell-content .ant-space-compact > .ant-input-affix-wrapper {
+    min-width: 0;
+  }
+
+  .app-shell-content .ant-result {
+    padding: 24px 8px;
+  }
+
+  .app-shell-content .ant-result-title {
+    font-size: 20px;
+  }
 }

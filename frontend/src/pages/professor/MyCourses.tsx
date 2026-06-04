@@ -85,6 +85,7 @@ export default function ProfessorMyCourses() {
         {details.map(({ course, schedules, studentCount }) => (
           <Panel
             key={course.id}
+            style={{ height: "100%" }}
             title={
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                 <BookOutlined />

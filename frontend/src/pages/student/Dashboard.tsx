@@ -228,6 +228,7 @@ export default function StudentDashboard() {
           {summary.map((course) => (
             <Panel
               key={course.course_id}
+              style={{ height: "100%" }}
               title={
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                   <BookOutlined />

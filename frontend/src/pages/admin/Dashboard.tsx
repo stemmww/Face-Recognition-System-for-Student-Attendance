@@ -421,7 +421,6 @@ export default function AdminDashboard() {
         <StatCard
           label={t("dashboard.totalUsers")}
           value={users.length}
-          badge={`+ ${t("dashboard.activeBadge")}`}
           progress={activeProgress}
           loading={loading}
           c={c}

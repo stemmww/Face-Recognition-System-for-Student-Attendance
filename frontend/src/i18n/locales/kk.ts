@@ -601,6 +601,8 @@ const kk = {
     filterNeedsMore: "Тағы керек",
     filterComplete: "Дайын",
     filterResultCount: "{{total}} студенттің {{shown}} көрсетілді",
+    enrollmentQueue: "Тіркеу статусы",
+    noStudentsForFilter: "Бұл сүзгіге сәйкес студенттер жоқ",
     photos: "фотосуреттер",
     photosRecommend: "{{count}} фото тіркелді. Сенімді тану үшін кемінде 3 фотоны әртүрлі бұрыштардан жүктеуді ұсынамыз.",
     photosGood: "Жақсы қамту: {{count}} фото тіркелді.",

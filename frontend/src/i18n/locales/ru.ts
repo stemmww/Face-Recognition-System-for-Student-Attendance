@@ -601,6 +601,8 @@ const ru = {
     filterNeedsMore: "Нужно ещё",
     filterComplete: "Готово",
     filterResultCount: "Показано {{shown}} из {{total}} студентов",
+    enrollmentQueue: "Статус регистрации",
+    noStudentsForFilter: "Нет студентов для этого фильтра",
     photos: "фото",
     photosRecommend: "{{count}} фото зарегистрировано. Рекомендуем минимум 3 фото с разных ракурсов для надёжного распознавания.",
     photosGood: "Хорошее покрытие: {{count}} фото зарегистрировано.",

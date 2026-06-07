@@ -612,6 +612,8 @@ const en = {
     filterNeedsMore: "Needs more",
     filterComplete: "Complete",
     filterResultCount: "{{shown}} of {{total}} students shown",
+    enrollmentQueue: "Enrollment status",
+    noStudentsForFilter: "No students match this filter",
     photos: "photos",
     photosRecommend: "{{count}} photo(s) enrolled. We recommend at least 3 photos from different angles for reliable recognition.",
     photosGood: "Good coverage: {{count}} photo(s) enrolled.",

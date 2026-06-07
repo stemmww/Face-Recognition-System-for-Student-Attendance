@@ -198,6 +198,31 @@ class TestAssessFaceQuality:
         assert any(i.code == "face_smallish" and i.severity == "hard" for i in strict.issues)
         assert strict.passed is False
 
+    def test_strict_mode_can_allow_selected_soft_issues(self):
+        img = _good_image()
+        bbox = (100, 100, 300, 340)
+        lm = np.array([
+            [160, 170],
+            [240, 170],
+            [220, 220],  # mild yaw: above soft threshold, below hard threshold
+            [180, 300],
+            [220, 300],
+        ], dtype=float)
+        det = _make_detection(bbox=bbox, landmarks=lm)
+
+        strict = assess_face_quality(img, det, strict=True)
+        allowed = assess_face_quality(
+            img,
+            det,
+            strict=True,
+            strict_allowed_soft_codes=frozenset({"soft_yaw"}),
+        )
+
+        assert any(i.code == "soft_yaw" and i.severity == "hard" for i in strict.issues)
+        assert strict.passed is False
+        assert any(i.code == "soft_yaw" and i.severity == "soft" for i in allowed.issues)
+        assert allowed.passed is True
+
     def test_metrics_populated(self):
         img = _good_image()
         det = _make_detection(bbox=(100, 100, 300, 340))

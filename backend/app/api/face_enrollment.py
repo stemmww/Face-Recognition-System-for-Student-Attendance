@@ -176,7 +176,12 @@ async def self_enroll_face(
 
     # Quality check (strict gate — same as admin enrollment)
     try:
-        _det, _report, embedding = FaceService.assess_and_embed(pipe, image, strict=True)
+        _det, _report, embedding = FaceService.assess_and_embed(
+            pipe,
+            image,
+            strict=True,
+            strict_allowed_soft_codes=FaceService.ENROLLMENT_ALLOWED_SOFT_ISSUES,
+        )
     except BadRequestError as exc:
         detail = str(exc.detail) if hasattr(exc, "detail") else str(exc)
         reason = _map_quality_reason(detail)

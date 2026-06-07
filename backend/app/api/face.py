@@ -65,7 +65,12 @@ async def enroll_face(
     pipe = get_pipeline()
 
     # Strict gate so admins never seed bad reference photos
-    _det, _report, embedding = FaceService.assess_and_embed(pipe, image, strict=True)
+    _det, _report, embedding = FaceService.assess_and_embed(
+        pipe,
+        image,
+        strict=True,
+        strict_allowed_soft_codes=FaceService.ENROLLMENT_ALLOWED_SOFT_ISSUES,
+    )
 
     photo_data = cv2.imencode(".jpg", image)[1].tobytes()
     photo_path = await FaceService.save_photo(photo_data, photo.filename or "face.jpg")

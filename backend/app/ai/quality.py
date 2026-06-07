@@ -177,6 +177,7 @@ def assess_face_quality(
     det: Detection,
     *,
     strict: bool = False,
+    strict_allowed_soft_codes: set[str] | frozenset[str] | None = None,
 ) -> QualityReport:
     """Run all quality checks on a single detected face.
 
@@ -192,6 +193,10 @@ def assess_face_quality(
         would silently poison the user's stored embeddings) and strict=False
         for verification (where a borderline photo can still match an
         existing high-quality embedding).
+    strict_allowed_soft_codes : set[str] | frozenset[str] | None, default None
+        Soft issue codes that should remain warnings even when strict=True.
+        Useful for deliberate enrollment uploads where mild pose/lighting
+        imperfections are acceptable, while blur and size issues stay strict.
     """
     issues: list[QualityIssue] = []
     metrics: dict[str, float] = {}
@@ -305,11 +310,12 @@ def assess_face_quality(
                 threshold=settings.QUALITY_MAX_PITCH,
             ))
 
-    # In strict mode, promote any soft issues to hard rejections so that the
-    # caller (typically auto-enrollment) refuses to store a borderline embedding.
+    # In strict mode, promote soft issues to hard rejections unless the caller
+    # explicitly allows that issue to remain a warning.
     if strict:
+        allowed_soft_codes = strict_allowed_soft_codes or frozenset()
         for issue in issues:
-            if issue.severity == "soft":
+            if issue.severity == "soft" and issue.code not in allowed_soft_codes:
                 issue.severity = "hard"
 
     report = QualityReport(

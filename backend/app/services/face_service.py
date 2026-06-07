@@ -56,6 +56,8 @@ class VoteResult:
 
 
 class FaceService:
+    ENROLLMENT_ALLOWED_SOFT_ISSUES = frozenset({"soft_yaw", "low_contrast"})
+
     @staticmethod
     def _ensure_upload_dir() -> Path:
         upload_dir = Path(settings.UPLOAD_DIR) / "faces"
@@ -137,6 +139,7 @@ class FaceService:
         image: np.ndarray,
         *,
         strict: bool,
+        strict_allowed_soft_codes: frozenset[str] | set[str] | None = None,
     ) -> tuple[Detection, QualityReport, np.ndarray]:
         """Detect, quality-check, align, and embed the largest face in one image.
 
@@ -154,7 +157,12 @@ class FaceService:
         if det.landmarks is None:
             raise BadRequestError("Could not detect facial landmarks — try a clearer photo")
 
-        report = assess_face_quality(image, det, strict=strict)
+        report = assess_face_quality(
+            image,
+            det,
+            strict=strict,
+            strict_allowed_soft_codes=strict_allowed_soft_codes,
+        )
         if not report.passed:
             raise BadRequestError("Photo quality too low: " + report.hard_messages[0])
 

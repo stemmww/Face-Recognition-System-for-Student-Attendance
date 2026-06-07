@@ -189,7 +189,7 @@ async def import_groups_csv(
 ) -> dict:
     """
     Import groups from CSV.
-    Columns: code, group_type, academic_year, semester, student_emails
+    Columns: code, group_type, semester, student_emails
     code format: SE-2322
     student_emails: semicolon-separated
     """

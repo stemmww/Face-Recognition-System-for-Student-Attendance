@@ -1,6 +1,6 @@
-code,group_type,academic_year,semester,student_emails
-SE-2322,MAIN,2025-2026,,student_1@example.com
-SE-2421,MAIN,2025-2026,,student_6@example.com
-CS-2301,MAIN,2025-2026,,student_11@example.com
-BDA-2401,MAIN,2025-2026,,student_16@example.com
-SE-2322-ELEC,ELECTIVE,2025-2026,FALL,student_20@example.com
+code,group_type,semester,student_emails
+SE-2322,MAIN,,student_1@example.com
+SE-2421,MAIN,,student_6@example.com
+CS-2301,MAIN,,student_11@example.com
+BDA-2401,MAIN,,student_16@example.com
+SE-2323,ELECTIVE,FALL,student_20@example.com

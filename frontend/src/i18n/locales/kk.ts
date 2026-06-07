@@ -705,7 +705,7 @@ const kk = {
     importCSV: "CSV импорт",
     importTitle: "CSV-ден топтарды импорттау",
     import: "Импорт",
-    csvFormat: "CSV форматы: code, group_type, academic_year, semester, student_emails",
+    csvFormat: "CSV форматы: code, group_type, semester, student_emails",
   },
 
   // Professors

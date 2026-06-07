@@ -32,13 +32,12 @@ import type { User, Role, BulkImportResult } from "@/types";
 import { createUser, deactivateUser, importStudentsCSV, listUsers, updateUser } from "@/api/users";
 import { adminResetFaceData, adminSetEnrollmentPermission } from "@/api/faceEnrollment";
 import { formatDateTime } from "@/utils/formatters";
-import { BRAND_PRIMARY } from "@/styles/theme";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
 
 const roleColors: Record<Role, string> = {
   admin: "red",
-  professor: BRAND_PRIMARY,
+  professor: "blue",
   student: "green",
 };
 

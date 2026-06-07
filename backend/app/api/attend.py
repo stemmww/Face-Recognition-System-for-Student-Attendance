@@ -47,10 +47,6 @@ _used_nonces: dict[tuple[int, int], set[str]] = defaultdict(set)
 _nonce_timestamps: dict[tuple[int, int], float] = {}
 _NONCE_CACHE_TTL = 3600 * 4  # 4 hours
 
-# --- Rate limiting per (student_id, session_id) ---
-_rate_limit: dict[tuple[int, int], float] = {}
-_RATE_LIMIT_SECONDS = 15
-
 
 def _cleanup_expired_caches() -> None:
     now = time.time()
@@ -58,10 +54,6 @@ def _cleanup_expired_caches() -> None:
     for key in expired:
         _used_nonces.pop(key, None)
         _nonce_timestamps.pop(key, None)
-    # Also clean up stale rate-limit entries
-    stale = [key for key, ts in _rate_limit.items() if now - ts > _NONCE_CACHE_TTL]
-    for key in stale:
-        _rate_limit.pop(key, None)
 
 
 @router.post("/challenge", response_model=LivenessChallengeOut)
@@ -180,18 +172,6 @@ async def verify_attendance(
             status=existing_record.status,
             message="Your attendance was already recorded for this session.",
         )
-
-    # --- 3.6. Rate limiting ---
-    # Once a real verification attempt begins, throttle follow-up tries even if
-    # this attempt fails. This protects the expensive face/liveness pipeline
-    # from rapid retries with bad frames or repeated challenge failures.
-    rate_key = (current_user.id, session.id)
-    now_ts = time.time()
-    last_attempt = _rate_limit.get(rate_key, 0)
-    if now_ts - last_attempt < _RATE_LIMIT_SECONDS:
-        remaining = int(_RATE_LIMIT_SECONDS - (now_ts - last_attempt))
-        raise BadRequestError(f"Please wait {remaining} seconds before trying again.")
-    _rate_limit[rate_key] = now_ts
 
     # --- 4. Validate GPS ---
     has_session_gps = session.latitude is not None and session.longitude is not None

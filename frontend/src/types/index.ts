@@ -151,6 +151,12 @@ export interface FaceEmbedding {
   created_at: string;
 }
 
+export interface FaceCoverage {
+  user_id: number;
+  embedding_count: number;
+  latest_embedding_at: string | null;
+}
+
 export interface FaceEnrollResponse {
   id: number;
   user_id: number;

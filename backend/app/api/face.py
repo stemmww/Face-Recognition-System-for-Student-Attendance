@@ -13,6 +13,7 @@ from app.core.rbac import require_role
 from app.database import get_db
 from app.models.user import Role, User
 from app.schemas.face import (
+    FaceCoverageOut,
     FaceEmbeddingOut,
     FaceEnrollResponse,
     FaceVerifyMatch,
@@ -84,6 +85,14 @@ async def enroll_face(
         faces_detected=1,
         message="Face enrolled successfully",
     )
+
+
+@router.get("/coverage", response_model=list[FaceCoverageOut])
+async def face_coverage(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_role(Role.ADMIN)),
+):
+    return [FaceCoverageOut(**item) for item in await FaceService.get_coverage(db)]
 
 
 @router.get("/embeddings/{user_id}", response_model=list[FaceEmbeddingOut])

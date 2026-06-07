@@ -1,27 +1,28 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
-  Badge,
   Button,
   Card,
   Col,
   Divider,
   Empty,
   Image,
+  Input,
   List,
   Modal,
   Popconfirm,
   Progress,
   Row,
-  Select,
   Space,
   Tag,
   Typography,
   Upload,
   message,
+  theme,
 } from "antd";
 import {
+  ArrowRightOutlined,
   CameraOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -29,12 +30,13 @@ import {
   SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import type { User, FaceEmbedding, FaceVerifyMatch, PipelineStatus } from "@/types";
+import type { User, FaceCoverage, FaceEmbedding, FaceVerifyMatch, PipelineStatus } from "@/types";
 import { listUsers } from "@/api/users";
 import {
   deleteAllEmbeddings,
   deleteEmbedding,
   enrollFace,
+  getFaceCoverage,
   getPipelineStatus,
   listEmbeddings,
   verifyFace,
@@ -45,15 +47,23 @@ import Panel from "@/components/dashboard/Panel";
 
 const { Text, Paragraph } = Typography;
 const { Dragger } = Upload;
+const MIN_RECOMMENDED_PHOTOS = 3;
+
+type CoverageFilter = "all" | "missing" | "needs_more" | "complete";
 
 export default function FaceRegistry() {
   const { t } = useTranslation();
+  const { token } = theme.useToken();
   const [students, setStudents] = useState<User[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
   const [embeddings, setEmbeddings] = useState<FaceEmbedding[]>([]);
+  const [coverage, setCoverage] = useState<Record<number, FaceCoverage>>({});
+  const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus | null>(null);
+  const embeddingsRequestRef = useRef(0);
 
   // Verify state
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
@@ -70,6 +80,26 @@ export default function FaceRegistry() {
     }
   }, [t]);
 
+  const fetchCoverage = useCallback(async () => {
+    try {
+      const items = await getFaceCoverage();
+      setCoverage(Object.fromEntries(items.map((item) => [item.user_id, item])));
+    } catch {
+      message.error(t("faces.coverageLoadFailed"));
+    }
+  }, [t]);
+
+  const updateCoverageForStudent = useCallback((userId: number, items: FaceEmbedding[]) => {
+    setCoverage((prev) => ({
+      ...prev,
+      [userId]: {
+        user_id: userId,
+        embedding_count: items.length,
+        latest_embedding_at: items[0]?.created_at ?? null,
+      },
+    }));
+  }, []);
+
   const fetchStatus = useCallback(async () => {
     try {
       const status = await getPipelineStatus();
@@ -81,23 +111,36 @@ export default function FaceRegistry() {
 
   useEffect(() => {
     fetchStudents();
+    fetchCoverage();
     fetchStatus();
-  }, [fetchStudents, fetchStatus]);
+  }, [fetchCoverage, fetchStudents, fetchStatus]);
 
   const fetchEmbeddings = useCallback(async (userId: number) => {
+    const requestId = ++embeddingsRequestRef.current;
     setLoading(true);
     try {
-      setEmbeddings(await listEmbeddings(userId));
+      const items = await listEmbeddings(userId);
+      if (requestId !== embeddingsRequestRef.current) return;
+      setEmbeddings(items);
+      updateCoverageForStudent(userId, items);
     } catch {
-      message.error(t("faces.embeddingsLoadFailed"));
+      if (requestId === embeddingsRequestRef.current) {
+        message.error(t("faces.embeddingsLoadFailed"));
+      }
     } finally {
-      setLoading(false);
+      if (requestId === embeddingsRequestRef.current) {
+        setLoading(false);
+      }
     }
-  }, [t]);
+  }, [t, updateCoverageForStudent]);
 
   useEffect(() => {
     if (selectedStudent) fetchEmbeddings(selectedStudent);
-    else setEmbeddings([]);
+    else {
+      embeddingsRequestRef.current += 1;
+      setEmbeddings([]);
+      setLoading(false);
+    }
   }, [selectedStudent, fetchEmbeddings]);
 
   const handleEnroll = async (file: File) => {
@@ -109,7 +152,7 @@ export default function FaceRegistry() {
     try {
       const result = await enrollFace(selectedStudent, file);
       message.success(result.message);
-      fetchEmbeddings(selectedStudent);
+      await fetchEmbeddings(selectedStudent);
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       message.error(detail || t("faces.enrollFailed"));
@@ -122,7 +165,7 @@ export default function FaceRegistry() {
     try {
       await deleteEmbedding(id);
       message.success(t("faces.embeddingDeleted"));
-      if (selectedStudent) fetchEmbeddings(selectedStudent);
+      if (selectedStudent) await fetchEmbeddings(selectedStudent);
     } catch {
       message.error(t("faces.deleteFailed"));
     }
@@ -134,6 +177,7 @@ export default function FaceRegistry() {
       await deleteAllEmbeddings(selectedStudent);
       message.success(t("faces.allDeleted"));
       setEmbeddings([]);
+      updateCoverageForStudent(selectedStudent, []);
     } catch {
       message.error(t("faces.deleteFailed"));
     }
@@ -156,7 +200,114 @@ export default function FaceRegistry() {
     }
   };
 
+  const handleSelectStudent = useCallback((userId: number | null) => {
+    embeddingsRequestRef.current += 1;
+    setSelectedStudent(userId);
+    setEmbeddings([]);
+    setLoading(userId !== null);
+  }, []);
+
   const student = students.find((s) => s.id === selectedStudent);
+  const getPhotoCount = useCallback((userId: number) => {
+    return coverage[userId]?.embedding_count ?? 0;
+  }, [coverage]);
+
+  const filterCounts = useMemo(() => {
+    return students.reduce(
+      (acc, s) => {
+        const count = getPhotoCount(s.id);
+        acc.all += 1;
+        if (count === 0) acc.missing += 1;
+        else if (count < MIN_RECOMMENDED_PHOTOS) acc.needs_more += 1;
+        else acc.complete += 1;
+        return acc;
+      },
+      { all: 0, missing: 0, needs_more: 0, complete: 0 }
+    );
+  }, [getPhotoCount, students]);
+
+  const statusFilteredStudents = useMemo(() => {
+    return students.filter((s) => {
+      const count = getPhotoCount(s.id);
+      if (coverageFilter === "missing") return count === 0;
+      if (coverageFilter === "needs_more") return count > 0 && count < MIN_RECOMMENDED_PHOTOS;
+      if (coverageFilter === "complete") return count >= MIN_RECOMMENDED_PHOTOS;
+      return true;
+    });
+  }, [coverageFilter, getPhotoCount, students]);
+
+  const filteredStudents = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return statusFilteredStudents;
+
+    return statusFilteredStudents.filter((s) => (
+      `${s.first_name} ${s.last_name} ${s.email}`.toLowerCase().includes(query)
+    ));
+  }, [searchQuery, statusFilteredStudents]);
+
+  const getCoverageStatus = useCallback((count: number): Exclude<CoverageFilter, "all"> => {
+    if (count === 0) return "missing";
+    if (count < MIN_RECOMMENDED_PHOTOS) return "needs_more";
+    return "complete";
+  }, []);
+
+  const getStatusTone = useCallback((status: CoverageFilter) => {
+    if (status === "missing") return token.colorError;
+    if (status === "needs_more") return token.colorWarning;
+    if (status === "complete") return token.colorSuccess;
+    return token.colorPrimary;
+  }, [token.colorError, token.colorPrimary, token.colorSuccess, token.colorWarning]);
+
+  const getStatusLabel = useCallback((status: Exclude<CoverageFilter, "all">) => {
+    if (status === "missing") return t("faces.filterMissing");
+    if (status === "needs_more") return t("faces.filterNeedsMore");
+    return t("faces.filterComplete");
+  }, [t]);
+
+  const queuedStudents = useMemo(() => {
+    const priority: Record<Exclude<CoverageFilter, "all">, number> = {
+      missing: 0,
+      needs_more: 1,
+      complete: 2,
+    };
+
+    return [...filteredStudents].sort((a, b) => {
+      const aCount = getPhotoCount(a.id);
+      const bCount = getPhotoCount(b.id);
+      const statusDelta = priority[getCoverageStatus(aCount)] - priority[getCoverageStatus(bCount)];
+      if (statusDelta !== 0) return statusDelta;
+      if (aCount !== bCount) return aCount - bCount;
+      return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+    });
+  }, [filteredStudents, getCoverageStatus, getPhotoCount]);
+
+  const incompleteStudents = useMemo(() => (
+    queuedStudents.filter((s) => getPhotoCount(s.id) < MIN_RECOMMENDED_PHOTOS)
+  ), [getPhotoCount, queuedStudents]);
+
+  const handleSelectNextIncomplete = useCallback(() => {
+    if (incompleteStudents.length === 0) {
+      message.info(t("faces.noIncompleteStudents"));
+      return;
+    }
+
+    const currentIndex = selectedStudent
+      ? incompleteStudents.findIndex((s) => s.id === selectedStudent)
+      : -1;
+    const next = incompleteStudents[(currentIndex + 1) % incompleteStudents.length];
+    handleSelectStudent(next.id);
+  }, [handleSelectStudent, incompleteStudents, selectedStudent, t]);
+
+  const filterOptions = useMemo(() => ([
+    { value: "all" as const, label: t("faces.filterAll"), count: filterCounts.all },
+    { value: "missing" as const, label: t("faces.filterMissing"), count: filterCounts.missing },
+    { value: "needs_more" as const, label: t("faces.filterNeedsMore"), count: filterCounts.needs_more },
+    { value: "complete" as const, label: t("faces.filterComplete"), count: filterCounts.complete },
+  ]), [filterCounts.all, filterCounts.complete, filterCounts.missing, filterCounts.needs_more, t]);
+
+  const selectedPhotoCount = selectedStudent ? getPhotoCount(selectedStudent) : 0;
+  const selectedStatus = getCoverageStatus(selectedPhotoCount);
+  const selectedStatusColor = getStatusTone(selectedStatus);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -190,64 +341,251 @@ export default function FaceRegistry() {
           <Panel title={t("faces.enrollFace")}>
             <Space direction="vertical" style={{ width: "100%" }}>
               <Text strong>{t("faces.selectStudent")}</Text>
-              <Select
-                showSearch
-                optionFilterProp="label"
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(124px, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {filterOptions.map((option) => {
+                    const active = coverageFilter === option.value;
+                    const color = getStatusTone(option.value);
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setCoverageFilter(option.value)}
+                        style={{
+                          minHeight: 58,
+                          padding: "9px 11px",
+                          borderRadius: 8,
+                          border: `1px solid ${active ? color : token.colorBorderSecondary}`,
+                          background: active ? token.colorFillSecondary : token.colorBgContainer,
+                          boxShadow: active ? `inset 0 0 0 1px ${color}` : "none",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "border-color 120ms ease, box-shadow 120ms ease, background 120ms ease",
+                        }}
+                      >
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                          <span style={{ color: token.colorTextSecondary, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {option.label}
+                          </span>
+                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flex: "0 0 auto" }} />
+                        </span>
+                        <span style={{ display: "block", marginTop: 4, color: token.colorText, fontSize: 20, fontWeight: 750, lineHeight: 1 }}>
+                          {option.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {t("faces.filterResultCount", { shown: filteredStudents.length, total: students.length })}
+                </Text>
+              </div>
+              <Input
+                prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
                 placeholder={t("faces.searchByNameEmail")}
-                value={selectedStudent}
-                onChange={setSelectedStudent}
-                style={{ width: "100%" }}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 allowClear
-                options={students.map((s) => ({
-                  value: s.id,
-                  label: `${s.first_name} ${s.last_name} (${s.email})`,
-                }))}
               />
 
+              <div
+                style={{
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  background: token.colorBgContainer,
+                }}
+              >
+                <div
+                  style={{
+                    minHeight: 42,
+                    padding: "10px 12px",
+                    borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <Text strong style={{ display: "block", fontSize: 13 }}>{t("faces.enrollmentQueue")}</Text>
+                    <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
+                      {t("faces.filterResultCount", { shown: queuedStudents.length, total: students.length })}
+                    </Text>
+                  </div>
+                  <Button
+                    size="small"
+                    icon={<ArrowRightOutlined />}
+                    onClick={handleSelectNextIncomplete}
+                    disabled={incompleteStudents.length === 0}
+                  >
+                    {t("faces.nextIncomplete")}
+                  </Button>
+                </div>
+                {queuedStudents.length === 0 ? (
+                  <div style={{ padding: 16 }}>
+                    <Text type="secondary">{t("faces.noStudentsForFilter")}</Text>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                    {queuedStudents.map((s) => {
+                      const count = getPhotoCount(s.id);
+                      const status = getCoverageStatus(count);
+                      const color = getStatusTone(status);
+                      const active = selectedStudent === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => handleSelectStudent(s.id)}
+                          style={{
+                            width: "100%",
+                            minHeight: 64,
+                            padding: "10px 12px",
+                            border: 0,
+                            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                            background: active ? token.colorFillSecondary : token.colorBgContainer,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            textAlign: "left",
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: "50%",
+                              background: active ? token.colorBgContainer : token.colorFillQuaternary,
+                              border: `1px solid ${color}`,
+                              color,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flex: "0 0 auto",
+                            }}
+                          >
+                            {status === "complete" ? (
+                              <CheckCircleOutlined />
+                            ) : status === "missing" ? (
+                              <CloseCircleOutlined />
+                            ) : (
+                              <CameraOutlined />
+                            )}
+                          </span>
+                          <span style={{ minWidth: 0, flex: 1 }}>
+                            <span style={{ display: "block", color: token.colorText, fontWeight: 650, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {s.first_name} {s.last_name}
+                            </span>
+                            <span style={{ display: "block", color: token.colorTextTertiary, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {s.email}
+                            </span>
+                          </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
+                            <span
+                              style={{
+                                borderRadius: 999,
+                                background: token.colorFillQuaternary,
+                                color,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                lineHeight: "24px",
+                                padding: "0 9px",
+                              }}
+                            >
+                              {getStatusLabel(status)}
+                            </span>
+                            <span style={{ color: token.colorTextSecondary, fontSize: 12, minWidth: 34, textAlign: "right" }}>
+                              {count}/{MIN_RECOMMENDED_PHOTOS}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {student && (
-                <Card size="small" style={{ marginTop: 8 }}>
-                  <Space>
-                    <UserOutlined />
-                    <Text strong>{student.first_name} {student.last_name}</Text>
-                    <Text type="secondary">{student.email}</Text>
-                    <Badge
-                      count={embeddings.length}
-                      showZero
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: 14,
+                    border: `1px solid ${token.colorBorderSecondary}`,
+                    borderRadius: 8,
+                    background: token.colorFillQuaternary,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div
                       style={{
-                        backgroundColor:
-                          embeddings.length === 0 ? "#ff4d4f" :
-                          embeddings.length < 3 ? "#fa8c16" :
-                          "#52c41a"
+                        width: 34,
+                        height: 34,
+                        borderRadius: "50%",
+                        background: token.colorBgContainer,
+                        border: `1px solid ${token.colorBorderSecondary}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flex: "0 0 auto",
                       }}
                     >
-                      <Tag>{t("faces.photos")}</Tag>
-                    </Badge>
-                  </Space>
-                  {embeddings.length < 3 && (
+                      <UserOutlined style={{ color: token.colorTextSecondary }} />
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <Text strong style={{ display: "block" }}>{student.first_name} {student.last_name}</Text>
+                      <Text type="secondary" style={{ display: "block", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {student.email}
+                      </Text>
+                    </div>
+                    <span
+                      style={{
+                        flex: "0 0 auto",
+                        border: `1px solid ${selectedStatusColor}`,
+                        borderRadius: 999,
+                        color: selectedStatusColor,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        lineHeight: "24px",
+                        padding: "0 10px",
+                      }}
+                    >
+                      {selectedPhotoCount} {t("faces.photos")}
+                    </span>
+                  </div>
+                  {selectedPhotoCount < 3 && (
                     <Alert
                       type="warning"
-                      message={t("faces.photosRecommend", { count: embeddings.length })}
+                      message={t("faces.photosRecommend", { count: selectedPhotoCount })}
                       showIcon
                       style={{ marginTop: 8 }}
                     />
                   )}
-                  {embeddings.length >= 3 && embeddings.length <= 5 && (
+                  {selectedPhotoCount >= 3 && selectedPhotoCount <= 5 && (
                     <Alert
                       type="success"
-                      message={t("faces.photosGood", { count: embeddings.length })}
+                      message={t("faces.photosGood", { count: selectedPhotoCount })}
                       showIcon
                       style={{ marginTop: 8 }}
                     />
                   )}
-                  {embeddings.length > 5 && (
+                  {selectedPhotoCount > 5 && (
                     <Alert
                       type="info"
-                      message={t("faces.photosSufficient", { count: embeddings.length })}
+                      message={t("faces.photosSufficient", { count: selectedPhotoCount })}
                       showIcon
                       style={{ marginTop: 8 }}
                     />
                   )}
-                </Card>
+                </div>
               )}
 
               <Divider />

@@ -1,4 +1,5 @@
 import type {
+  FaceCoverage,
   FaceEmbedding,
   FaceEnrollResponse,
   FaceVerifyResponse,
@@ -18,6 +19,11 @@ export async function enrollFace(userId: number, photo: File): Promise<FaceEnrol
   const { data } = await apiClient.post<FaceEnrollResponse>("/face/enroll", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+  return data;
+}
+
+export async function getFaceCoverage(): Promise<FaceCoverage[]> {
+  const { data } = await apiClient.get<FaceCoverage[]>("/face/coverage");
   return data;
 }
 

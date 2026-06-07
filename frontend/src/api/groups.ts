@@ -15,10 +15,11 @@ export async function getGroup(groupId: number): Promise<Group> {
 }
 
 export async function createGroup(payload: {
-  major: string;
+  code?: string;
+  major?: string;
   enrollment_year_short?: number;
   enrollment_year_full?: number;
-  group_number: number;
+  group_number?: number;
   group_type?: string;
   semester?: string | null;
   academic_year?: string | null;
@@ -30,6 +31,7 @@ export async function createGroup(payload: {
 export async function updateGroup(
   groupId: number,
   payload: Partial<{
+    code: string;
     major: string;
     enrollment_year_short: number;
     group_number: number;

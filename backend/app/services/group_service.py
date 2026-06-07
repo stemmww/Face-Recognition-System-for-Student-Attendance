@@ -1,7 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import BadRequestError, NotFoundError
+from app.core.exceptions import BadRequestError, DuplicateError, NotFoundError
 from app.models.group import Group, group_students
 from app.models.user import Role, User
 from app.schemas.group import GroupCreate, GroupOut, GroupUpdate
@@ -10,7 +10,9 @@ from app.schemas.group import GroupCreate, GroupOut, GroupUpdate
 class GroupService:
     @staticmethod
     async def create_group(db: AsyncSession, data: GroupCreate) -> GroupOut:
+        await GroupService._ensure_code_available(db, data.code)
         group = Group(
+            code=data.code,
             major=data.major,
             enrollment_year_short=data.enrollment_year_short,
             group_number=data.group_number,
@@ -34,7 +36,7 @@ class GroupService:
             query = query.where(Group.is_active == True)
         if group_type:
             query = query.where(Group.group_type == group_type.upper())
-        query = query.order_by(Group.major, Group.enrollment_year_short, Group.group_number)
+        query = query.order_by(Group.group_type, Group.code)
         result = await db.execute(query)
         groups = result.scalars().all()
         counts = await GroupService._student_counts(db, [g.id for g in groups])
@@ -50,6 +52,8 @@ class GroupService:
     async def update_group(db: AsyncSession, group_id: int, data: GroupUpdate) -> GroupOut:
         group = await GroupService._get_or_404(db, group_id)
         for field, value in data.model_dump(exclude_unset=True).items():
+            if field == "code":
+                await GroupService._ensure_code_available(db, value, exclude_group_id=group_id)
             setattr(group, field, value)
         await db.commit()
         await db.refresh(group)
@@ -134,6 +138,21 @@ class GroupService:
         if group is None:
             raise NotFoundError("Group")
         return group
+
+    @staticmethod
+    async def _ensure_code_available(
+        db: AsyncSession,
+        code: str | None,
+        exclude_group_id: int | None = None,
+    ) -> None:
+        if not code:
+            return
+        query = select(Group).where(Group.code == code)
+        if exclude_group_id is not None:
+            query = query.where(Group.id != exclude_group_id)
+        result = await db.execute(query)
+        if result.scalar_one_or_none() is not None:
+            raise DuplicateError(f"Group code '{code}'")
 
     @staticmethod
     async def _student_count(db: AsyncSession, group_id: int) -> int:

@@ -293,13 +293,14 @@ export interface StudentTrendPoint {
 
 export interface Group {
   id: number;
-  major: string;
+  code: string | null;
+  major: string | null;
   major_name: string;
-  enrollment_year_short: number;
-  enrollment_year_full: number;
-  group_number: number;
+  enrollment_year_short: number | null;
+  enrollment_year_full: number | null;
+  group_number: number | null;
   group_type: GroupType;
-  semester: SemesterType | null;
+  semester: string | null;
   academic_year: string | null;
   is_active: boolean;
   name: string;

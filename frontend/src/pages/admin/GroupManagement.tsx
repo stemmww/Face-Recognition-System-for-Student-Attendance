@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import {
   Alert, Button, Drawer, Input, Modal, Popconfirm,
   Select, Space, Switch, Table, Tabs, Tag, Typography, Upload, message,
@@ -18,7 +18,7 @@ import {
 } from "@/api/groups";
 import { listCourses } from "@/api/courses";
 import { listUsers } from "@/api/users";
-import { BRAND_PRIMARY } from "@/styles/theme";
+import { BRAND_PRIMARY_DARK } from "@/styles/theme";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
 
@@ -28,9 +28,22 @@ function getApiErrorMessage(error: unknown): string | undefined {
   if (
     typeof error === "object" && error !== null && "response" in error &&
     typeof (error as { response?: unknown }).response === "object" &&
-    (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
+    (error as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
   ) {
-    return (error as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+    const detail = (error as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      const messages = detail
+        .map((item) => {
+          if (typeof item === "string") return item;
+          if (typeof item === "object" && item !== null && "msg" in item) {
+            return String((item as { msg?: unknown }).msg);
+          }
+          return undefined;
+        })
+        .filter(Boolean);
+      if (messages.length) return messages.join("; ");
+    }
   }
   return undefined;
 }
@@ -59,6 +72,11 @@ const MAJOR_LABELS: Record<string, string> = {
 };
 
 const CODE_RE = /^([A-Z]+)-(\d{4})$/i;
+const CUSTOM_ELECTIVE_CODE_RE = /^[A-Z0-9][A-Z0-9_-]{1,49}$/i;
+
+function normalizeElectiveCode(raw: string) {
+  return raw.trim().toUpperCase().replace(/\s*-\s*/g, "-").replace(/\s+/g, "-");
+}
 
 interface ParsedCode {
   major: string; yearShort: number; groupNum: number;
@@ -81,7 +99,36 @@ function parseGroupCode(raw: string): ParsedCode {
 }
 
 const SEMESTER_OPTIONS = ["FALL", "WINTER", "SPRING"];
-const TYPE_COLORS: Record<string, string> = { MAIN: BRAND_PRIMARY, ELECTIVE: "orange" };
+const TRIMESTER_OPTIONS = ["TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3"];
+const META_TAG_BASE: CSSProperties = {
+  borderRadius: 6,
+  fontWeight: 600,
+  lineHeight: "20px",
+  marginInlineEnd: 0,
+};
+
+const GROUP_TYPE_TAG_STYLES: Record<string, CSSProperties> = {
+  MAIN: {
+    ...META_TAG_BASE,
+    color: BRAND_PRIMARY_DARK,
+    background: "rgba(1, 123, 223, 0.1)",
+    borderColor: "rgba(1, 123, 223, 0.28)",
+  },
+  ELECTIVE: {
+    ...META_TAG_BASE,
+    color: "#047857",
+    background: "#ecfdf5",
+    borderColor: "#a7f3d0",
+  },
+};
+
+const TRIMESTER_TAG_STYLE: CSSProperties = {
+  ...META_TAG_BASE,
+  color: "#475569",
+  background: "#f8fafc",
+  borderColor: "#cbd5e1",
+  fontWeight: 500,
+};
 
 export default function GroupManagement() {
   const { t } = useTranslation();
@@ -150,7 +197,13 @@ export default function GroupManagement() {
 
   const handleCodeChange = (val: string) => {
     setCodeInput(val);
-    setParsedCode(val.trim() ? parseGroupCode(val) : null);
+    setParsedCode(groupType === "MAIN" && val.trim() ? parseGroupCode(val) : null);
+  };
+
+  const handleCodeBlur = () => {
+    if (groupType !== "MAIN" && codeInput.trim()) {
+      setCodeInput(normalizeElectiveCode(codeInput));
+    }
   };
 
   const openCreate = () => {
@@ -160,18 +213,27 @@ export default function GroupManagement() {
   };
 
   const openEdit = (g: Group) => {
-    setEditing(g); setCodeInput(g.name); setParsedCode(parseGroupCode(g.name));
+    setEditing(g); setCodeInput(g.name); setParsedCode(g.group_type === "MAIN" ? parseGroupCode(g.name) : null);
     setGroupType(g.group_type); setSemester(g.semester ?? undefined);
     setIsActive(g.is_active);
     setModalOpen(true);
   };
 
   const handleSubmit = async () => {
-    if (!parsedCode?.valid) { message.error(t("groups.fixCode")); return; }
+    const customCode = normalizeElectiveCode(codeInput);
+    const isMain = groupType === "MAIN";
+    if (isMain && !parsedCode?.valid) { message.error(t("groups.fixCode")); return; }
+    if (!isMain && !CUSTOM_ELECTIVE_CODE_RE.test(customCode)) { message.error(t("groups.fixElectiveCode")); return; }
+    if (!isMain) setCodeInput(customCode);
     try {
-      const payload = {
-        major: parsedCode.major, enrollment_year_short: parsedCode.yearShort,
-        group_number: parsedCode.groupNum, group_type: groupType,
+      const payload = isMain ? {
+        code: `${parsedCode!.major}-${parsedCode!.yearShort.toString().padStart(2, "0")}${parsedCode!.groupNum.toString().padStart(2, "0")}`,
+        major: parsedCode!.major, enrollment_year_short: parsedCode!.yearShort,
+        group_number: parsedCode!.groupNum, group_type: groupType,
+        semester: undefined,
+        ...(editing ? { is_active: isActive } : {}),
+      } : {
+        code: customCode, group_type: groupType,
         semester: groupType === "ELECTIVE" ? (semester || undefined) : undefined,
         ...(editing ? { is_active: isActive } : {}),
       };
@@ -253,6 +315,10 @@ export default function GroupManagement() {
 
   const memberIds = new Set(groupStudents.map((s) => s.id));
   const availableStudents = allStudents.filter((s) => !memberIds.has(s.id));
+  const isMainGroupType = groupType === "MAIN";
+  const normalizedElectiveCode = normalizeElectiveCode(codeInput);
+  const electiveCodeValid = CUSTOM_ELECTIVE_CODE_RE.test(normalizedElectiveCode);
+  const canSubmitGroup = isMainGroupType ? parsedCode?.valid : electiveCodeValid;
 
   const columns = [
     {
@@ -261,19 +327,30 @@ export default function GroupManagement() {
       render: (_: unknown, g: Group) => (
         <Space>
           <Text strong style={{ fontSize: 15 }}>{g.name}</Text>
-          <Tag color={TYPE_COLORS[g.group_type]}>{t(`groups.type_${g.group_type}`)}</Tag>
+          <Tag style={GROUP_TYPE_TAG_STYLES[g.group_type] ?? META_TAG_BASE}>
+            {t(`groups.type_${g.group_type}`)}
+          </Tag>
           {!g.is_active && <Tag color="default">{t("common.inactive")}</Tag>}
-          {g.semester && <Tag color="purple">{t(`groups.sem_${g.semester}`)}</Tag>}
+          {g.semester && <Tag style={TRIMESTER_TAG_STYLE}>{t(`groups.sem_${g.semester}`)}</Tag>}
         </Space>
       ),
     },
-    { title: t("groups.major"), dataIndex: "major_name", key: "major_name" },
+    {
+      title: t("groups.major"),
+      dataIndex: "major_name",
+      key: "major_name",
+      render: (majorName: string, g: Group) => (
+        <Text type={g.group_type === "ELECTIVE" ? "secondary" : undefined}>
+          {g.group_type === "ELECTIVE" ? "—" : majorName}
+        </Text>
+      ),
+    },
     {
       title: t("groups.studyYear"),
       key: "year",
       width: 120,
       render: (_: unknown, g: Group) => (
-        <Text>{g.current_study_year > 3 ? t("groups.graduated") : g.current_study_year > 0 ? `${t("groups.year")} ${g.current_study_year}` : "—"}</Text>
+        <Text>{g.group_type === "ELECTIVE" ? "—" : g.current_study_year > 3 ? t("groups.graduated") : g.current_study_year > 0 ? `${t("groups.year")} ${g.current_study_year}` : "—"}</Text>
       ),
     },
     { title: t("groups.students"), dataIndex: "student_count", key: "student_count", width: 90 },
@@ -330,38 +407,54 @@ export default function GroupManagement() {
       <Modal title={editing ? t("groups.editGroup") : t("groups.createGroup")}
         open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)}
         okText={editing ? t("common.save") : t("common.create")}
-        okButtonProps={{ disabled: !parsedCode?.valid }} width={480} destroyOnClose>
+        okButtonProps={{ disabled: !canSubmitGroup }} width={480} destroyOnClose>
         <div style={{ marginTop: 16 }}>
           <div style={{ marginBottom: 12 }}>
             <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>{t("groups.code")} <span style={{ color: "#ef4444" }}>*</span></label>
-            <Input value={codeInput} onChange={(e) => handleCodeChange(e.target.value)}
-              placeholder="e.g. SE-2322" status={parsedCode && !parsedCode.valid ? "error" : undefined}
+            <Input value={codeInput} onChange={(e) => handleCodeChange(e.target.value)} onBlur={handleCodeBlur}
+              placeholder={isMainGroupType ? "e.g. SE-2322" : "e.g. AI-ETHICS-2026"}
+              status={
+                isMainGroupType
+                  ? parsedCode && !parsedCode.valid ? "error" : undefined
+                  : codeInput.trim() && !electiveCodeValid ? "error" : undefined
+              }
               style={{ fontFamily: "monospace", fontSize: 16 }} />
-            {parsedCode?.error && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{parsedCode.error}</div>}
-            {parsedCode?.valid && (
+            {isMainGroupType && parsedCode?.error && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{parsedCode.error}</div>}
+            {!isMainGroupType && codeInput.trim() && !electiveCodeValid && (
+              <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{t("groups.electiveCodeError")}</div>
+            )}
+            {isMainGroupType && parsedCode?.valid && (
               <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <Tag color="blue">{MAJOR_LABELS[parsedCode.major] ?? parsedCode.major}</Tag>
                 <Tag color="green">{parsedCode.studyYear > 3 ? t("groups.graduated") : parsedCode.studyYear > 0 ? `${t("groups.year")} ${parsedCode.studyYear}` : t("groups.graduated")}</Tag>
                 <Tag>{t("groups.groupNum")} №{parsedCode.groupNum}</Tag>
               </div>
             )}
-            <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>{t("groups.codeHint")}</div>
+            <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>
+              {isMainGroupType ? t("groups.codeHint") : t("groups.electiveCodeHint")}
+            </div>
           </div>
 
           <div style={{ marginBottom: 12 }}>
             <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>{t("groups.type")}</label>
-            <Select value={groupType} onChange={setGroupType} style={{ width: "100%" }}
+            <Select value={groupType} onChange={(value) => {
+              setGroupType(value);
+              setParsedCode(value === "MAIN" && codeInput.trim() ? parseGroupCode(codeInput) : null);
+            }} style={{ width: "100%" }}
               options={[
                 { value: "MAIN", label: t("groups.type_MAIN") },
                 { value: "ELECTIVE", label: t("groups.type_ELECTIVE") },
               ]} />
+            <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
+              {isMainGroupType ? t("groups.mainTypeHint") : t("groups.electiveTypeHint")}
+            </div>
           </div>
 
           {groupType === "ELECTIVE" && (
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>{t("groups.semester")}</label>
-              <Select value={semester} onChange={setSemester} style={{ width: "100%" }} placeholder={t("groups.selectSemester")}
-                options={SEMESTER_OPTIONS.map((s) => ({ value: s, label: t(`groups.sem_${s}`) }))} />
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>{t("groups.trimester")}</label>
+              <Select value={semester} onChange={setSemester} style={{ width: "100%" }} placeholder={t("groups.selectTrimester")}
+                options={TRIMESTER_OPTIONS.map((s) => ({ value: s, label: t(`groups.sem_${s}`) }))} />
             </div>
           )}
 
@@ -382,7 +475,7 @@ export default function GroupManagement() {
         ]} width={520}>
         <div style={{ marginBottom: 12 }}>
           <Text type="secondary" style={{ display: "block", marginBottom: 4 }}>{t("groups.csvFormat")}</Text>
-          <Text code style={{ fontSize: 12 }}>code, group_type, semester, student_emails</Text>
+          <Text code style={{ fontSize: 12 }}>code, group_type, trimester, student_emails</Text>
         </div>
         <Upload.Dragger accept=".csv" maxCount={1} beforeUpload={(f) => { setCsvFile(f); return false; }}
           onRemove={() => setCsvFile(null)}

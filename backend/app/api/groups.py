@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.core.rbac import require_role
 from app.database import get_db
-from app.models.group import SEMESTER_VALUES, VALID_MAJORS
+from app.models.group import TRIMESTER_VALUES, VALID_MAJORS
 from app.models.group_subject import GroupSubject
 from app.models.user import Role, User
 from app.schemas.group import GroupCreate, GroupOut, GroupStudentAdd, GroupUpdate
@@ -189,8 +189,9 @@ async def import_groups_csv(
 ) -> dict:
     """
     Import groups from CSV.
-    Columns: code, group_type, semester, student_emails
-    code format: SE-2322
+    Columns: code, group_type, trimester, student_emails
+    MAIN code format: SE-2322
+    ELECTIVE code format: custom code, e.g. AI-ETHICS-2026
     student_emails: semicolon-separated
     """
     content = (await file.read()).decode("utf-8-sig")
@@ -210,21 +211,31 @@ async def import_groups_csv(
         if group_type_raw not in ("MAIN", "ELECTIVE"):
             group_type_raw = "MAIN"
 
-        semester_raw = (r.get("semester") or "").upper() or None
-        if semester_raw and semester_raw not in SEMESTER_VALUES:
-            errors.append(f"Row {i}: invalid semester '{semester_raw}'")
+        semester_raw = (r.get("trimester") or r.get("semester") or "").upper() or None
+        if semester_raw and semester_raw not in TRIMESTER_VALUES:
+            errors.append(f"Row {i}: invalid trimester '{semester_raw}'")
             skipped += 1
             continue
 
         academic_year = r.get("academic_year") or None
 
-        if name_cell:
+        if group_type_raw == "ELECTIVE":
+            if not name_cell:
+                errors.append(f"Row {i}: elective groups require a code")
+                skipped += 1
+                continue
+            major = None
+            year_short = None
+            group_num = None
+            code = name_cell.upper()
+        elif name_cell:
             parsed = _parse_group_code(name_cell)
             if not parsed:
                 errors.append(f"Row {i}: cannot parse code '{name_cell}' (expected SE-2322)")
                 skipped += 1
                 continue
             major, year_short, group_num = parsed
+            code = None
         else:
             major = (r.get("major") or "").upper()
             year_raw = r.get("enrollment_year") or r.get("year_short") or r.get("year") or ""
@@ -240,8 +251,9 @@ async def import_groups_csv(
                 errors.append(f"Row {i}: invalid year or group_number")
                 skipped += 1
                 continue
+            code = None
 
-        if major not in VALID_MAJORS:
+        if group_type_raw == "MAIN" and major not in VALID_MAJORS:
             errors.append(f"Row {i}: unknown major '{major}'")
             skipped += 1
             continue
@@ -265,6 +277,7 @@ async def import_groups_csv(
 
         try:
             data = GroupCreate(
+                code=code,
                 major=major,
                 enrollment_year_short=year_short,
                 group_number=group_num,

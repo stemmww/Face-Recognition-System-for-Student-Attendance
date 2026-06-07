@@ -12,6 +12,12 @@ class FaceEmbeddingOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class FaceCoverageOut(BaseModel):
+    user_id: int
+    embedding_count: int
+    latest_embedding_at: datetime | None = None
+
+
 class FaceEnrollResponse(BaseModel):
     id: int
     user_id: int

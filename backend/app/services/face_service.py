@@ -8,7 +8,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.anti_spoof import AntiSpoofResult, get_anti_spoof
@@ -102,6 +102,24 @@ class FaceService:
             .order_by(FaceEmbedding.created_at.desc())
         )
         return result.scalars().all()
+
+    @staticmethod
+    async def get_coverage(db: AsyncSession) -> list[dict]:
+        result = await db.execute(
+            select(
+                FaceEmbedding.user_id,
+                func.count(FaceEmbedding.id),
+                func.max(FaceEmbedding.created_at),
+            ).group_by(FaceEmbedding.user_id)
+        )
+        return [
+            {
+                "user_id": user_id,
+                "embedding_count": embedding_count,
+                "latest_embedding_at": latest_embedding_at,
+            }
+            for user_id, embedding_count, latest_embedding_at in result.all()
+        ]
 
     @staticmethod
     async def delete_embedding(db: AsyncSession, embedding_id: int) -> None:

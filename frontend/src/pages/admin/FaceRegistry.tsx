@@ -22,6 +22,7 @@ import {
   theme,
 } from "antd";
 import {
+  ArrowRightOutlined,
   CameraOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -280,6 +281,23 @@ export default function FaceRegistry() {
     });
   }, [filteredStudents, getCoverageStatus, getPhotoCount]);
 
+  const incompleteStudents = useMemo(() => (
+    queuedStudents.filter((s) => getPhotoCount(s.id) < MIN_RECOMMENDED_PHOTOS)
+  ), [getPhotoCount, queuedStudents]);
+
+  const handleSelectNextIncomplete = useCallback(() => {
+    if (incompleteStudents.length === 0) {
+      message.info(t("faces.noIncompleteStudents"));
+      return;
+    }
+
+    const currentIndex = selectedStudent
+      ? incompleteStudents.findIndex((s) => s.id === selectedStudent)
+      : -1;
+    const next = incompleteStudents[(currentIndex + 1) % incompleteStudents.length];
+    handleSelectStudent(next.id);
+  }, [handleSelectStudent, incompleteStudents, selectedStudent, t]);
+
   const filterOptions = useMemo(() => ([
     { value: "all" as const, label: t("faces.filterAll"), count: filterCounts.all },
     { value: "missing" as const, label: t("faces.filterMissing"), count: filterCounts.missing },
@@ -396,10 +414,20 @@ export default function FaceRegistry() {
                     gap: 12,
                   }}
                 >
-                  <Text strong style={{ fontSize: 13 }}>{t("faces.enrollmentQueue")}</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {t("faces.filterResultCount", { shown: queuedStudents.length, total: students.length })}
-                  </Text>
+                  <div style={{ minWidth: 0 }}>
+                    <Text strong style={{ display: "block", fontSize: 13 }}>{t("faces.enrollmentQueue")}</Text>
+                    <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
+                      {t("faces.filterResultCount", { shown: queuedStudents.length, total: students.length })}
+                    </Text>
+                  </div>
+                  <Button
+                    size="small"
+                    icon={<ArrowRightOutlined />}
+                    onClick={handleSelectNextIncomplete}
+                    disabled={incompleteStudents.length === 0}
+                  >
+                    {t("faces.nextIncomplete")}
+                  </Button>
                 </div>
                 {queuedStudents.length === 0 ? (
                   <div style={{ padding: 16 }}>

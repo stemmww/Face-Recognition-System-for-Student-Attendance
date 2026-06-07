@@ -602,6 +602,8 @@ const kk = {
     filterComplete: "Дайын",
     filterResultCount: "{{total}} студенттің {{shown}} көрсетілді",
     enrollmentQueue: "Тіркеу статусы",
+    nextIncomplete: "Келесі толық емес",
+    noIncompleteStudents: "Бұл көріністе толық емес тіркеулер жоқ",
     noStudentsForFilter: "Бұл сүзгіге сәйкес студенттер жоқ",
     photos: "фотосуреттер",
     photosRecommend: "{{count}} фото тіркелді. Сенімді тану үшін кемінде 3 фотоны әртүрлі бұрыштардан жүктеуді ұсынамыз.",

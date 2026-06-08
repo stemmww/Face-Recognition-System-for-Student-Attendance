@@ -32,19 +32,16 @@ import {
   assignProfessors,
   createCourse,
   deleteCourse,
-  enrollStudents,
   getCourseProfessors,
-  getCourseStudents,
   importCoursesCSV,
   listAllCourseGroups,
   listCourseGroups,
   listCourses,
   removeCourseGroup,
   removeProfessor,
-  removeStudent,
   updateCourse,
 } from "@/api/courses";
-import { listGroups } from "@/api/groups";
+import { listGroups, listGroupStudents } from "@/api/groups";
 import { listUsers } from "@/api/users";
 import { formatDateTime, getSemesterLabel } from "@/utils/formatters";
 import { BRAND_PRIMARY } from "@/styles/theme";
@@ -74,6 +71,10 @@ interface CourseFormValues {
   description?: string;
   semester: string;
   academic_year: string;
+}
+
+interface GroupDerivedStudent extends User {
+  group_names: string[];
 }
 
 function buildAcademicYearOptions() {
@@ -120,10 +121,8 @@ export default function CourseManagement() {
   const [allProfessors, setAllProfessors] = useState<User[]>([]);
   const [addProfessorIds, setAddProfessorIds] = useState<number[]>([]);
 
-  // Students tab
-  const [students, setStudents] = useState<User[]>([]);
-  const [allStudents, setAllStudents] = useState<User[]>([]);
-  const [addStudentIds, setAddStudentIds] = useState<number[]>([]);
+  // Students tab: read-only list derived from assigned groups
+  const [students, setStudents] = useState<GroupDerivedStudent[]>([]);
 
   // Groups tab
   const [courseGroups, setCourseGroups] = useState<CourseGroupOut[]>([]);
@@ -217,6 +216,34 @@ export default function CourseManagement() {
     }
   };
 
+  const loadCourseGroupsWithStudents = async (courseId: number) => {
+    const cGroups = await listCourseGroups(courseId);
+    const studentLists = await Promise.all(
+      cGroups.map(async (group) => ({
+        group,
+        students: await listGroupStudents(group.group_id),
+      }))
+    );
+    const studentMap = new Map<number, GroupDerivedStudent>();
+    for (const { group, students: groupStudents } of studentLists) {
+      for (const student of groupStudents) {
+        const existing = studentMap.get(student.id);
+        if (existing) {
+          existing.group_names.push(group.group_name);
+        } else {
+          studentMap.set(student.id, { ...student, group_names: [group.group_name] });
+        }
+      }
+    }
+    setCourseGroups(cGroups);
+    setStudents(
+      [...studentMap.values()].sort((a, b) =>
+        `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`)
+      )
+    );
+    return cGroups;
+  };
+
   // --- Drawer open ---
   const openDrawer = async (course: Course, tab: "professors" | "students" | "groups" = "professors") => {
     setSelectedCourse(course);
@@ -224,19 +251,15 @@ export default function CourseManagement() {
     setDrawerOpen(true);
     setProfessors([]); setStudents([]); setCourseGroups([]);
     try {
-      const [profs, studs, cGroups, allUsers, allG] = await Promise.all([
+      const [profs, allUsers, allG] = await Promise.all([
         getCourseProfessors(course.id),
-        getCourseStudents(course.id),
-        listCourseGroups(course.id),
         listUsers(),
         listGroups({ active_only: true }),
       ]);
       setProfessors(profs);
-      setStudents(studs);
-      setCourseGroups(cGroups);
       setAllProfessors(allUsers.filter((u) => u.role === "professor"));
-      setAllStudents(allUsers.filter((u) => u.role === "student"));
       setAllGroups(allG);
+      await loadCourseGroupsWithStudents(course.id);
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.membersFailed"));
     }
@@ -261,30 +284,7 @@ export default function CourseManagement() {
       await removeProfessor(selectedCourse.id, pid);
       setProfessors((prev) => prev.filter((p) => p.id !== pid));
     } catch (error) {
-      message.error(getApiErrorMessage(error) || t("coursesPage.removeProfFailed"));
-    }
-  };
-
-  // --- Students ---
-  const handleEnrollStudents = async () => {
-    if (!selectedCourse || !addStudentIds.length) return;
-    try {
-      await enrollStudents(selectedCourse.id, addStudentIds);
-      message.success(t("coursesPage.studentsEnrolledSuccess"));
-      setAddStudentIds([]);
-      setStudents(await getCourseStudents(selectedCourse.id));
-    } catch (error) {
-      message.error(getApiErrorMessage(error) || t("coursesPage.enrollFailed"));
-    }
-  };
-
-  const handleRemoveStudent = async (sid: number) => {
-    if (!selectedCourse) return;
-    try {
-      await removeStudent(selectedCourse.id, sid);
-      setStudents((prev) => prev.filter((s) => s.id !== sid));
-    } catch (error) {
-      message.error(getApiErrorMessage(error) || t("coursesPage.removeStudentFailed"));
+      message.error(getApiErrorMessage(error) || t("coursesPage.removeGroupFailed"));
     }
   };
 
@@ -295,12 +295,8 @@ export default function CourseManagement() {
       await addCourseGroup(selectedCourse.id, selectedGroupId, selectedSemester);
       setAddGroupModalOpen(false);
       setSelectedGroupId(null);
-      const [cGroups, allG] = await Promise.all([
-        listCourseGroups(selectedCourse.id),
-        listGroups({ active_only: true }),
-      ]);
-      setCourseGroups(cGroups);
-      setAllGroups(allG);
+      await loadCourseGroupsWithStudents(selectedCourse.id);
+      setAllGroups(await listGroups({ active_only: true }));
       fetchAllGroupTags();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.assignFailed"));
@@ -311,7 +307,7 @@ export default function CourseManagement() {
     if (!selectedCourse) return;
     try {
       await removeCourseGroup(selectedCourse.id, gsId);
-      setCourseGroups((prev) => prev.filter((g) => g.group_subject_id !== gsId));
+      await loadCourseGroupsWithStudents(selectedCourse.id);
       fetchAllGroupTags();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.removeProfFailed"));
@@ -322,8 +318,6 @@ export default function CourseManagement() {
   const availableGroups = allGroups.filter((g) => !linkedGroupIds.has(g.id));
   const assignedProfIds = new Set(professors.map((p) => p.id));
   const availableProfessors = allProfessors.filter((p) => !assignedProfIds.has(p.id));
-  const enrolledStudentIds = new Set(students.map((s) => s.id));
-  const availableStudents = allStudents.filter((s) => !enrolledStudentIds.has(s.id));
 
   const columns = [
     { title: t("coursesPage.code"), dataIndex: "code", key: "code", width: 100 },
@@ -435,7 +429,7 @@ export default function CourseManagement() {
       <Drawer
         title={selectedCourse ? `${selectedCourse.code} — ${selectedCourse.name}` : ""}
         open={drawerOpen}
-        onClose={() => { setDrawerOpen(false); setAddProfessorIds([]); setAddStudentIds([]); }}
+        onClose={() => { setDrawerOpen(false); setAddProfessorIds([]); }}
         width={560}
       >
         <Tabs activeKey={drawerTab} onChange={(k) => setDrawerTab(k as "professors" | "students" | "groups")}
@@ -467,25 +461,27 @@ export default function CourseManagement() {
             },
             {
               key: "students",
-              label: `${t("coursesPage.enrolledStudents")} (${students.length})`,
+              label: `${t("coursesPage.studentsFromGroups")} (${students.length})`,
               children: (
                 <>
-                  <Space.Compact style={{ width: "100%", marginBottom: 12 }}>
-                    <Select mode="multiple" style={{ flex: 1 }} placeholder={t("coursesPage.selectStudents")}
-                      value={addStudentIds} onChange={setAddStudentIds} showSearch optionFilterProp="label"
-                      options={availableStudents.map((s) => ({ value: s.id, label: `${s.last_name} ${s.first_name} (${s.email})` }))} />
-                    <Button type="primary" onClick={handleEnrollStudents} disabled={!addStudentIds.length}>{t("common.enroll")}</Button>
-                  </Space.Compact>
+                  <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
+                    {t("coursesPage.studentsFromGroupsHint")}
+                  </Text>
                   <Table dataSource={students} rowKey="id" size="small" pagination={false}
-                    locale={{ emptyText: t("coursesPage.noStudents") }}
+                    locale={{ emptyText: t("coursesPage.noStudentsFromGroups") }}
                     columns={[
                       { title: t("common.name"), key: "name", render: (_: unknown, u: User) => `${u.last_name} ${u.first_name}` },
                       { title: t("common.email"), dataIndex: "email", key: "email" },
-                      { title: "", key: "rm", width: 40, render: (_: unknown, u: User) => (
-                        <Popconfirm title={t("common.remove")} onConfirm={() => handleRemoveStudent(u.id)} okButtonProps={{ danger: true }}>
-                          <Button type="text" danger size="small" icon={<UserDeleteOutlined />} />
-                        </Popconfirm>
-                      )},
+                      {
+                        title: t("coursesPage.sourceGroups"),
+                        dataIndex: "group_names",
+                        key: "groups",
+                        render: (groupNames: string[]) => (
+                          <Space size={4} wrap>
+                            {groupNames.map((name) => <Tag key={name}>{name}</Tag>)}
+                          </Space>
+                        ),
+                      },
                     ]} />
                 </>
               ),

@@ -452,8 +452,12 @@ const en = {
     // Members drawer
     professors: "Professors",
     enrolledStudents: "Enrolled Students",
+    studentsFromGroups: "Students",
+    studentsFromGroupsHint: "Students are shown from the groups assigned to this course.",
+    sourceGroups: "Groups",
     noProfessors: "No professors assigned",
     noStudents: "No students enrolled",
+    noStudentsFromGroups: "No students from assigned groups",
     assignProfessors: "Assign Professors",
     enrollStudents: "Enroll Students",
     selectProfessors: "Select professors",
@@ -470,6 +474,7 @@ const en = {
     noGroups: "No groups linked",
     addGroup: "Add Group",
     selectGroup: "Select group",
+    removeGroupFailed: "Failed to remove group",
 
     // CSV import
     importCSV: "Import CSV",

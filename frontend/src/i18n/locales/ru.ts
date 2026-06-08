@@ -446,8 +446,12 @@ const ru = {
 
     professors: "Преподаватели",
     enrolledStudents: "Зачисленные студенты",
+    studentsFromGroups: "Студенты",
+    studentsFromGroupsHint: "Студенты отображаются из групп, назначенных этому курсу.",
+    sourceGroups: "Группы",
     noProfessors: "Преподаватели не назначены",
     noStudents: "Студенты не зачислены",
+    noStudentsFromGroups: "В назначенных группах нет студентов",
     assignProfessors: "Назначить преподавателей",
     enrollStudents: "Зачислить студентов",
     selectProfessors: "Выберите преподавателей",
@@ -463,6 +467,7 @@ const ru = {
     noGroups: "Нет привязанных групп",
     addGroup: "Добавить группу",
     selectGroup: "Выберите группу",
+    removeGroupFailed: "Не удалось удалить группу",
 
     importCSV: "Импорт CSV",
     importTitle: "Импорт предметов из CSV",

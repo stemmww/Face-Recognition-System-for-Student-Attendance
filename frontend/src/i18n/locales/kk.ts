@@ -446,8 +446,12 @@ const kk = {
 
     professors: "Оқытушылар",
     enrolledStudents: "Тіркелген студенттер",
+    studentsFromGroups: "Студенттер",
+    studentsFromGroupsHint: "Студенттер осы курсқа тағайындалған топтардан көрсетіледі.",
+    sourceGroups: "Топтар",
     noProfessors: "Оқытушылар тағайындалмаған",
     noStudents: "Студенттер тіркелмеген",
+    noStudentsFromGroups: "Тағайындалған топтарда студенттер жоқ",
     assignProfessors: "Оқытушыларды тағайындау",
     enrollStudents: "Студенттерді тіркеу",
     selectProfessors: "Оқытушыларды таңдаңыз",
@@ -463,6 +467,7 @@ const kk = {
     noGroups: "Байланған топтар жоқ",
     addGroup: "Топ қосу",
     selectGroup: "Топты таңдаңыз",
+    removeGroupFailed: "Топты алып тастау сәтсіз",
 
     importCSV: "CSV импорт",
     importTitle: "Пәндерді CSV-дан импорттау",

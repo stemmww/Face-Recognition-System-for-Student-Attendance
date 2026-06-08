@@ -95,6 +95,31 @@ const TRIMESTER_TAG_STYLE: CSSProperties = {
 };
 const EMPTY_VALUE_STYLE: CSSProperties = { fontSize: 12, color: "#94a3b8" };
 const ACTION_BUTTON_STYLE: CSSProperties = { paddingInline: 6 };
+const DRAWER_SUMMARY_GRID: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  gap: 8,
+  marginBottom: 16,
+};
+const DRAWER_SUMMARY_ITEM: CSSProperties = {
+  border: "1px solid #e2e8f0",
+  borderRadius: 8,
+  padding: "10px 12px",
+  background: "#f8fafc",
+};
+const DRAWER_SUMMARY_VALUE: CSSProperties = {
+  display: "block",
+  color: "#0f172a",
+  fontSize: 20,
+  fontWeight: 800,
+  lineHeight: 1.1,
+};
+const DRAWER_SUMMARY_LABEL: CSSProperties = {
+  display: "block",
+  color: "#64748b",
+  fontSize: 12,
+  marginTop: 4,
+};
 const SETUP_TAG_STYLES: Record<string, CSSProperties> = {
   READY: {
     ...META_TAG_BASE,
@@ -181,6 +206,10 @@ function normalizeAcademicYearForForm(value: string) {
 
 function renderEmptyValue() {
   return <span style={EMPTY_VALUE_STYLE}>-</span>;
+}
+
+function getUserDisplayName(user: User) {
+  return `${user.last_name} ${user.first_name}`.trim();
 }
 
 function getSetupIssues(status?: CourseSetupStatus) {
@@ -696,6 +725,21 @@ export default function CourseManagement() {
         onClose={() => { setDrawerOpen(false); setAddProfessorIds([]); }}
         width={560}
       >
+        <div style={DRAWER_SUMMARY_GRID}>
+          <div style={DRAWER_SUMMARY_ITEM}>
+            <span style={DRAWER_SUMMARY_VALUE}>{professors.length}</span>
+            <span style={DRAWER_SUMMARY_LABEL}>{t("coursesPage.professors")}</span>
+          </div>
+          <div style={DRAWER_SUMMARY_ITEM}>
+            <span style={DRAWER_SUMMARY_VALUE}>{courseGroups.length}</span>
+            <span style={DRAWER_SUMMARY_LABEL}>{t("coursesPage.groups")}</span>
+          </div>
+          <div style={DRAWER_SUMMARY_ITEM}>
+            <span style={DRAWER_SUMMARY_VALUE}>{students.length}</span>
+            <span style={DRAWER_SUMMARY_LABEL}>{t("coursesPage.studentsFromGroups")}</span>
+          </div>
+        </div>
+
         <Tabs activeKey={drawerTab} onChange={(k) => setDrawerTab(k as "professors" | "students" | "groups")}
           items={[
             {
@@ -712,8 +756,12 @@ export default function CourseManagement() {
                   <Table dataSource={professors} rowKey="id" size="small" pagination={false}
                     locale={{ emptyText: t("coursesPage.noProfessors") }}
                     columns={[
-                      { title: t("common.name"), key: "name", render: (_: unknown, u: User) => `${u.last_name} ${u.first_name}` },
-                      { title: t("common.email"), dataIndex: "email", key: "email" },
+                      {
+                        title: t("common.name"),
+                        key: "name",
+                        render: (_: unknown, u: User) => <Text strong>{getUserDisplayName(u)}</Text>,
+                      },
+                      { title: t("common.email"), dataIndex: "email", key: "email", render: (email: string) => <Text type="secondary">{email}</Text> },
                       { title: "", key: "rm", width: 40, render: (_: unknown, u: User) => (
                         <Popconfirm title={t("common.remove")} onConfirm={() => handleRemoveProfessor(u.id)} okButtonProps={{ danger: true }}>
                           <Button type="text" danger size="small" icon={<UserDeleteOutlined />} />
@@ -728,21 +776,23 @@ export default function CourseManagement() {
               label: `${t("coursesPage.studentsFromGroups")} (${students.length})`,
               children: (
                 <>
-                  <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
-                    {t("coursesPage.studentsFromGroupsHint")}
-                  </Text>
+                  <Alert type="info" showIcon message={t("coursesPage.studentsFromGroupsHint")} style={{ marginBottom: 12 }} />
                   <Table dataSource={students} rowKey="id" size="small" pagination={false}
                     locale={{ emptyText: t("coursesPage.noStudentsFromGroups") }}
                     columns={[
-                      { title: t("common.name"), key: "name", render: (_: unknown, u: User) => `${u.last_name} ${u.first_name}` },
-                      { title: t("common.email"), dataIndex: "email", key: "email" },
+                      {
+                        title: t("common.name"),
+                        key: "name",
+                        render: (_: unknown, u: User) => <Text strong>{getUserDisplayName(u)}</Text>,
+                      },
+                      { title: t("common.email"), dataIndex: "email", key: "email", render: (email: string) => <Text type="secondary">{email}</Text> },
                       {
                         title: t("coursesPage.sourceGroups"),
                         dataIndex: "group_names",
                         key: "groups",
                         render: (groupNames: string[]) => (
                           <Space size={4} wrap>
-                            {groupNames.map((name) => <Tag key={name}>{name}</Tag>)}
+                            {groupNames.map((name) => <Tag key={name} style={GROUP_TYPE_TAG_STYLES.MAIN}>{name}</Tag>)}
                           </Space>
                         ),
                       },
@@ -766,8 +816,8 @@ export default function CourseManagement() {
                     locale={{ emptyText: t("coursesPage.noGroups") }}
                     columns={[
                       { title: t("groups.group"), key: "name", render: (_: unknown, cg: CourseGroupOut) => (
-                        <Space size={4}>
-                          <Text strong>{cg.group_name}</Text>
+                        <Space size={6} wrap>
+                          <span style={COURSE_CODE_STYLE}>{cg.group_name}</span>
                           <Tag style={GROUP_TYPE_TAG_STYLES[cg.group_type] ?? META_TAG_BASE}>
                             {t(`groups.type_${cg.group_type}`)}
                           </Tag>

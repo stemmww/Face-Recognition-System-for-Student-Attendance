@@ -98,7 +98,6 @@ function parseGroupCode(raw: string): ParsedCode {
   return { major, yearShort, groupNum, studyYear, valid: true };
 }
 
-const SEMESTER_OPTIONS = ["FALL", "WINTER", "SPRING"];
 const TRIMESTER_OPTIONS = ["TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3"];
 const META_TAG_BASE: CSSProperties = {
   borderRadius: 6,
@@ -162,7 +161,7 @@ export default function GroupManagement() {
   const [groupSubjects, setGroupSubjects] = useState<GroupSubject[]>([]);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [addSubjectCourseId, setAddSubjectCourseId] = useState<number | null>(null);
-  const [addSubjectSemester, setAddSubjectSemester] = useState<string>("FALL");
+  const [addSubjectSemester, setAddSubjectSemester] = useState<string>("TRIMESTER_1");
 
   const fetchSubjectTags = useCallback(async () => {
     try {
@@ -625,12 +624,12 @@ export default function GroupManagement() {
                       value={addSubjectCourseId} onChange={setAddSubjectCourseId}
                       options={allCourses.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))} />
                     <Select value={addSubjectSemester} onChange={setAddSubjectSemester} style={{ width: 110 }}
-                      options={SEMESTER_OPTIONS.map((s) => ({ value: s, label: t(`groups.sem_${s}`) }))} />
+                      options={TRIMESTER_OPTIONS.map((s) => ({ value: s, label: t(`groups.sem_${s}`) }))} />
                     <Button type="primary" icon={<PlusOutlined />} onClick={handleAddSubject} disabled={!addSubjectCourseId}>{t("common.assign")}</Button>
                   </Space>
                   <Table dataSource={groupSubjects} loading={subjectsLoading} rowKey="id" size="small" pagination={false}
                     columns={[
-                      { title: t("groups.semester"), dataIndex: "semester", key: "semester", width: 80, render: (s: string) => <Tag>{s}</Tag> },
+                      { title: t("groups.trimester"), dataIndex: "semester", key: "semester", width: 100, render: (s: string) => <Tag>{t(`groups.sem_${s}`)}</Tag> },
                       { title: t("groups.code"), dataIndex: "course_code", key: "code", width: 80 },
                       { title: t("groups.subject"), dataIndex: "course_name", key: "name" },
                       { title: "", key: "rm", width: 40, render: (_: unknown, gs: GroupSubject) => (

@@ -35,7 +35,7 @@ export type DayOfWeek =
   | "FRIDAY" | "SATURDAY" | "SUNDAY";
 
 export type LessonType = "LECTURE" | "PRACTICE";
-export type SemesterType = "FALL" | "WINTER" | "SPRING";
+export type SemesterType = "TRIMESTER_1" | "TRIMESTER_2" | "TRIMESTER_3";
 export type GroupType = "MAIN" | "ELECTIVE";
 
 export interface ScheduleGroupInfo {

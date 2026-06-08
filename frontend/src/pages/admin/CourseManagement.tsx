@@ -51,6 +51,7 @@ import Panel from "@/components/dashboard/Panel";
 const { Text } = Typography;
 
 const GROUP_TYPE_COLORS: Record<string, string> = { MAIN: BRAND_PRIMARY, ELECTIVE: "orange" };
+const TRIMESTER_OPTIONS = ["TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3"];
 
 function getApiErrorMessage(error: unknown): string | undefined {
   if (
@@ -129,7 +130,7 @@ export default function CourseManagement() {
   const [allGroups, setAllGroups] = useState<Group[]>([]);
   const [addGroupModalOpen, setAddGroupModalOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
-  const [selectedSemester, setSelectedSemester] = useState<string>("FALL");
+  const [selectedSemester, setSelectedSemester] = useState<string>("TRIMESTER_1");
 
   const fetchAllGroupTags = useCallback(async () => {
     try {
@@ -410,11 +411,7 @@ export default function CourseManagement() {
           <Space wrap>
             <Form.Item name="semester" label={t("coursesPage.semester")} rules={[{ required: true }]}>
               <Select style={{ width: 160 }} placeholder={t("coursesPage.semester")}
-                options={[
-                  { value: "Fall", label: t("coursesPage.fall") },
-                  { value: "Spring", label: t("coursesPage.spring") },
-                  { value: "Summer", label: t("coursesPage.summer") },
-                ]} />
+                options={TRIMESTER_OPTIONS.map((term) => ({ value: term, label: getSemesterLabel(term, t) }))} />
             </Form.Item>
             <Form.Item name="academic_year" label={t("coursesPage.academicYear")}
               rules={[{ required: true, message: t("coursesPage.academicYearRequired") }]}>
@@ -507,7 +504,7 @@ export default function CourseManagement() {
                           <Tag color={GROUP_TYPE_COLORS[cg.group_type] ?? "default"} style={{ fontSize: 11 }}>{cg.group_type}</Tag>
                         </Space>
                       )},
-                      { title: t("groups.semester"), dataIndex: "semester", key: "semester", width: 80, render: (s: string) => <Tag>{s}</Tag> },
+                      { title: t("groups.trimester"), dataIndex: "semester", key: "semester", width: 100, render: (s: string) => <Tag>{getSemesterLabel(s, t)}</Tag> },
                       { title: "", key: "rm", width: 40, render: (_: unknown, cg: CourseGroupOut) => (
                         <Popconfirm title={t("common.remove")} onConfirm={() => handleRemoveGroup(cg.group_subject_id)} okButtonProps={{ danger: true }}>
                           <Button type="text" danger size="small" icon={<UserDeleteOutlined />} />
@@ -535,11 +532,7 @@ export default function CourseManagement() {
             options={availableGroups.map((g) => ({ value: g.id, label: g.name }))}
             style={{ width: "100%" }} />
           <Select value={selectedSemester} onChange={setSelectedSemester} style={{ width: "100%" }}
-            options={[
-              { value: "FALL", label: t("schedulesPage.fall") },
-              { value: "WINTER", label: t("schedulesPage.winter") },
-              { value: "SPRING", label: t("schedulesPage.spring") },
-            ]} />
+            options={TRIMESTER_OPTIONS.map((term) => ({ value: term, label: getSemesterLabel(term, t) }))} />
         </div>
       </Modal>
 

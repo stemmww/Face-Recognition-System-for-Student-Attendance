@@ -43,7 +43,7 @@ class ProfessorTagOut(BaseModel):
 
 class GroupSubjectCreate(BaseModel):
     course_id: int
-    semester: str   # FALL/WINTER/SPRING
+    semester: str   # TRIMESTER_1/2/3
 
 
 class GroupSubjectOut(BaseModel):

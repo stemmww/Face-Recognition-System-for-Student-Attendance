@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Select, Space, Spin, Table, Tag, Typography, message } from "antd";
 import type { Schedule } from "@/types";
 import { getMySchedule } from "@/api/schedules";
+import { getSemesterLabel } from "@/utils/formatters";
 import { BRAND_PRIMARY } from "@/styles/theme";
 import { useThemeStore } from "@/stores/themeStore";
 import PageHeader from "@/components/dashboard/PageHeader";
@@ -13,7 +14,7 @@ const { Text } = Typography;
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 const DAY_ORDER: Record<string, number> = Object.fromEntries(DAYS.map((d, i) => [d, i]));
 const LESSON_COLORS: Record<string, string> = { LECTURE: BRAND_PRIMARY, PRACTICE: "#10b981" };
-const SEMESTER_OPTIONS = ["FALL", "WINTER", "SPRING"];
+const TRIMESTER_OPTIONS = ["TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3"];
 
 function formatTime(t: string) { return t?.slice(0, 5) ?? ""; }
 
@@ -179,9 +180,9 @@ export default function MySchedule() {
     ? schedules.filter((s) => s.semester === semester)
     : schedules;
 
-  const semesterOptions = SEMESTER_OPTIONS.map((s) => ({
+  const semesterOptions = TRIMESTER_OPTIONS.map((s) => ({
     value: s,
-    label: t(`schedulesPage.${s.toLowerCase()}` as never) || s,
+    label: getSemesterLabel(s, t),
   }));
 
   return (

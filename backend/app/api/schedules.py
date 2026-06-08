@@ -12,7 +12,7 @@ from app.database import get_db
 from app.models.classroom import Classroom
 from app.models.course import Course
 from app.models.enrollment import Enrollment
-from app.models.group import Group
+from app.models.group import Group, TRIMESTER_VALUES
 from app.models.schedule import DAY_OF_WEEK_VALUES
 from app.models.user import Role, User
 from app.schemas.schedule import ScheduleCreate, ScheduleOut, ScheduleUpdate
@@ -115,7 +115,7 @@ async def import_schedules_csv(
     Import schedules from CSV.
     Required columns (case-insensitive):
       day_of_week, start_time, subject_code (or subject_name), professor_email,
-      classroom_code, group_codes, semester, academic_year
+      classroom_code, group_codes, trimester, academic_year
     group_codes: semicolon-separated
     """
     content = (await file.read()).decode("utf-8-sig")
@@ -196,7 +196,11 @@ async def import_schedules_csv(
                 else:
                     group_ids.append(matched.id)
 
-        semester = (r.get("semester") or "").upper() or None
+        semester = (r.get("trimester") or r.get("semester") or "").upper() or None
+        if semester and semester not in TRIMESTER_VALUES:
+            errors.append(f"Row {i}: invalid trimester '{semester}'")
+            skipped += 1
+            continue
         academic_year = r.get("academic_year") or None
         lesson_type = (r.get("lesson_type") or "LECTURE").upper()
 

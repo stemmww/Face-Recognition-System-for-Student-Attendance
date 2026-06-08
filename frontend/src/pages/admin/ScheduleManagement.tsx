@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert, Button, Form, Input, Modal, Popconfirm, Select,
@@ -61,6 +61,7 @@ function ScheduleCard({ schedule: s, onEdit, onDelete, isDark }: ScheduleCardPro
   const color = LESSON_COLORS[s.lesson_type] ?? BRAND_PRIMARY;
   return (
     <div
+      onClick={(e) => e.stopPropagation()}
       style={{
         border: `1px solid ${color}`,
         borderLeft: `3px solid ${color}`,
@@ -214,12 +215,12 @@ function WeekGrid({ schedules, onCellClick, onEdit, onDelete, isDark, t }: WeekG
                         verticalAlign: "top",
                         minWidth: 110,
                         minHeight: 70,
-                        cursor: items.length === 0 ? "pointer" : "default",
+                        cursor: "pointer",
                         transition: "background 0.15s",
                       }}
-                      onClick={() => items.length === 0 && onCellClick(day, slot)}
+                      onClick={() => onCellClick(day, slot)}
                       onMouseEnter={(e) => {
-                        if (items.length === 0) e.currentTarget.style.background = cellHover;
+                        e.currentTarget.style.background = cellHover;
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background = "transparent";
@@ -234,7 +235,7 @@ function WeekGrid({ schedules, onCellClick, onEdit, onDelete, isDark, t }: WeekG
                           isDark={isDark}
                         />
                       ))}
-                      {items.length === 0 && (
+                      {items.length === 0 ? (
                         <div style={{
                           height: 66,
                           display: "flex",
@@ -243,6 +244,10 @@ function WeekGrid({ schedules, onCellClick, onEdit, onDelete, isDark, t }: WeekG
                           opacity: 0.25,
                         }}>
                           <PlusOutlined style={{ fontSize: 16, color: isDark ? "#94a3b8" : "#94a3b8" }} />
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", justifyContent: "center", padding: "4px 0 2px", opacity: 0.45 }}>
+                          <PlusOutlined style={{ fontSize: 13, color: isDark ? "#94a3b8" : "#64748b" }} />
                         </div>
                       )}
                     </td>
@@ -270,7 +275,11 @@ export default function ScheduleManagement() {
   const [loading, setLoading] = useState(false);
   const [filterSemester, setFilterSemester] = useState<string | undefined>();
   const [filterYear, setFilterYear] = useState<string | undefined>();
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [filterCourseId, setFilterCourseId] = useState<number | undefined>();
+  const [filterProfessorId, setFilterProfessorId] = useState<number | undefined>();
+  const [filterClassroomId, setFilterClassroomId] = useState<number | undefined>();
+  const [filterGroupId, setFilterGroupId] = useState<number | undefined>();
+  const [viewMode, setViewMode] = useState<"grid" | "table">("table");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Schedule | null>(null);
@@ -285,7 +294,14 @@ export default function ScheduleManagement() {
     setLoading(true);
     try {
       const [s, c, p, cl, g] = await Promise.all([
-        listSchedules({ semester: filterSemester, academic_year: filterYear }),
+        listSchedules({
+          semester: filterSemester,
+          academic_year: filterYear,
+          course_id: filterCourseId,
+          professor_id: filterProfessorId,
+          classroom_id: filterClassroomId,
+          group_id: filterGroupId,
+        }),
         listCourses(),
         listProfessors(),
         listClassrooms(true),
@@ -301,7 +317,7 @@ export default function ScheduleManagement() {
     } finally {
       setLoading(false);
     }
-  }, [filterSemester, filterYear, t]);
+  }, [filterClassroomId, filterCourseId, filterGroupId, filterProfessorId, filterSemester, filterYear, t]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -310,6 +326,12 @@ export default function ScheduleManagement() {
     form.resetFields();
     if (day) form.setFieldValue("day_of_week", day);
     if (slot) form.setFieldValue("start_time", dayjs(slot, "HH:mm"));
+    if (filterCourseId) form.setFieldValue("course_id", filterCourseId);
+    if (filterProfessorId) form.setFieldValue("professor_id", filterProfessorId);
+    if (filterClassroomId) form.setFieldValue("classroom_id", filterClassroomId);
+    if (filterGroupId) form.setFieldValue("group_ids", [filterGroupId]);
+    if (filterSemester) form.setFieldValue("semester", filterSemester);
+    if (filterYear) form.setFieldValue("academic_year", filterYear);
     setModalOpen(true);
   };
 
@@ -356,8 +378,9 @@ export default function ScheduleManagement() {
       await deleteSchedule(id);
       message.success(t("schedulesPage.scheduleDeleted"));
       fetchAll();
-    } catch {
-      message.error(t("schedulesPage.deleteFailed"));
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      message.error(detail || t("schedulesPage.deleteFailed"));
     }
   };
 
@@ -380,6 +403,33 @@ export default function ScheduleManagement() {
     value: s,
     label: getSemesterLabel(s, t),
   }));
+  const courseOptions = useMemo(
+    () => courses.map((c) => ({ value: c.id, label: `${c.code} - ${c.name}` })),
+    [courses]
+  );
+  const professorOptions = useMemo(
+    () => professors.map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` })),
+    [professors]
+  );
+  const classroomOptions = useMemo(
+    () => classrooms.map((c) => ({ value: c.id, label: c.name })),
+    [classrooms]
+  );
+  const groupOptions = useMemo(
+    () => groups.map((g) => ({ value: g.id, label: g.name })),
+    [groups]
+  );
+  const hasFocusedGridFilter = Boolean(filterGroupId || filterCourseId || filterProfessorId || filterClassroomId);
+  const hasGridTermFilter = Boolean(filterSemester);
+
+  const clearFilters = () => {
+    setFilterSemester(undefined);
+    setFilterYear(undefined);
+    setFilterCourseId(undefined);
+    setFilterProfessorId(undefined);
+    setFilterClassroomId(undefined);
+    setFilterGroupId(undefined);
+  };
 
   const sortedSchedules = [...schedules].sort(
     (a, b) => (DAY_ORDER[a.day_of_week] ?? 0) - (DAY_ORDER[b.day_of_week] ?? 0)
@@ -416,6 +466,18 @@ export default function ScheduleManagement() {
       key: "classroom",
       width: 110,
       render: (_: unknown, r: Schedule) => r.classroom_name ?? "—",
+    },
+    {
+      title: t("schedulesPage.groups"),
+      key: "groups",
+      width: 180,
+      render: (_: unknown, r: Schedule) => (
+        r.groups.length ? (
+          <Space size={4} wrap>
+            {r.groups.map((g) => <Tag key={g.id}>{g.name}</Tag>)}
+          </Space>
+        ) : "-"
+      ),
     },
     {
       title: t("schedulesPage.type"),
@@ -466,22 +528,65 @@ export default function ScheduleManagement() {
       />
 
       <Panel>
-        <Space style={{ marginBottom: 16 }} wrap>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16, alignItems: "center" }}>
+          <Select
+            value={filterGroupId}
+            onChange={setFilterGroupId}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t("schedulesPage.filterGroup")}
+            style={{ flex: "1 1 180px", minWidth: 180 }}
+            options={groupOptions}
+          />
+          <Select
+            value={filterCourseId}
+            onChange={setFilterCourseId}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t("common.filterByCourse")}
+            style={{ flex: "1 1 240px", minWidth: 220 }}
+            options={courseOptions}
+          />
+          <Select
+            value={filterProfessorId}
+            onChange={setFilterProfessorId}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t("schedulesPage.filterProfessor")}
+            style={{ flex: "1 1 190px", minWidth: 180 }}
+            options={professorOptions}
+          />
+          <Select
+            value={filterClassroomId}
+            onChange={setFilterClassroomId}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t("schedulesPage.filterClassroom")}
+            style={{ flex: "1 1 160px", minWidth: 150 }}
+            options={classroomOptions}
+          />
           <Select
             value={filterSemester}
             onChange={setFilterSemester}
             allowClear
             placeholder={t("schedulesPage.selectSemester")}
-            style={{ width: 160 }}
+            style={{ flex: "0 1 160px", minWidth: 150 }}
             options={semesterOptions}
           />
           <Input
             value={filterYear}
             onChange={(e) => setFilterYear(e.target.value || undefined)}
             placeholder={t("schedulesPage.selectAcademicYear")}
-            style={{ width: 160 }}
+            style={{ flex: "0 1 160px", minWidth: 150 }}
             allowClear
           />
+          <Button type="text" onClick={clearFilters}>
+            {t("groups.clearFilters")}
+          </Button>
           <Space.Compact>
             <Button
               icon={<CalendarOutlined />}
@@ -498,12 +603,26 @@ export default function ScheduleManagement() {
               {t("schedulesPage.tableView")}
             </Button>
           </Space.Compact>
-        </Space>
+        </div>
 
         {loading ? (
           <div style={{ textAlign: "center", padding: 48, color: "#94a3b8" }}>
             {t("common.loading")}
           </div>
+        ) : viewMode === "grid" && !hasFocusedGridFilter ? (
+          <Alert
+            type="info"
+            showIcon
+            message={t("schedulesPage.focusGridTitle")}
+            description={t("schedulesPage.focusGridDescription")}
+          />
+        ) : viewMode === "grid" && !hasGridTermFilter ? (
+          <Alert
+            type="warning"
+            showIcon
+            message={t("schedulesPage.termGridTitle")}
+            description={t("schedulesPage.termGridDescription")}
+          />
         ) : viewMode === "grid" ? (
           <WeekGrid
             schedules={schedules}
@@ -540,7 +659,7 @@ export default function ScheduleManagement() {
               showSearch
               optionFilterProp="label"
               placeholder={t("schedulesPage.selectCourse")}
-              options={courses.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
+              options={courseOptions}
             />
           </Form.Item>
 
@@ -574,7 +693,7 @@ export default function ScheduleManagement() {
                 allowClear
                 optionFilterProp="label"
                 placeholder={t("schedulesPage.selectProfessor")}
-                options={professors.map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))}
+                options={professorOptions}
               />
             </Form.Item>
           </div>
@@ -586,7 +705,7 @@ export default function ScheduleManagement() {
                 allowClear
                 optionFilterProp="label"
                 placeholder={t("schedulesPage.selectClassroom")}
-                options={classrooms.map((c) => ({ value: c.id, label: c.name }))}
+                options={classroomOptions}
               />
             </Form.Item>
             <Form.Item name="semester" label={t("schedulesPage.semester")} style={{ flex: 1 }}>
@@ -608,7 +727,7 @@ export default function ScheduleManagement() {
               showSearch
               optionFilterProp="label"
               placeholder={t("schedulesPage.selectGroups")}
-              options={groups.map((g) => ({ value: g.id, label: g.name }))}
+              options={groupOptions}
             />
           </Form.Item>
         </Form>

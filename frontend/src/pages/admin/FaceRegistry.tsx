@@ -14,6 +14,7 @@ import {
   Popconfirm,
   Progress,
   Row,
+  Select,
   Space,
   Tag,
   Typography,
@@ -30,8 +31,9 @@ import {
   SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import type { User, FaceCoverage, FaceEmbedding, FaceVerifyMatch, PipelineStatus } from "@/types";
+import type { User, FaceCoverage, FaceEmbedding, FaceVerifyMatch, Group, PipelineStatus } from "@/types";
 import { listUsers } from "@/api/users";
+import { listGroups, listGroupStudents } from "@/api/groups";
 import {
   deleteAllEmbeddings,
   deleteEmbedding,
@@ -50,11 +52,24 @@ const { Dragger } = Upload;
 const MIN_RECOMMENDED_PHOTOS = 3;
 
 type CoverageFilter = "all" | "missing" | "needs_more" | "complete";
+type GroupTypeFilter = "ALL" | Group["group_type"];
+type GroupOption = {
+  value: number;
+  label: string;
+  searchText: string;
+  group: Group;
+};
 
 export default function FaceRegistry() {
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const [students, setStudents] = useState<User[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>();
+  const [groupTypeFilter, setGroupTypeFilter] = useState<GroupTypeFilter>("ALL");
+  const [groupMajorFilter, setGroupMajorFilter] = useState<string>("ALL");
+  const [groupStudents, setGroupStudents] = useState<User[]>([]);
+  const [groupStudentsLoading, setGroupStudentsLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
   const [embeddings, setEmbeddings] = useState<FaceEmbedding[]>([]);
   const [coverage, setCoverage] = useState<Record<number, FaceCoverage>>({});
@@ -70,6 +85,7 @@ export default function FaceRegistry() {
   const [verifying, setVerifying] = useState(false);
   const [verifyMatches, setVerifyMatches] = useState<FaceVerifyMatch[]>([]);
   const [verifyFaceCount, setVerifyFaceCount] = useState(0);
+  const groupStudentsRequestRef = useRef(0);
 
   const fetchStudents = useCallback(async () => {
     try {
@@ -86,6 +102,15 @@ export default function FaceRegistry() {
       setCoverage(Object.fromEntries(items.map((item) => [item.user_id, item])));
     } catch {
       message.error(t("faces.coverageLoadFailed"));
+    }
+  }, [t]);
+
+  const fetchGroups = useCallback(async () => {
+    try {
+      const items = await listGroups({ active_only: true });
+      setGroups(items);
+    } catch {
+      message.error(t("faces.groupsLoadFailed"));
     }
   }, [t]);
 
@@ -111,9 +136,36 @@ export default function FaceRegistry() {
 
   useEffect(() => {
     fetchStudents();
+    fetchGroups();
     fetchCoverage();
     fetchStatus();
-  }, [fetchCoverage, fetchStudents, fetchStatus]);
+  }, [fetchCoverage, fetchGroups, fetchStudents, fetchStatus]);
+
+  useEffect(() => {
+    const requestId = ++groupStudentsRequestRef.current;
+    if (!selectedGroupId) {
+      setGroupStudents([]);
+      setGroupStudentsLoading(false);
+      return;
+    }
+
+    setGroupStudentsLoading(true);
+    listGroupStudents(selectedGroupId)
+      .then((items) => {
+        if (requestId !== groupStudentsRequestRef.current) return;
+        setGroupStudents(items);
+      })
+      .catch(() => {
+        if (requestId === groupStudentsRequestRef.current) {
+          message.error(t("faces.groupStudentsLoadFailed"));
+        }
+      })
+      .finally(() => {
+        if (requestId === groupStudentsRequestRef.current) {
+          setGroupStudentsLoading(false);
+        }
+      });
+  }, [selectedGroupId, t]);
 
   const fetchEmbeddings = useCallback(async (userId: number) => {
     const requestId = ++embeddingsRequestRef.current;
@@ -207,13 +259,52 @@ export default function FaceRegistry() {
     setLoading(userId !== null);
   }, []);
 
+  const handleGroupChange = useCallback((groupId?: number) => {
+    setSelectedGroupId(groupId);
+    setSearchQuery("");
+  }, []);
+
+  const availableMajorOptions = useMemo(() => {
+    const majors = new Map<string, string>();
+    for (const group of groups) {
+      if (group.major) majors.set(group.major, group.major_name || group.major);
+    }
+    return [...majors.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([value, label]) => ({ value, label }));
+  }, [groups]);
+
+  const filteredGroups = useMemo(() => (
+    groups.filter((group) => {
+      if (groupTypeFilter !== "ALL" && group.group_type !== groupTypeFilter) return false;
+      if (groupMajorFilter !== "ALL" && group.major !== groupMajorFilter) return false;
+      return true;
+    })
+  ), [groupMajorFilter, groupTypeFilter, groups]);
+
+  useEffect(() => {
+    if (!selectedGroupId) return;
+    if (!filteredGroups.some((group) => group.id === selectedGroupId)) {
+      handleGroupChange(undefined);
+    }
+  }, [filteredGroups, handleGroupChange, selectedGroupId]);
+
+  const baseStudents = selectedGroupId ? groupStudents : students;
+
+  useEffect(() => {
+    if (groupStudentsLoading || !selectedStudent) return;
+    if (!baseStudents.some((s) => s.id === selectedStudent)) {
+      handleSelectStudent(null);
+    }
+  }, [baseStudents, groupStudentsLoading, handleSelectStudent, selectedStudent]);
+
   const student = students.find((s) => s.id === selectedStudent);
   const getPhotoCount = useCallback((userId: number) => {
     return coverage[userId]?.embedding_count ?? 0;
   }, [coverage]);
 
   const filterCounts = useMemo(() => {
-    return students.reduce(
+    return baseStudents.reduce(
       (acc, s) => {
         const count = getPhotoCount(s.id);
         acc.all += 1;
@@ -224,17 +315,17 @@ export default function FaceRegistry() {
       },
       { all: 0, missing: 0, needs_more: 0, complete: 0 }
     );
-  }, [getPhotoCount, students]);
+  }, [baseStudents, getPhotoCount]);
 
   const statusFilteredStudents = useMemo(() => {
-    return students.filter((s) => {
+    return baseStudents.filter((s) => {
       const count = getPhotoCount(s.id);
       if (coverageFilter === "missing") return count === 0;
       if (coverageFilter === "needs_more") return count > 0 && count < MIN_RECOMMENDED_PHOTOS;
       if (coverageFilter === "complete") return count >= MIN_RECOMMENDED_PHOTOS;
       return true;
     });
-  }, [coverageFilter, getPhotoCount, students]);
+  }, [baseStudents, coverageFilter, getPhotoCount]);
 
   const filteredStudents = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -304,6 +395,22 @@ export default function FaceRegistry() {
     { value: "needs_more" as const, label: t("faces.filterNeedsMore"), count: filterCounts.needs_more },
     { value: "complete" as const, label: t("faces.filterComplete"), count: filterCounts.complete },
   ]), [filterCounts.all, filterCounts.complete, filterCounts.missing, filterCounts.needs_more, t]);
+  const groupOptions = useMemo<GroupOption[]>(() => (
+    filteredGroups.map((g) => ({
+      value: g.id,
+      label: g.name,
+      searchText: [
+        g.name,
+        g.code,
+        g.major,
+        g.major_name,
+        g.group_type,
+        g.semester,
+        String(g.current_study_year || ""),
+      ].filter(Boolean).join(" "),
+      group: g,
+    }))
+  ), [filteredGroups]);
 
   const selectedPhotoCount = selectedStudent ? getPhotoCount(selectedStudent) : 0;
   const selectedStatus = getCoverageStatus(selectedPhotoCount);
@@ -341,6 +448,59 @@ export default function FaceRegistry() {
           <Panel title={t("faces.enrollFace")}>
             <Space direction="vertical" style={{ width: "100%" }}>
               <Text strong>{t("faces.selectStudent")}</Text>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Select
+                  value={groupTypeFilter}
+                  onChange={setGroupTypeFilter}
+                  style={{ flex: "0 0 132px" }}
+                  options={[
+                    { value: "ALL", label: t("groups.allTypes") },
+                    { value: "MAIN", label: t("groups.type_MAIN") },
+                    { value: "ELECTIVE", label: t("groups.type_ELECTIVE") },
+                  ]}
+                />
+                <Select
+                  value={groupMajorFilter}
+                  onChange={setGroupMajorFilter}
+                  showSearch
+                  optionFilterProp="label"
+                  style={{ flex: "1 1 180px", minWidth: 180 }}
+                  options={[
+                    { value: "ALL", label: t("groups.allMajors") },
+                    ...availableMajorOptions,
+                  ]}
+                />
+              </div>
+              <Select
+                value={selectedGroupId}
+                onChange={handleGroupChange}
+                allowClear
+                showSearch
+                optionFilterProp="searchText"
+                loading={groupStudentsLoading}
+                placeholder={t("faces.allGroups")}
+                style={{ width: "100%" }}
+                options={groupOptions}
+                optionRender={(option) => {
+                  const data = option.data as GroupOption;
+                  const group = data.group;
+                  const isMain = group.group_type === "MAIN";
+                  const meta = [
+                    isMain ? group.major_name : t("groups.type_ELECTIVE"),
+                    isMain && group.current_study_year > 0 ? `${t("groups.year")} ${group.current_study_year}` : undefined,
+                    `${group.student_count} ${t("groups.students").toLowerCase()}`,
+                  ].filter(Boolean).join(" • ");
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <Text strong>{group.name}</Text>
+                      <Text type="secondary" style={{ fontSize: 12 }}>{meta}</Text>
+                    </div>
+                  );
+                }}
+              />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {t("groups.filterResultCount", { shown: filteredGroups.length, total: groups.length })}
+              </Text>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <div
                   style={{
@@ -384,7 +544,7 @@ export default function FaceRegistry() {
                   })}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  {t("faces.filterResultCount", { shown: filteredStudents.length, total: students.length })}
+                  {t("faces.filterResultCount", { shown: filteredStudents.length, total: baseStudents.length })}
                 </Text>
               </div>
               <Input
@@ -417,7 +577,7 @@ export default function FaceRegistry() {
                   <div style={{ minWidth: 0 }}>
                     <Text strong style={{ display: "block", fontSize: 13 }}>{t("faces.enrollmentQueue")}</Text>
                     <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
-                      {t("faces.filterResultCount", { shown: queuedStudents.length, total: students.length })}
+                      {t("faces.filterResultCount", { shown: queuedStudents.length, total: baseStudents.length })}
                     </Text>
                   </div>
                   <Button

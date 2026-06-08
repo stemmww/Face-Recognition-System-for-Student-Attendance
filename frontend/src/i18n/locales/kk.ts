@@ -438,6 +438,11 @@ const kk = {
     loadFailed: "Курстарды жүктеу сәтсіз",
     membersFailed: "Курс мүшелерін жүктеу сәтсіз",
     optionalDescription: "Қосымша сипаттама",
+    searchPlaceholder: "Курстар немесе топтар бойынша іздеу",
+    allTrimesters: "Барлық триместрлер",
+    allAcademicYears: "Барлық оқу жылдары",
+    clearFilters: "Сүзгілерді тазалау",
+    filterResultCount: "{{total}} курстың {{shown}} көрсетілді",
 
     fall: "Күз",
     spring: "Көктем",

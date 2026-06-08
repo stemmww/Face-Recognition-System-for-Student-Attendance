@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -21,6 +21,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  SearchOutlined,
   TeamOutlined,
   UploadOutlined,
   UserDeleteOutlined,
@@ -59,9 +60,22 @@ function getApiErrorMessage(error: unknown): string | undefined {
     error !== null &&
     "response" in error &&
     typeof (error as { response?: unknown }).response === "object" &&
-    (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
+    (error as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
   ) {
-    return (error as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+    const detail = (error as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      const messages = detail
+        .map((item) => {
+          if (typeof item === "string") return item;
+          if (typeof item === "object" && item !== null && "msg" in item) {
+            return String((item as { msg?: unknown }).msg);
+          }
+          return undefined;
+        })
+        .filter(Boolean);
+      if (messages.length) return messages.join("; ");
+    }
   }
   return undefined;
 }
@@ -88,10 +102,22 @@ function buildAcademicYearOptions() {
   });
 }
 
+function normalizeAcademicYearForForm(value: string) {
+  const trimmed = value.trim();
+  if (/^\d{4}$/.test(trimmed)) {
+    const startYear = Number(trimmed);
+    return `${startYear}-${startYear + 1}`;
+  }
+  return trimmed;
+}
+
 export default function CourseManagement() {
   const { t } = useTranslation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
+  const [courseSearch, setCourseSearch] = useState("");
+  const [trimesterFilter, setTrimesterFilter] = useState<string>("ALL");
+  const [academicYearFilter, setAcademicYearFilter] = useState<string>("ALL");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [form] = Form.useForm<CourseFormValues>();
@@ -170,7 +196,11 @@ export default function CourseManagement() {
 
   const openEdit = (course: Course) => {
     setEditingCourse(course);
-    form.setFieldsValue({ ...course, description: course.description ?? undefined });
+    form.setFieldsValue({
+      ...course,
+      academic_year: normalizeAcademicYearForForm(course.academic_year),
+      description: course.description ?? undefined,
+    });
     setModalOpen(true);
   };
 
@@ -187,8 +217,8 @@ export default function CourseManagement() {
       }
       setModalOpen(false);
       fetchCourses();
-    } catch {
-      message.error(t("common.operationFailed"));
+    } catch (error) {
+      message.error(getApiErrorMessage(error) || t("common.operationFailed"));
     }
   };
 
@@ -319,6 +349,38 @@ export default function CourseManagement() {
   const availableGroups = allGroups.filter((g) => !linkedGroupIds.has(g.id));
   const assignedProfIds = new Set(professors.map((p) => p.id));
   const availableProfessors = allProfessors.filter((p) => !assignedProfIds.has(p.id));
+  const availableAcademicYears = useMemo(
+    () => [...new Set(courses.map((course) => course.academic_year).filter(Boolean))].sort().reverse(),
+    [courses]
+  );
+  const filteredCourses = useMemo(() => {
+    const query = courseSearch.trim().toLowerCase();
+    return courses.filter((course) => {
+      if (trimesterFilter !== "ALL" && course.semester !== trimesterFilter) return false;
+      if (academicYearFilter !== "ALL" && course.academic_year !== academicYearFilter) return false;
+      if (!query) return true;
+
+      const groupTags = allCourseGroupsMap.get(course.id) ?? [];
+      const searchable = [
+        course.code,
+        course.name,
+        course.description,
+        course.semester,
+        getSemesterLabel(course.semester, t),
+        course.academic_year,
+        ...groupTags.map((group) => group.group_name),
+      ];
+      return searchable.some((value) => value?.toLowerCase().includes(query));
+    });
+  }, [academicYearFilter, allCourseGroupsMap, courseSearch, courses, t, trimesterFilter]);
+  const hasCourseFilters =
+    Boolean(courseSearch.trim()) || trimesterFilter !== "ALL" || academicYearFilter !== "ALL";
+
+  const clearCourseFilters = () => {
+    setCourseSearch("");
+    setTrimesterFilter("ALL");
+    setAcademicYearFilter("ALL");
+  };
 
   const columns = [
     { title: t("coursesPage.code"), dataIndex: "code", key: "code", width: 100 },
@@ -382,7 +444,52 @@ export default function CourseManagement() {
       />
 
       <Panel flush>
-        <Table dataSource={courses} columns={columns} rowKey="id" loading={loading}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            padding: "16px 20px",
+            borderBottom: "1px solid #f1f5f9",
+          }}
+        >
+          <Input
+            allowClear
+            prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+            value={courseSearch}
+            onChange={(e) => setCourseSearch(e.target.value)}
+            placeholder={t("coursesPage.searchPlaceholder")}
+            style={{ flex: "1 1 320px", maxWidth: 460 }}
+          />
+          <Select
+            value={trimesterFilter}
+            onChange={setTrimesterFilter}
+            style={{ width: 170 }}
+            options={[
+              { value: "ALL", label: t("coursesPage.allTrimesters") },
+              ...TRIMESTER_OPTIONS.map((term) => ({ value: term, label: getSemesterLabel(term, t) })),
+            ]}
+          />
+          <Select
+            value={academicYearFilter}
+            onChange={setAcademicYearFilter}
+            style={{ width: 180 }}
+            options={[
+              { value: "ALL", label: t("coursesPage.allAcademicYears") },
+              ...availableAcademicYears.map((year) => ({ value: year, label: year })),
+            ]}
+          />
+          {hasCourseFilters && (
+            <Button type="text" onClick={clearCourseFilters}>
+              {t("coursesPage.clearFilters")}
+            </Button>
+          )}
+          <Text type="secondary" style={{ marginLeft: "auto", fontSize: 13 }}>
+            {t("coursesPage.filterResultCount", { shown: filteredCourses.length, total: courses.length })}
+          </Text>
+        </div>
+        <Table dataSource={filteredCourses} columns={columns} rowKey="id" loading={loading}
           pagination={{ pageSize: 10, showTotal: (total) => `${total} ${t("common.courses")}` }} />
       </Panel>
 

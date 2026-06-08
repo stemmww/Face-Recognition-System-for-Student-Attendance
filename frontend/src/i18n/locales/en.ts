@@ -442,6 +442,11 @@ const en = {
     loadFailed: "Failed to load courses",
     membersFailed: "Failed to load course members",
     optionalDescription: "Optional description",
+    searchPlaceholder: "Search courses or groups",
+    allTrimesters: "All trimesters",
+    allAcademicYears: "All academic years",
+    clearFilters: "Clear filters",
+    filterResultCount: "{{shown}} of {{total}} courses shown",
 
     // Semesters
     fall: "Fall",

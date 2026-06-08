@@ -438,6 +438,11 @@ const ru = {
     loadFailed: "Не удалось загрузить курсы",
     membersFailed: "Не удалось загрузить участников курса",
     optionalDescription: "Необязательное описание",
+    searchPlaceholder: "Поиск по курсам или группам",
+    allTrimesters: "Все триместры",
+    allAcademicYears: "Все учебные годы",
+    clearFilters: "Очистить фильтры",
+    filterResultCount: "Показано {{shown}} из {{total}} курсов",
 
     fall: "Осень",
     spring: "Весна",

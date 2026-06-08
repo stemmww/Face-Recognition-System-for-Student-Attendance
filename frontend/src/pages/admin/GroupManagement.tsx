@@ -1,11 +1,11 @@
-import { type CSSProperties, useCallback, useEffect, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert, Button, Drawer, Input, Modal, Popconfirm,
   Select, Space, Switch, Table, Tabs, Tag, Typography, Upload, message,
 } from "antd";
 import {
   BookOutlined, DeleteOutlined, EditOutlined, PlusOutlined,
-  TeamOutlined, UploadOutlined, UserDeleteOutlined,
+  SearchOutlined, TeamOutlined, UploadOutlined, UserDeleteOutlined,
 } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import type { Course, CsvImportResult, Group, GroupSubject, User } from "@/types";
@@ -137,6 +137,9 @@ export default function GroupManagement() {
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [allGroupSubjectsMap, setAllGroupSubjectsMap] = useState<Map<number, GroupSubjectTag[]>>(new Map());
+  const [groupSearch, setGroupSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("ALL");
+  const [majorFilter, setMajorFilter] = useState<string>("ALL");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Group | null>(null);
@@ -319,6 +322,44 @@ export default function GroupManagement() {
   const normalizedElectiveCode = normalizeElectiveCode(codeInput);
   const electiveCodeValid = CUSTOM_ELECTIVE_CODE_RE.test(normalizedElectiveCode);
   const canSubmitGroup = isMainGroupType ? parsedCode?.valid : electiveCodeValid;
+  const availableMajorCodes = useMemo(() => {
+    const majors = new Set(groups.map((g) => g.major).filter(Boolean) as string[]);
+    return [...majors].sort((a, b) => {
+      const aIndex = MAJOR_CODES.indexOf(a);
+      const bIndex = MAJOR_CODES.indexOf(b);
+      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    });
+  }, [groups]);
+  const filteredGroups = useMemo(() => {
+    const query = groupSearch.trim().toLowerCase();
+    return groups.filter((g) => {
+      if (typeFilter !== "ALL" && g.group_type !== typeFilter) return false;
+      if (majorFilter !== "ALL" && g.major !== majorFilter) return false;
+      if (!query) return true;
+
+      const subjects = allGroupSubjectsMap.get(g.id) ?? [];
+      const searchable = [
+        g.name,
+        g.code,
+        g.major,
+        g.major_name,
+        g.group_type,
+        g.semester,
+        ...subjects.flatMap((subject) => [subject.course_code, subject.course_name]),
+      ];
+      return searchable.some((value) => value?.toLowerCase().includes(query));
+    });
+  }, [allGroupSubjectsMap, groupSearch, groups, majorFilter, typeFilter]);
+  const hasGroupFilters = Boolean(groupSearch.trim()) || typeFilter !== "ALL" || majorFilter !== "ALL";
+
+  const clearGroupFilters = () => {
+    setGroupSearch("");
+    setTypeFilter("ALL");
+    setMajorFilter("ALL");
+  };
 
   const columns = [
     {
@@ -399,7 +440,56 @@ export default function GroupManagement() {
       />
 
       <Panel flush>
-        <Table dataSource={groups} columns={columns} rowKey="id" loading={loading}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            padding: "16px 20px",
+            borderBottom: "1px solid #f1f5f9",
+          }}
+        >
+          <Input
+            allowClear
+            prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+            value={groupSearch}
+            onChange={(e) => setGroupSearch(e.target.value)}
+            placeholder={t("groups.searchPlaceholder")}
+            style={{ flex: "1 1 320px", maxWidth: 460 }}
+          />
+          <Select
+            value={typeFilter}
+            onChange={setTypeFilter}
+            style={{ width: 150 }}
+            options={[
+              { value: "ALL", label: t("groups.allTypes") },
+              { value: "MAIN", label: t("groups.type_MAIN") },
+              { value: "ELECTIVE", label: t("groups.type_ELECTIVE") },
+            ]}
+          />
+          <Select
+            value={majorFilter}
+            onChange={setMajorFilter}
+            style={{ width: 220 }}
+            options={[
+              { value: "ALL", label: t("groups.allMajors") },
+              ...availableMajorCodes.map((major) => ({
+                value: major,
+                label: MAJOR_LABELS[major] ?? major,
+              })),
+            ]}
+          />
+          {hasGroupFilters && (
+            <Button type="text" onClick={clearGroupFilters}>
+              {t("groups.clearFilters")}
+            </Button>
+          )}
+          <Text type="secondary" style={{ marginLeft: "auto", fontSize: 13 }}>
+            {t("groups.filterResultCount", { shown: filteredGroups.length, total: groups.length })}
+          </Text>
+        </div>
+        <Table dataSource={filteredGroups} columns={columns} rowKey="id" loading={loading}
           pagination={{ pageSize: 25, showTotal: (n) => `${n} ${t("common.total")}` }} />
       </Panel>
 

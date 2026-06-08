@@ -8,7 +8,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from sqlalchemy import delete, func, select, text
+from sqlalchemy import case, delete, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.anti_spoof import AntiSpoofResult, get_anti_spoof
@@ -19,7 +19,8 @@ from app.ai.recognizer import align_face
 from app.config import settings
 from app.core.exceptions import BadRequestError, NotFoundError
 from app.models.face_embedding import FaceEmbedding
-from app.models.user import User
+from app.models.group import group_students
+from app.models.user import Role, User
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,141 @@ class FaceService:
             }
             for user_id, embedding_count, latest_embedding_at in result.all()
         ]
+
+    @staticmethod
+    async def list_registry_students(
+        db: AsyncSession,
+        *,
+        group_id: int | None = None,
+        status: str = "all",
+        search: str | None = None,
+        limit: int = 200,
+        offset: int = 0,
+        min_recommended_photos: int = 3,
+    ) -> dict:
+        coverage_sq = (
+            select(
+                FaceEmbedding.user_id.label("user_id"),
+                func.count(FaceEmbedding.id).label("embedding_count"),
+                func.max(FaceEmbedding.created_at).label("latest_embedding_at"),
+            )
+            .group_by(FaceEmbedding.user_id)
+            .subquery()
+        )
+        count_expr = func.coalesce(coverage_sq.c.embedding_count, 0)
+
+        base_count_query = (
+            select(count_expr.label("embedding_count"))
+            .select_from(User)
+            .outerjoin(coverage_sq, coverage_sq.c.user_id == User.id)
+            .where(User.role == Role.STUDENT)
+        )
+        if group_id is not None:
+            base_count_query = base_count_query.join(
+                group_students,
+                group_students.c.student_id == User.id,
+            ).where(group_students.c.group_id == group_id)
+
+        base_counts_sq = base_count_query.subquery()
+        counts_result = await db.execute(
+            select(
+                func.count().label("all"),
+                func.coalesce(func.sum(case((base_counts_sq.c.embedding_count == 0, 1), else_=0)), 0).label("missing"),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                (base_counts_sq.c.embedding_count > 0)
+                                & (base_counts_sq.c.embedding_count < min_recommended_photos),
+                                1,
+                            ),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("needs_more"),
+                func.coalesce(
+                    func.sum(case((base_counts_sq.c.embedding_count >= min_recommended_photos, 1), else_=0)),
+                    0,
+                ).label("complete"),
+            ).select_from(base_counts_sq)
+        )
+        counts = counts_result.one()._mapping
+
+        query = (
+            select(
+                User,
+                count_expr.label("embedding_count"),
+                coverage_sq.c.latest_embedding_at,
+            )
+            .outerjoin(coverage_sq, coverage_sq.c.user_id == User.id)
+            .where(User.role == Role.STUDENT)
+        )
+        if group_id is not None:
+            query = query.join(
+                group_students,
+                group_students.c.student_id == User.id,
+            ).where(group_students.c.group_id == group_id)
+
+        trimmed_search = (search or "").strip()
+        if trimmed_search:
+            pattern = f"%{trimmed_search}%"
+            query = query.where(
+                or_(
+                    User.first_name.ilike(pattern),
+                    User.last_name.ilike(pattern),
+                    User.email.ilike(pattern),
+                )
+            )
+
+        if status == "missing":
+            query = query.where(count_expr == 0)
+        elif status == "needs_more":
+            query = query.where((count_expr > 0) & (count_expr < min_recommended_photos))
+        elif status == "complete":
+            query = query.where(count_expr >= min_recommended_photos)
+
+        filtered_total_result = await db.execute(
+            select(func.count()).select_from(query.order_by(None).subquery())
+        )
+        filtered_total = filtered_total_result.scalar_one()
+
+        status_order = case(
+            (count_expr == 0, 0),
+            (count_expr < min_recommended_photos, 1),
+            else_=2,
+        )
+        rows = await db.execute(
+            query.order_by(status_order, count_expr, User.last_name, User.first_name)
+            .offset(offset)
+            .limit(limit)
+        )
+
+        return {
+            "items": [
+                {
+                    "id": user.id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "photo_url": user.photo_url,
+                    "is_active": user.is_active,
+                    "created_at": user.created_at,
+                    "embedding_count": int(embedding_count or 0),
+                    "latest_embedding_at": latest_embedding_at,
+                }
+                for user, embedding_count, latest_embedding_at in rows.all()
+            ],
+            "counts": {
+                "all": int(counts["all"] or 0),
+                "missing": int(counts["missing"] or 0),
+                "needs_more": int(counts["needs_more"] or 0),
+                "complete": int(counts["complete"] or 0),
+            },
+            "filtered_total": int(filtered_total or 0),
+            "limit": limit,
+            "offset": offset,
+        }
 
     @staticmethod
     async def delete_embedding(db: AsyncSession, embedding_id: int) -> None:

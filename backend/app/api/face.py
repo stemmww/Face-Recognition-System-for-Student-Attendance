@@ -16,6 +16,7 @@ from app.schemas.face import (
     FaceCoverageOut,
     FaceEmbeddingOut,
     FaceEnrollResponse,
+    FaceRegistryStudentsPage,
     FaceVerifyMatch,
     FaceVerifyResponse,
     PipelineStatusResponse,
@@ -93,6 +94,26 @@ async def face_coverage(
     _: User = Depends(require_role(Role.ADMIN)),
 ):
     return [FaceCoverageOut(**item) for item in await FaceService.get_coverage(db)]
+
+
+@router.get("/registry-students", response_model=FaceRegistryStudentsPage)
+async def face_registry_students(
+    group_id: int | None = None,
+    status: str = Query(default="all", pattern="^(all|missing|needs_more|complete)$"),
+    search: str | None = None,
+    limit: int = Query(default=200, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_role(Role.ADMIN)),
+):
+    return await FaceService.list_registry_students(
+        db,
+        group_id=group_id,
+        status=status,
+        search=search,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/embeddings/{user_id}", response_model=list[FaceEmbeddingOut])

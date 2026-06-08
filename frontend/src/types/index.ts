@@ -157,6 +157,33 @@ export interface FaceCoverage {
   latest_embedding_at: string | null;
 }
 
+export interface FaceRegistryStudent {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  photo_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  embedding_count: number;
+  latest_embedding_at: string | null;
+}
+
+export interface FaceRegistryCounts {
+  all: number;
+  missing: number;
+  needs_more: number;
+  complete: number;
+}
+
+export interface FaceRegistryStudentsPage {
+  items: FaceRegistryStudent[];
+  counts: FaceRegistryCounts;
+  filtered_total: number;
+  limit: number;
+  offset: number;
+}
+
 export interface FaceEnrollResponse {
   id: number;
   user_id: number;

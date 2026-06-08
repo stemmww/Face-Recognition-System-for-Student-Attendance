@@ -31,15 +31,14 @@ import {
   SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import type { User, FaceCoverage, FaceEmbedding, FaceVerifyMatch, Group, PipelineStatus } from "@/types";
-import { listUsers } from "@/api/users";
-import { listGroups, listGroupStudents } from "@/api/groups";
+import type { FaceEmbedding, FaceRegistryCounts, FaceRegistryStudent, FaceVerifyMatch, Group, PipelineStatus } from "@/types";
+import { listGroups } from "@/api/groups";
 import {
   deleteAllEmbeddings,
   deleteEmbedding,
   enrollFace,
-  getFaceCoverage,
   getPipelineStatus,
+  listFaceRegistryStudents,
   listEmbeddings,
   verifyFace,
 } from "@/api/face";
@@ -63,19 +62,24 @@ type GroupOption = {
 export default function FaceRegistry() {
   const { t } = useTranslation();
   const { token } = theme.useToken();
-  const [students, setStudents] = useState<User[]>([]);
+  const [students, setStudents] = useState<FaceRegistryStudent[]>([]);
+  const [studentTotal, setStudentTotal] = useState(0);
+  const [filterCounts, setFilterCounts] = useState<FaceRegistryCounts>({
+    all: 0,
+    missing: 0,
+    needs_more: 0,
+    complete: 0,
+  });
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>();
   const [groupTypeFilter, setGroupTypeFilter] = useState<GroupTypeFilter>("ALL");
   const [groupMajorFilter, setGroupMajorFilter] = useState<string>("ALL");
-  const [groupStudents, setGroupStudents] = useState<User[]>([]);
-  const [groupStudentsLoading, setGroupStudentsLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
   const [embeddings, setEmbeddings] = useState<FaceEmbedding[]>([]);
-  const [coverage, setCoverage] = useState<Record<number, FaceCoverage>>({});
   const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [studentsLoading, setStudentsLoading] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus | null>(null);
   const embeddingsRequestRef = useRef(0);
@@ -85,25 +89,6 @@ export default function FaceRegistry() {
   const [verifying, setVerifying] = useState(false);
   const [verifyMatches, setVerifyMatches] = useState<FaceVerifyMatch[]>([]);
   const [verifyFaceCount, setVerifyFaceCount] = useState(0);
-  const groupStudentsRequestRef = useRef(0);
-
-  const fetchStudents = useCallback(async () => {
-    try {
-      const users = await listUsers("student");
-      setStudents(users);
-    } catch {
-      message.error(t("faces.loadFailed"));
-    }
-  }, [t]);
-
-  const fetchCoverage = useCallback(async () => {
-    try {
-      const items = await getFaceCoverage();
-      setCoverage(Object.fromEntries(items.map((item) => [item.user_id, item])));
-    } catch {
-      message.error(t("faces.coverageLoadFailed"));
-    }
-  }, [t]);
 
   const fetchGroups = useCallback(async () => {
     try {
@@ -115,14 +100,15 @@ export default function FaceRegistry() {
   }, [t]);
 
   const updateCoverageForStudent = useCallback((userId: number, items: FaceEmbedding[]) => {
-    setCoverage((prev) => ({
-      ...prev,
-      [userId]: {
-        user_id: userId,
-        embedding_count: items.length,
-        latest_embedding_at: items[0]?.created_at ?? null,
-      },
-    }));
+    setStudents((prev) => prev.map((student) => (
+      student.id === userId
+        ? {
+          ...student,
+          embedding_count: items.length,
+          latest_embedding_at: items[0]?.created_at ?? null,
+        }
+        : student
+    )));
   }, []);
 
   const fetchStatus = useCallback(async () => {
@@ -135,37 +121,33 @@ export default function FaceRegistry() {
   }, []);
 
   useEffect(() => {
-    fetchStudents();
     fetchGroups();
-    fetchCoverage();
     fetchStatus();
-  }, [fetchCoverage, fetchGroups, fetchStudents, fetchStatus]);
+  }, [fetchGroups, fetchStatus]);
+
+  const fetchRegistryStudents = useCallback(async () => {
+    setStudentsLoading(true);
+    try {
+      const result = await listFaceRegistryStudents({
+        group_id: selectedGroupId,
+        status: coverageFilter,
+        search: searchQuery.trim() || undefined,
+        limit: 200,
+        offset: 0,
+      });
+      setStudents(result.items);
+      setFilterCounts(result.counts);
+      setStudentTotal(result.filtered_total);
+    } catch {
+      message.error(t("faces.loadFailed"));
+    } finally {
+      setStudentsLoading(false);
+    }
+  }, [coverageFilter, searchQuery, selectedGroupId, t]);
 
   useEffect(() => {
-    const requestId = ++groupStudentsRequestRef.current;
-    if (!selectedGroupId) {
-      setGroupStudents([]);
-      setGroupStudentsLoading(false);
-      return;
-    }
-
-    setGroupStudentsLoading(true);
-    listGroupStudents(selectedGroupId)
-      .then((items) => {
-        if (requestId !== groupStudentsRequestRef.current) return;
-        setGroupStudents(items);
-      })
-      .catch(() => {
-        if (requestId === groupStudentsRequestRef.current) {
-          message.error(t("faces.groupStudentsLoadFailed"));
-        }
-      })
-      .finally(() => {
-        if (requestId === groupStudentsRequestRef.current) {
-          setGroupStudentsLoading(false);
-        }
-      });
-  }, [selectedGroupId, t]);
+    fetchRegistryStudents();
+  }, [fetchRegistryStudents]);
 
   const fetchEmbeddings = useCallback(async (userId: number) => {
     const requestId = ++embeddingsRequestRef.current;
@@ -205,6 +187,7 @@ export default function FaceRegistry() {
       const result = await enrollFace(selectedStudent, file);
       message.success(result.message);
       await fetchEmbeddings(selectedStudent);
+      await fetchRegistryStudents();
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       message.error(detail || t("faces.enrollFailed"));
@@ -218,6 +201,7 @@ export default function FaceRegistry() {
       await deleteEmbedding(id);
       message.success(t("faces.embeddingDeleted"));
       if (selectedStudent) await fetchEmbeddings(selectedStudent);
+      await fetchRegistryStudents();
     } catch {
       message.error(t("faces.deleteFailed"));
     }
@@ -230,6 +214,7 @@ export default function FaceRegistry() {
       message.success(t("faces.allDeleted"));
       setEmbeddings([]);
       updateCoverageForStudent(selectedStudent, []);
+      await fetchRegistryStudents();
     } catch {
       message.error(t("faces.deleteFailed"));
     }
@@ -289,52 +274,19 @@ export default function FaceRegistry() {
     }
   }, [filteredGroups, handleGroupChange, selectedGroupId]);
 
-  const baseStudents = selectedGroupId ? groupStudents : students;
-
   useEffect(() => {
-    if (groupStudentsLoading || !selectedStudent) return;
-    if (!baseStudents.some((s) => s.id === selectedStudent)) {
+    if (studentsLoading || !selectedStudent) return;
+    if (!students.some((s) => s.id === selectedStudent)) {
       handleSelectStudent(null);
     }
-  }, [baseStudents, groupStudentsLoading, handleSelectStudent, selectedStudent]);
+  }, [handleSelectStudent, selectedStudent, students, studentsLoading]);
 
   const student = students.find((s) => s.id === selectedStudent);
   const getPhotoCount = useCallback((userId: number) => {
-    return coverage[userId]?.embedding_count ?? 0;
-  }, [coverage]);
+    return students.find((s) => s.id === userId)?.embedding_count ?? 0;
+  }, [students]);
 
-  const filterCounts = useMemo(() => {
-    return baseStudents.reduce(
-      (acc, s) => {
-        const count = getPhotoCount(s.id);
-        acc.all += 1;
-        if (count === 0) acc.missing += 1;
-        else if (count < MIN_RECOMMENDED_PHOTOS) acc.needs_more += 1;
-        else acc.complete += 1;
-        return acc;
-      },
-      { all: 0, missing: 0, needs_more: 0, complete: 0 }
-    );
-  }, [baseStudents, getPhotoCount]);
-
-  const statusFilteredStudents = useMemo(() => {
-    return baseStudents.filter((s) => {
-      const count = getPhotoCount(s.id);
-      if (coverageFilter === "missing") return count === 0;
-      if (coverageFilter === "needs_more") return count > 0 && count < MIN_RECOMMENDED_PHOTOS;
-      if (coverageFilter === "complete") return count >= MIN_RECOMMENDED_PHOTOS;
-      return true;
-    });
-  }, [baseStudents, coverageFilter, getPhotoCount]);
-
-  const filteredStudents = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return statusFilteredStudents;
-
-    return statusFilteredStudents.filter((s) => (
-      `${s.first_name} ${s.last_name} ${s.email}`.toLowerCase().includes(query)
-    ));
-  }, [searchQuery, statusFilteredStudents]);
+  const filteredStudents = students;
 
   const getCoverageStatus = useCallback((count: number): Exclude<CoverageFilter, "all"> => {
     if (count === 0) return "missing";
@@ -355,22 +307,7 @@ export default function FaceRegistry() {
     return t("faces.filterComplete");
   }, [t]);
 
-  const queuedStudents = useMemo(() => {
-    const priority: Record<Exclude<CoverageFilter, "all">, number> = {
-      missing: 0,
-      needs_more: 1,
-      complete: 2,
-    };
-
-    return [...filteredStudents].sort((a, b) => {
-      const aCount = getPhotoCount(a.id);
-      const bCount = getPhotoCount(b.id);
-      const statusDelta = priority[getCoverageStatus(aCount)] - priority[getCoverageStatus(bCount)];
-      if (statusDelta !== 0) return statusDelta;
-      if (aCount !== bCount) return aCount - bCount;
-      return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
-    });
-  }, [filteredStudents, getCoverageStatus, getPhotoCount]);
+  const queuedStudents = filteredStudents;
 
   const incompleteStudents = useMemo(() => (
     queuedStudents.filter((s) => getPhotoCount(s.id) < MIN_RECOMMENDED_PHOTOS)
@@ -477,7 +414,7 @@ export default function FaceRegistry() {
                 allowClear
                 showSearch
                 optionFilterProp="searchText"
-                loading={groupStudentsLoading}
+                loading={studentsLoading}
                 placeholder={t("faces.allGroups")}
                 style={{ width: "100%" }}
                 options={groupOptions}
@@ -489,7 +426,7 @@ export default function FaceRegistry() {
                     isMain ? group.major_name : t("groups.type_ELECTIVE"),
                     isMain && group.current_study_year > 0 ? `${t("groups.year")} ${group.current_study_year}` : undefined,
                     `${group.student_count} ${t("groups.students").toLowerCase()}`,
-                  ].filter(Boolean).join(" • ");
+                  ].filter(Boolean).join(" - ");
                   return (
                     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                       <Text strong>{group.name}</Text>
@@ -544,7 +481,7 @@ export default function FaceRegistry() {
                   })}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  {t("faces.filterResultCount", { shown: filteredStudents.length, total: baseStudents.length })}
+                  {t("faces.filterResultCount", { shown: filteredStudents.length, total: studentTotal })}
                 </Text>
               </div>
               <Input
@@ -577,7 +514,7 @@ export default function FaceRegistry() {
                   <div style={{ minWidth: 0 }}>
                     <Text strong style={{ display: "block", fontSize: 13 }}>{t("faces.enrollmentQueue")}</Text>
                     <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
-                      {t("faces.filterResultCount", { shown: queuedStudents.length, total: baseStudents.length })}
+                      {t("faces.filterResultCount", { shown: queuedStudents.length, total: studentTotal })}
                     </Text>
                   </div>
                   <Button

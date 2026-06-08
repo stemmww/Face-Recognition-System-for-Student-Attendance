@@ -447,6 +447,11 @@ const en = {
     allAcademicYears: "All academic years",
     clearFilters: "Clear filters",
     filterResultCount: "{{shown}} of {{total}} courses shown",
+    setup: "Setup",
+    setupReady: "Ready",
+    setupMissingPROFESSOR: "No professor",
+    setupMissingGROUPS: "No groups",
+    setupMissingSCHEDULE: "No schedule",
 
     // Semesters
     fall: "Fall",

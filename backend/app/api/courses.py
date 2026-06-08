@@ -3,15 +3,17 @@ import io
 
 from fastapi import APIRouter, Depends, File, UploadFile
 from pydantic import BaseModel, field_validator
-from sqlalchemy import select
+from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.rbac import require_role
 from app.database import get_db
+from app.models.course import Course, CourseProf
 from app.models.group import TRIMESTER_VALUES
 from app.models.group_subject import GroupSubject
+from app.models.schedule import Schedule
 from app.models.user import Role, User
 from app.schemas.course import CourseCreate, CourseOut, CourseUpdate, EnrollmentRequest, ProfessorAssignRequest
 from app.schemas.user import UserOut
@@ -39,6 +41,14 @@ class CourseGroupOut(BaseModel):
     group_name: str
     group_type: str
     semester: str
+
+
+class CourseSetupStatusOut(BaseModel):
+    course_id: int
+    professor_count: int
+    group_count: int
+    schedule_count: int
+
 
 router = APIRouter()
 
@@ -80,6 +90,27 @@ async def list_all_course_groups(
         )
         for gs in result.scalars().all()
     ]
+
+
+@router.get("/setup-status", response_model=list[CourseSetupStatusOut])
+async def list_course_setup_statuses(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_role(Role.ADMIN)),
+):
+    result = await db.execute(
+        select(
+            Course.id.label("course_id"),
+            func.count(distinct(CourseProf.professor_id)).label("professor_count"),
+            func.count(distinct(GroupSubject.id)).label("group_count"),
+            func.count(distinct(Schedule.id)).label("schedule_count"),
+        )
+        .select_from(Course)
+        .outerjoin(CourseProf, CourseProf.course_id == Course.id)
+        .outerjoin(GroupSubject, GroupSubject.course_id == Course.id)
+        .outerjoin(Schedule, Schedule.course_id == Course.id)
+        .group_by(Course.id)
+    )
+    return [CourseSetupStatusOut(**row._mapping) for row in result.all()]
 
 
 @router.get("/{course_id}", response_model=CourseOut)

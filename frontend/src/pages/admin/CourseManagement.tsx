@@ -29,6 +29,7 @@ import {
 import type { Course, CsvImportResult, Group, User } from "@/types";
 import {
   type CourseGroupOut,
+  type CourseSetupStatus,
   addCourseGroup,
   assignProfessors,
   createCourse,
@@ -36,6 +37,7 @@ import {
   getCourseProfessors,
   importCoursesCSV,
   listAllCourseGroups,
+  listCourseSetupStatuses,
   listCourseGroups,
   listCourses,
   removeCourseGroup,
@@ -93,6 +95,32 @@ const TRIMESTER_TAG_STYLE: CSSProperties = {
 };
 const EMPTY_VALUE_STYLE: CSSProperties = { fontSize: 12, color: "#94a3b8" };
 const ACTION_BUTTON_STYLE: CSSProperties = { paddingInline: 6 };
+const SETUP_TAG_STYLES: Record<string, CSSProperties> = {
+  READY: {
+    ...META_TAG_BASE,
+    color: "#047857",
+    background: "#ecfdf5",
+    borderColor: "#a7f3d0",
+  },
+  PROFESSOR: {
+    ...META_TAG_BASE,
+    color: "#b45309",
+    background: "#fffbeb",
+    borderColor: "#fde68a",
+  },
+  GROUPS: {
+    ...META_TAG_BASE,
+    color: "#be123c",
+    background: "#fff1f2",
+    borderColor: "#fecdd3",
+  },
+  SCHEDULE: {
+    ...META_TAG_BASE,
+    color: "#6d28d9",
+    background: "#f5f3ff",
+    borderColor: "#ddd6fe",
+  },
+};
 
 function getApiErrorMessage(error: unknown): string | undefined {
   if (
@@ -155,6 +183,15 @@ function renderEmptyValue() {
   return <span style={EMPTY_VALUE_STYLE}>-</span>;
 }
 
+function getSetupIssues(status?: CourseSetupStatus) {
+  if (!status) return [];
+  const issues: Array<"PROFESSOR" | "GROUPS" | "SCHEDULE"> = [];
+  if (status.professor_count === 0) issues.push("PROFESSOR");
+  if (status.group_count === 0) issues.push("GROUPS");
+  if (status.schedule_count === 0) issues.push("SCHEDULE");
+  return issues;
+}
+
 export default function CourseManagement() {
   const { t } = useTranslation();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -175,6 +212,7 @@ export default function CourseManagement() {
 
   // Batch group tags for table column
   const [allCourseGroupsMap, setAllCourseGroupsMap] = useState<Map<number, CourseGroupOut[]>>(new Map());
+  const [setupStatusMap, setSetupStatusMap] = useState<Map<number, CourseSetupStatus>>(new Map());
 
   // CSV import
   const [csvModalOpen, setCsvModalOpen] = useState(false);
@@ -216,6 +254,15 @@ export default function CourseManagement() {
     }
   }, []);
 
+  const fetchSetupStatuses = useCallback(async () => {
+    try {
+      const statuses = await listCourseSetupStatuses();
+      setSetupStatusMap(new Map(statuses.map((status) => [status.course_id, status])));
+    } catch {
+      // non-critical
+    }
+  }, []);
+
   const fetchCourses = useCallback(async () => {
     setLoading(true);
     try {
@@ -230,7 +277,8 @@ export default function CourseManagement() {
   useEffect(() => {
     fetchCourses();
     fetchAllGroupTags();
-  }, [fetchCourses, fetchAllGroupTags]);
+    fetchSetupStatuses();
+  }, [fetchCourses, fetchAllGroupTags, fetchSetupStatuses]);
 
   const openCreate = () => {
     setEditingCourse(null);
@@ -261,6 +309,7 @@ export default function CourseManagement() {
       }
       setModalOpen(false);
       fetchCourses();
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("common.operationFailed"));
     }
@@ -272,6 +321,7 @@ export default function CourseManagement() {
       message.success(t("coursesPage.courseDeleted"));
       fetchCourses();
       fetchAllGroupTags();
+      fetchSetupStatuses();
     } catch {
       message.error(t("coursesPage.deleteFailed"));
     }
@@ -348,6 +398,7 @@ export default function CourseManagement() {
       message.success(t("coursesPage.professorsAssigned"));
       setAddProfessorIds([]);
       setProfessors(await getCourseProfessors(selectedCourse.id));
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.assignFailed"));
     }
@@ -358,6 +409,7 @@ export default function CourseManagement() {
     try {
       await removeProfessor(selectedCourse.id, pid);
       setProfessors((prev) => prev.filter((p) => p.id !== pid));
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.removeGroupFailed"));
     }
@@ -373,6 +425,7 @@ export default function CourseManagement() {
       await loadCourseGroupsWithStudents(selectedCourse.id);
       setAllGroups(await listGroups({ active_only: true }));
       fetchAllGroupTags();
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.assignFailed"));
     }
@@ -384,6 +437,7 @@ export default function CourseManagement() {
       await removeCourseGroup(selectedCourse.id, gsId);
       await loadCourseGroupsWithStudents(selectedCourse.id);
       fetchAllGroupTags();
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.removeProfFailed"));
     }
@@ -424,6 +478,25 @@ export default function CourseManagement() {
     setCourseSearch("");
     setTrimesterFilter("ALL");
     setAcademicYearFilter("ALL");
+  };
+  const renderSetupStatus = (courseId: number) => {
+    const status = setupStatusMap.get(courseId);
+    if (!status) return renderEmptyValue();
+
+    const issues = getSetupIssues(status);
+    if (!issues.length) {
+      return <Tag style={SETUP_TAG_STYLES.READY}>{t("coursesPage.setupReady")}</Tag>;
+    }
+
+    return (
+      <Space size={4} wrap>
+        {issues.map((issue) => (
+          <Tag key={issue} style={SETUP_TAG_STYLES[issue]}>
+            {t(`coursesPage.setupMissing${issue}`)}
+          </Tag>
+        ))}
+      </Space>
+    );
   };
 
   const columns = [
@@ -479,6 +552,12 @@ export default function CourseManagement() {
           </Space>
         );
       },
+    },
+    {
+      title: t("coursesPage.setup"),
+      key: "setup",
+      width: 220,
+      render: (_: unknown, record: Course) => renderSetupStatus(record.id),
     },
     {
       title: t("coursesPage.created"),

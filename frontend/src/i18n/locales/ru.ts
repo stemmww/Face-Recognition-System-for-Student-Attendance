@@ -443,6 +443,11 @@ const ru = {
     allAcademicYears: "Все учебные годы",
     clearFilters: "Очистить фильтры",
     filterResultCount: "Показано {{shown}} из {{total}} курсов",
+    setup: "Настройка",
+    setupReady: "Готово",
+    setupMissingPROFESSOR: "Нет преподавателя",
+    setupMissingGROUPS: "Нет групп",
+    setupMissingSCHEDULE: "Нет расписания",
 
     fall: "Осень",
     spring: "Весна",

@@ -443,6 +443,11 @@ const kk = {
     allAcademicYears: "Барлық оқу жылдары",
     clearFilters: "Сүзгілерді тазалау",
     filterResultCount: "{{total}} курстың {{shown}} көрсетілді",
+    setup: "Дайындық",
+    setupReady: "Дайын",
+    setupMissingPROFESSOR: "Оқытушы жоқ",
+    setupMissingGROUPS: "Топ жоқ",
+    setupMissingSCHEDULE: "Кесте жоқ",
 
     fall: "Күз",
     spring: "Көктем",

@@ -25,8 +25,8 @@ MAJOR_NAMES: dict[str, str] = {
 
 VALID_MAJORS = set(MAJOR_NAMES.keys())
 GROUP_TYPE_VALUES = ("MAIN", "ELECTIVE")
-SEMESTER_VALUES = ("FALL", "WINTER", "SPRING")
 TRIMESTER_VALUES = ("TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3")
+SEMESTER_VALUES = TRIMESTER_VALUES
 
 # Many-to-many: group ↔ student (users)
 group_students = Table(

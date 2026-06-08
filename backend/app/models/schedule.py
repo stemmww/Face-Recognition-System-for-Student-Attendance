@@ -7,7 +7,8 @@ from app.database import Base
 
 DAY_OF_WEEK_VALUES = ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
 LESSON_TYPE_VALUES = ("LECTURE", "PRACTICE")
-SEMESTER_VALUES = ("FALL", "WINTER", "SPRING")
+TRIMESTER_VALUES = ("TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3")
+SEMESTER_VALUES = TRIMESTER_VALUES
 
 # Many-to-many: schedule ↔ group
 schedule_groups = Table(
@@ -30,7 +31,7 @@ class Schedule(Base):
     end_time: Mapped[str] = mapped_column(Time, nullable=False)
     room: Mapped[str | None] = mapped_column(String(50), nullable=True)            # kept for backward compat
     lesson_type: Mapped[str] = mapped_column(String(10), nullable=False, default="LECTURE")  # LECTURE/PRACTICE
-    semester: Mapped[str | None] = mapped_column(String(10), nullable=True)        # FALL/WINTER/SPRING
+    semester: Mapped[str | None] = mapped_column(String(20), nullable=True)        # TRIMESTER_1/2/3
     academic_year: Mapped[str | None] = mapped_column(String(9), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), default=func.now(), onupdate=func.now())

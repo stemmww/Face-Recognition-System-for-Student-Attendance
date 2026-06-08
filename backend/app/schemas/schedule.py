@@ -52,7 +52,7 @@ class ScheduleCreate(BaseModel):
             return v
         v = v.upper()
         if v not in SEMESTER_VALUES:
-            raise ValueError(f"semester must be one of {SEMESTER_VALUES}")
+            raise ValueError(f"trimester must be one of {SEMESTER_VALUES}")
         return v
 
 
@@ -86,6 +86,16 @@ class ScheduleUpdate(BaseModel):
         v = v.upper()
         if v not in LESSON_TYPE_VALUES:
             raise ValueError(f"lesson_type must be one of {LESSON_TYPE_VALUES}")
+        return v
+
+    @field_validator("semester")
+    @classmethod
+    def validate_semester(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.upper()
+        if v not in SEMESTER_VALUES:
+            raise ValueError(f"trimester must be one of {SEMESTER_VALUES}")
         return v
 
 

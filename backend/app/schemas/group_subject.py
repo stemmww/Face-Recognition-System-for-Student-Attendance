@@ -5,14 +5,14 @@ from app.models.group import SEMESTER_VALUES
 
 class GroupSubjectAdd(BaseModel):
     course_id: int
-    semester: str   # FALL/WINTER/SPRING
+    semester: str   # TRIMESTER_1/2/3
 
     @field_validator("semester")
     @classmethod
     def validate_semester(cls, v: str) -> str:
         v = v.upper()
         if v not in SEMESTER_VALUES:
-            raise ValueError(f"semester must be one of {SEMESTER_VALUES}")
+            raise ValueError(f"trimester must be one of {SEMESTER_VALUES}")
         return v
 
 

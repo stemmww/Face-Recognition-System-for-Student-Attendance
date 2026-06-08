@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -21,6 +21,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  SearchOutlined,
   TeamOutlined,
   UploadOutlined,
   UserDeleteOutlined,
@@ -32,19 +33,16 @@ import {
   assignProfessors,
   createCourse,
   deleteCourse,
-  enrollStudents,
   getCourseProfessors,
-  getCourseStudents,
   importCoursesCSV,
   listAllCourseGroups,
   listCourseGroups,
   listCourses,
   removeCourseGroup,
   removeProfessor,
-  removeStudent,
   updateCourse,
 } from "@/api/courses";
-import { listGroups } from "@/api/groups";
+import { listGroups, listGroupStudents } from "@/api/groups";
 import { listUsers } from "@/api/users";
 import { formatDateTime, getSemesterLabel } from "@/utils/formatters";
 import { BRAND_PRIMARY } from "@/styles/theme";
@@ -54,6 +52,7 @@ import Panel from "@/components/dashboard/Panel";
 const { Text } = Typography;
 
 const GROUP_TYPE_COLORS: Record<string, string> = { MAIN: BRAND_PRIMARY, ELECTIVE: "orange" };
+const TRIMESTER_OPTIONS = ["TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3"];
 
 function getApiErrorMessage(error: unknown): string | undefined {
   if (
@@ -61,9 +60,22 @@ function getApiErrorMessage(error: unknown): string | undefined {
     error !== null &&
     "response" in error &&
     typeof (error as { response?: unknown }).response === "object" &&
-    (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
+    (error as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
   ) {
-    return (error as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+    const detail = (error as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      const messages = detail
+        .map((item) => {
+          if (typeof item === "string") return item;
+          if (typeof item === "object" && item !== null && "msg" in item) {
+            return String((item as { msg?: unknown }).msg);
+          }
+          return undefined;
+        })
+        .filter(Boolean);
+      if (messages.length) return messages.join("; ");
+    }
   }
   return undefined;
 }
@@ -76,6 +88,10 @@ interface CourseFormValues {
   academic_year: string;
 }
 
+interface GroupDerivedStudent extends User {
+  group_names: string[];
+}
+
 function buildAcademicYearOptions() {
   const currentYear = new Date().getFullYear();
   const startYear = currentYear - 2;
@@ -86,10 +102,22 @@ function buildAcademicYearOptions() {
   });
 }
 
+function normalizeAcademicYearForForm(value: string) {
+  const trimmed = value.trim();
+  if (/^\d{4}$/.test(trimmed)) {
+    const startYear = Number(trimmed);
+    return `${startYear}-${startYear + 1}`;
+  }
+  return trimmed;
+}
+
 export default function CourseManagement() {
   const { t } = useTranslation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
+  const [courseSearch, setCourseSearch] = useState("");
+  const [trimesterFilter, setTrimesterFilter] = useState<string>("ALL");
+  const [academicYearFilter, setAcademicYearFilter] = useState<string>("ALL");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [form] = Form.useForm<CourseFormValues>();
@@ -120,17 +148,15 @@ export default function CourseManagement() {
   const [allProfessors, setAllProfessors] = useState<User[]>([]);
   const [addProfessorIds, setAddProfessorIds] = useState<number[]>([]);
 
-  // Students tab
-  const [students, setStudents] = useState<User[]>([]);
-  const [allStudents, setAllStudents] = useState<User[]>([]);
-  const [addStudentIds, setAddStudentIds] = useState<number[]>([]);
+  // Students tab: read-only list derived from assigned groups
+  const [students, setStudents] = useState<GroupDerivedStudent[]>([]);
 
   // Groups tab
   const [courseGroups, setCourseGroups] = useState<CourseGroupOut[]>([]);
   const [allGroups, setAllGroups] = useState<Group[]>([]);
   const [addGroupModalOpen, setAddGroupModalOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
-  const [selectedSemester, setSelectedSemester] = useState<string>("FALL");
+  const [selectedSemester, setSelectedSemester] = useState<string>("TRIMESTER_1");
 
   const fetchAllGroupTags = useCallback(async () => {
     try {
@@ -170,7 +196,11 @@ export default function CourseManagement() {
 
   const openEdit = (course: Course) => {
     setEditingCourse(course);
-    form.setFieldsValue({ ...course, description: course.description ?? undefined });
+    form.setFieldsValue({
+      ...course,
+      academic_year: normalizeAcademicYearForForm(course.academic_year),
+      description: course.description ?? undefined,
+    });
     setModalOpen(true);
   };
 
@@ -187,8 +217,8 @@ export default function CourseManagement() {
       }
       setModalOpen(false);
       fetchCourses();
-    } catch {
-      message.error(t("common.operationFailed"));
+    } catch (error) {
+      message.error(getApiErrorMessage(error) || t("common.operationFailed"));
     }
   };
 
@@ -217,6 +247,34 @@ export default function CourseManagement() {
     }
   };
 
+  const loadCourseGroupsWithStudents = async (courseId: number) => {
+    const cGroups = await listCourseGroups(courseId);
+    const studentLists = await Promise.all(
+      cGroups.map(async (group) => ({
+        group,
+        students: await listGroupStudents(group.group_id),
+      }))
+    );
+    const studentMap = new Map<number, GroupDerivedStudent>();
+    for (const { group, students: groupStudents } of studentLists) {
+      for (const student of groupStudents) {
+        const existing = studentMap.get(student.id);
+        if (existing) {
+          existing.group_names.push(group.group_name);
+        } else {
+          studentMap.set(student.id, { ...student, group_names: [group.group_name] });
+        }
+      }
+    }
+    setCourseGroups(cGroups);
+    setStudents(
+      [...studentMap.values()].sort((a, b) =>
+        `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`)
+      )
+    );
+    return cGroups;
+  };
+
   // --- Drawer open ---
   const openDrawer = async (course: Course, tab: "professors" | "students" | "groups" = "professors") => {
     setSelectedCourse(course);
@@ -224,19 +282,15 @@ export default function CourseManagement() {
     setDrawerOpen(true);
     setProfessors([]); setStudents([]); setCourseGroups([]);
     try {
-      const [profs, studs, cGroups, allUsers, allG] = await Promise.all([
+      const [profs, allUsers, allG] = await Promise.all([
         getCourseProfessors(course.id),
-        getCourseStudents(course.id),
-        listCourseGroups(course.id),
         listUsers(),
         listGroups({ active_only: true }),
       ]);
       setProfessors(profs);
-      setStudents(studs);
-      setCourseGroups(cGroups);
       setAllProfessors(allUsers.filter((u) => u.role === "professor"));
-      setAllStudents(allUsers.filter((u) => u.role === "student"));
       setAllGroups(allG);
+      await loadCourseGroupsWithStudents(course.id);
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.membersFailed"));
     }
@@ -261,30 +315,7 @@ export default function CourseManagement() {
       await removeProfessor(selectedCourse.id, pid);
       setProfessors((prev) => prev.filter((p) => p.id !== pid));
     } catch (error) {
-      message.error(getApiErrorMessage(error) || t("coursesPage.removeProfFailed"));
-    }
-  };
-
-  // --- Students ---
-  const handleEnrollStudents = async () => {
-    if (!selectedCourse || !addStudentIds.length) return;
-    try {
-      await enrollStudents(selectedCourse.id, addStudentIds);
-      message.success(t("coursesPage.studentsEnrolledSuccess"));
-      setAddStudentIds([]);
-      setStudents(await getCourseStudents(selectedCourse.id));
-    } catch (error) {
-      message.error(getApiErrorMessage(error) || t("coursesPage.enrollFailed"));
-    }
-  };
-
-  const handleRemoveStudent = async (sid: number) => {
-    if (!selectedCourse) return;
-    try {
-      await removeStudent(selectedCourse.id, sid);
-      setStudents((prev) => prev.filter((s) => s.id !== sid));
-    } catch (error) {
-      message.error(getApiErrorMessage(error) || t("coursesPage.removeStudentFailed"));
+      message.error(getApiErrorMessage(error) || t("coursesPage.removeGroupFailed"));
     }
   };
 
@@ -295,12 +326,8 @@ export default function CourseManagement() {
       await addCourseGroup(selectedCourse.id, selectedGroupId, selectedSemester);
       setAddGroupModalOpen(false);
       setSelectedGroupId(null);
-      const [cGroups, allG] = await Promise.all([
-        listCourseGroups(selectedCourse.id),
-        listGroups({ active_only: true }),
-      ]);
-      setCourseGroups(cGroups);
-      setAllGroups(allG);
+      await loadCourseGroupsWithStudents(selectedCourse.id);
+      setAllGroups(await listGroups({ active_only: true }));
       fetchAllGroupTags();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.assignFailed"));
@@ -311,7 +338,7 @@ export default function CourseManagement() {
     if (!selectedCourse) return;
     try {
       await removeCourseGroup(selectedCourse.id, gsId);
-      setCourseGroups((prev) => prev.filter((g) => g.group_subject_id !== gsId));
+      await loadCourseGroupsWithStudents(selectedCourse.id);
       fetchAllGroupTags();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.removeProfFailed"));
@@ -322,8 +349,38 @@ export default function CourseManagement() {
   const availableGroups = allGroups.filter((g) => !linkedGroupIds.has(g.id));
   const assignedProfIds = new Set(professors.map((p) => p.id));
   const availableProfessors = allProfessors.filter((p) => !assignedProfIds.has(p.id));
-  const enrolledStudentIds = new Set(students.map((s) => s.id));
-  const availableStudents = allStudents.filter((s) => !enrolledStudentIds.has(s.id));
+  const availableAcademicYears = useMemo(
+    () => [...new Set(courses.map((course) => course.academic_year).filter(Boolean))].sort().reverse(),
+    [courses]
+  );
+  const filteredCourses = useMemo(() => {
+    const query = courseSearch.trim().toLowerCase();
+    return courses.filter((course) => {
+      if (trimesterFilter !== "ALL" && course.semester !== trimesterFilter) return false;
+      if (academicYearFilter !== "ALL" && course.academic_year !== academicYearFilter) return false;
+      if (!query) return true;
+
+      const groupTags = allCourseGroupsMap.get(course.id) ?? [];
+      const searchable = [
+        course.code,
+        course.name,
+        course.description,
+        course.semester,
+        getSemesterLabel(course.semester, t),
+        course.academic_year,
+        ...groupTags.map((group) => group.group_name),
+      ];
+      return searchable.some((value) => value?.toLowerCase().includes(query));
+    });
+  }, [academicYearFilter, allCourseGroupsMap, courseSearch, courses, t, trimesterFilter]);
+  const hasCourseFilters =
+    Boolean(courseSearch.trim()) || trimesterFilter !== "ALL" || academicYearFilter !== "ALL";
+
+  const clearCourseFilters = () => {
+    setCourseSearch("");
+    setTrimesterFilter("ALL");
+    setAcademicYearFilter("ALL");
+  };
 
   const columns = [
     { title: t("coursesPage.code"), dataIndex: "code", key: "code", width: 100 },
@@ -387,7 +444,52 @@ export default function CourseManagement() {
       />
 
       <Panel flush>
-        <Table dataSource={courses} columns={columns} rowKey="id" loading={loading}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            padding: "16px 20px",
+            borderBottom: "1px solid #f1f5f9",
+          }}
+        >
+          <Input
+            allowClear
+            prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+            value={courseSearch}
+            onChange={(e) => setCourseSearch(e.target.value)}
+            placeholder={t("coursesPage.searchPlaceholder")}
+            style={{ flex: "1 1 320px", maxWidth: 460 }}
+          />
+          <Select
+            value={trimesterFilter}
+            onChange={setTrimesterFilter}
+            style={{ width: 170 }}
+            options={[
+              { value: "ALL", label: t("coursesPage.allTrimesters") },
+              ...TRIMESTER_OPTIONS.map((term) => ({ value: term, label: getSemesterLabel(term, t) })),
+            ]}
+          />
+          <Select
+            value={academicYearFilter}
+            onChange={setAcademicYearFilter}
+            style={{ width: 180 }}
+            options={[
+              { value: "ALL", label: t("coursesPage.allAcademicYears") },
+              ...availableAcademicYears.map((year) => ({ value: year, label: year })),
+            ]}
+          />
+          {hasCourseFilters && (
+            <Button type="text" onClick={clearCourseFilters}>
+              {t("coursesPage.clearFilters")}
+            </Button>
+          )}
+          <Text type="secondary" style={{ marginLeft: "auto", fontSize: 13 }}>
+            {t("coursesPage.filterResultCount", { shown: filteredCourses.length, total: courses.length })}
+          </Text>
+        </div>
+        <Table dataSource={filteredCourses} columns={columns} rowKey="id" loading={loading}
           pagination={{ pageSize: 10, showTotal: (total) => `${total} ${t("common.courses")}` }} />
       </Panel>
 
@@ -416,11 +518,7 @@ export default function CourseManagement() {
           <Space wrap>
             <Form.Item name="semester" label={t("coursesPage.semester")} rules={[{ required: true }]}>
               <Select style={{ width: 160 }} placeholder={t("coursesPage.semester")}
-                options={[
-                  { value: "Fall", label: t("coursesPage.fall") },
-                  { value: "Spring", label: t("coursesPage.spring") },
-                  { value: "Summer", label: t("coursesPage.summer") },
-                ]} />
+                options={TRIMESTER_OPTIONS.map((term) => ({ value: term, label: getSemesterLabel(term, t) }))} />
             </Form.Item>
             <Form.Item name="academic_year" label={t("coursesPage.academicYear")}
               rules={[{ required: true, message: t("coursesPage.academicYearRequired") }]}>
@@ -435,7 +533,7 @@ export default function CourseManagement() {
       <Drawer
         title={selectedCourse ? `${selectedCourse.code} — ${selectedCourse.name}` : ""}
         open={drawerOpen}
-        onClose={() => { setDrawerOpen(false); setAddProfessorIds([]); setAddStudentIds([]); }}
+        onClose={() => { setDrawerOpen(false); setAddProfessorIds([]); }}
         width={560}
       >
         <Tabs activeKey={drawerTab} onChange={(k) => setDrawerTab(k as "professors" | "students" | "groups")}
@@ -467,25 +565,27 @@ export default function CourseManagement() {
             },
             {
               key: "students",
-              label: `${t("coursesPage.enrolledStudents")} (${students.length})`,
+              label: `${t("coursesPage.studentsFromGroups")} (${students.length})`,
               children: (
                 <>
-                  <Space.Compact style={{ width: "100%", marginBottom: 12 }}>
-                    <Select mode="multiple" style={{ flex: 1 }} placeholder={t("coursesPage.selectStudents")}
-                      value={addStudentIds} onChange={setAddStudentIds} showSearch optionFilterProp="label"
-                      options={availableStudents.map((s) => ({ value: s.id, label: `${s.last_name} ${s.first_name} (${s.email})` }))} />
-                    <Button type="primary" onClick={handleEnrollStudents} disabled={!addStudentIds.length}>{t("common.enroll")}</Button>
-                  </Space.Compact>
+                  <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
+                    {t("coursesPage.studentsFromGroupsHint")}
+                  </Text>
                   <Table dataSource={students} rowKey="id" size="small" pagination={false}
-                    locale={{ emptyText: t("coursesPage.noStudents") }}
+                    locale={{ emptyText: t("coursesPage.noStudentsFromGroups") }}
                     columns={[
                       { title: t("common.name"), key: "name", render: (_: unknown, u: User) => `${u.last_name} ${u.first_name}` },
                       { title: t("common.email"), dataIndex: "email", key: "email" },
-                      { title: "", key: "rm", width: 40, render: (_: unknown, u: User) => (
-                        <Popconfirm title={t("common.remove")} onConfirm={() => handleRemoveStudent(u.id)} okButtonProps={{ danger: true }}>
-                          <Button type="text" danger size="small" icon={<UserDeleteOutlined />} />
-                        </Popconfirm>
-                      )},
+                      {
+                        title: t("coursesPage.sourceGroups"),
+                        dataIndex: "group_names",
+                        key: "groups",
+                        render: (groupNames: string[]) => (
+                          <Space size={4} wrap>
+                            {groupNames.map((name) => <Tag key={name}>{name}</Tag>)}
+                          </Space>
+                        ),
+                      },
                     ]} />
                 </>
               ),
@@ -511,7 +611,7 @@ export default function CourseManagement() {
                           <Tag color={GROUP_TYPE_COLORS[cg.group_type] ?? "default"} style={{ fontSize: 11 }}>{cg.group_type}</Tag>
                         </Space>
                       )},
-                      { title: t("groups.semester"), dataIndex: "semester", key: "semester", width: 80, render: (s: string) => <Tag>{s}</Tag> },
+                      { title: t("groups.trimester"), dataIndex: "semester", key: "semester", width: 100, render: (s: string) => <Tag>{getSemesterLabel(s, t)}</Tag> },
                       { title: "", key: "rm", width: 40, render: (_: unknown, cg: CourseGroupOut) => (
                         <Popconfirm title={t("common.remove")} onConfirm={() => handleRemoveGroup(cg.group_subject_id)} okButtonProps={{ danger: true }}>
                           <Button type="text" danger size="small" icon={<UserDeleteOutlined />} />
@@ -539,11 +639,7 @@ export default function CourseManagement() {
             options={availableGroups.map((g) => ({ value: g.id, label: g.name }))}
             style={{ width: "100%" }} />
           <Select value={selectedSemester} onChange={setSelectedSemester} style={{ width: "100%" }}
-            options={[
-              { value: "FALL", label: t("schedulesPage.fall") },
-              { value: "WINTER", label: t("schedulesPage.winter") },
-              { value: "SPRING", label: t("schedulesPage.spring") },
-            ]} />
+            options={TRIMESTER_OPTIONS.map((term) => ({ value: term, label: getSemesterLabel(term, t) }))} />
         </div>
       </Modal>
 

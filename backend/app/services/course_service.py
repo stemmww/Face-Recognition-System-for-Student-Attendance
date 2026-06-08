@@ -2,8 +2,14 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestError, NotFoundError
+from app.models.appeal import Appeal
+from app.models.attendance import AttendanceRecord
+from app.models.attendance_session import AttendanceSession
 from app.models.course import Course, CourseProf
 from app.models.enrollment import Enrollment
+from app.models.group_subject import GroupSubject
+from app.models.professor_tag import course_tag_assignments
+from app.models.schedule import Schedule, schedule_groups
 from app.models.user import Role, User
 from app.schemas.course import CourseCreate, CourseUpdate
 
@@ -115,6 +121,19 @@ class CourseService:
     @staticmethod
     async def delete_course(db: AsyncSession, course_id: int) -> None:
         course = await CourseService.get_course(db, course_id)
+        schedule_ids = select(Schedule.id).where(Schedule.course_id == course_id)
+        session_ids = select(AttendanceSession.id).where(AttendanceSession.schedule_id.in_(schedule_ids))
+        record_ids = select(AttendanceRecord.id).where(AttendanceRecord.session_id.in_(session_ids))
+
+        await db.execute(delete(Appeal).where(Appeal.attendance_id.in_(record_ids)))
+        await db.execute(delete(AttendanceRecord).where(AttendanceRecord.session_id.in_(session_ids)))
+        await db.execute(delete(AttendanceSession).where(AttendanceSession.schedule_id.in_(schedule_ids)))
+        await db.execute(delete(schedule_groups).where(schedule_groups.c.schedule_id.in_(schedule_ids)))
+        await db.execute(delete(Schedule).where(Schedule.course_id == course_id))
+        await db.execute(delete(Enrollment).where(Enrollment.course_id == course_id))
+        await db.execute(delete(CourseProf).where(CourseProf.course_id == course_id))
+        await db.execute(delete(GroupSubject).where(GroupSubject.course_id == course_id))
+        await db.execute(delete(course_tag_assignments).where(course_tag_assignments.c.course_id == course_id))
         await db.delete(course)
         await db.commit()
 

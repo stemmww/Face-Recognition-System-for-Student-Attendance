@@ -22,7 +22,7 @@ class Course(Base):
     code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)    # auto 6-digit e.g. 000001
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    semester: Mapped[str] = mapped_column(String(20), nullable=False)             # FALL/WINTER/SPRING
+    semester: Mapped[str] = mapped_column(String(20), nullable=False)             # TRIMESTER_1/2/3
     academic_year: Mapped[str] = mapped_column(String(9), nullable=False)
     lesson_type: Mapped[str | None] = mapped_column(String(10), nullable=True)    # LECTURE/PRACTICE
     group_type: Mapped[str | None] = mapped_column(String(10), nullable=True)     # MAIN/ELECTIVE

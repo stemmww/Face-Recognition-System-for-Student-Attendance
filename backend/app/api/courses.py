@@ -2,7 +2,7 @@ import csv
 import io
 
 from fastapi import APIRouter, Depends, File, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.core.rbac import require_role
 from app.database import get_db
+from app.models.group import TRIMESTER_VALUES
 from app.models.group_subject import GroupSubject
 from app.models.user import Role, User
 from app.schemas.course import CourseCreate, CourseOut, CourseUpdate, EnrollmentRequest, ProfessorAssignRequest
@@ -21,6 +22,14 @@ from app.services.course_service import CourseService
 class CourseGroupAdd(BaseModel):
     group_id: int
     semester: str
+
+    @field_validator("semester")
+    @classmethod
+    def validate_semester(cls, value: str) -> str:
+        value = value.upper()
+        if value not in TRIMESTER_VALUES:
+            raise ValueError(f"trimester must be one of {TRIMESTER_VALUES}")
+        return value
 
 
 class CourseGroupOut(BaseModel):
@@ -201,7 +210,7 @@ async def add_course_group(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_role(Role.ADMIN)),
 ):
-    gs = GroupSubject(group_id=body.group_id, course_id=course_id, semester=body.semester.upper())
+    gs = GroupSubject(group_id=body.group_id, course_id=course_id, semester=body.semester)
     db.add(gs)
     await db.commit()
     result = await db.execute(
@@ -249,7 +258,7 @@ async def import_courses_csv(
 ) -> dict:
     """
     Import subjects/courses from CSV.
-    Required: name, semester, academic_year
+    Required: name, trimester, academic_year
     Optional: lesson_type, group_type, description
     Code is auto-generated.
     """
@@ -261,14 +270,14 @@ async def import_courses_csv(
         r = {k.strip().lower(): (v or "").strip() for k, v in row.items()}
 
         name = r.get("name", "")
-        semester = (r.get("semester") or "").upper()
+        semester = (r.get("trimester") or r.get("semester") or "").upper()
         academic_year = r.get("academic_year", "")
         lesson_type = (r.get("lesson_type") or "").upper() or None
         group_type = (r.get("group_type") or "").upper() or None
         description = r.get("description") or None
 
         if not name or not semester or not academic_year:
-            errors.append(f"Row {i}: missing name, semester, or academic_year")
+            errors.append(f"Row {i}: missing name, trimester, or academic_year")
             skipped += 1
             continue
 

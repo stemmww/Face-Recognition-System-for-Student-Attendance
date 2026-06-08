@@ -18,6 +18,7 @@ import {
   createSchedule, deleteSchedule, importSchedulesCSV,
   listSchedules, updateSchedule,
 } from "@/api/schedules";
+import { getSemesterLabel } from "@/utils/formatters";
 import { useThemeStore } from "@/stores/themeStore";
 import { BRAND_PRIMARY } from "@/styles/theme";
 import PageHeader from "@/components/dashboard/PageHeader";
@@ -27,7 +28,7 @@ const { Text } = Typography;
 
 const DAYS: DayOfWeek[] = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
 const TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
-const SEMESTER_OPTIONS = ["FALL", "WINTER", "SPRING"];
+const TRIMESTER_OPTIONS = ["TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3"];
 const DAY_ORDER: Record<string, number> = Object.fromEntries(DAYS.map((d, i) => [d, i]));
 const LESSON_COLORS: Record<string, string> = { LECTURE: BRAND_PRIMARY, PRACTICE: "#10b981" };
 
@@ -375,9 +376,9 @@ export default function ScheduleManagement() {
     }
   };
 
-  const semesterOptions = SEMESTER_OPTIONS.map((s) => ({
+  const semesterOptions = TRIMESTER_OPTIONS.map((s) => ({
     value: s,
-    label: t(`schedulesPage.${s.toLowerCase()}` as never) || s,
+    label: getSemesterLabel(s, t),
   }));
 
   const sortedSchedules = [...schedules].sort(

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert, Button, Form, Input, Modal, Popconfirm, Select,
+  Alert, Button, Form, Modal, Popconfirm, Select,
   Space, Table, Tag, TimePicker, Typography, Upload, message,
 } from "antd";
 import {
@@ -31,8 +31,38 @@ const TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00
 const TRIMESTER_OPTIONS = ["TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3"];
 const DAY_ORDER: Record<string, number> = Object.fromEntries(DAYS.map((d, i) => [d, i]));
 const LESSON_COLORS: Record<string, string> = { LECTURE: BRAND_PRIMARY, PRACTICE: "#10b981" };
+const ACADEMIC_YEAR_PATTERN = /^\d{4}-\d{4}$/;
 
 function formatTime(t: string) { return t?.slice(0, 5) ?? ""; }
+
+function getCurrentAcademicYear() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const startYear = today.getMonth() >= 7 ? year : year - 1;
+  return `${startYear}-${startYear + 1}`;
+}
+
+function getCurrentTrimester() {
+  const month = new Date().getMonth();
+  if (month >= 7) return "TRIMESTER_1";
+  if (month <= 2) return "TRIMESTER_2";
+  return "TRIMESTER_3";
+}
+
+function isAcademicYear(value?: string) {
+  if (!value || !ACADEMIC_YEAR_PATTERN.test(value)) return false;
+  const [start, end] = value.split("-").map(Number);
+  return end === start + 1;
+}
+
+function buildAcademicYearOptions() {
+  const currentStartYear = Number(getCurrentAcademicYear().slice(0, 4));
+  return Array.from({ length: 8 }, (_, i) => {
+    const year = currentStartYear + i;
+    const value = `${year}-${year + 1}`;
+    return { value, label: value };
+  });
+}
 
 function getSlotHour(time: string): number {
   return parseInt(time.split(":")[0], 10);
@@ -273,8 +303,8 @@ export default function ScheduleManagement() {
   const [groups, setGroups] = useState<Group[]>([]);
 
   const [loading, setLoading] = useState(false);
-  const [filterSemester, setFilterSemester] = useState<string | undefined>();
-  const [filterYear, setFilterYear] = useState<string | undefined>();
+  const [filterSemester, setFilterSemester] = useState<string | undefined>(() => getCurrentTrimester());
+  const [filterYear, setFilterYear] = useState<string | undefined>(() => getCurrentAcademicYear());
   const [filterCourseId, setFilterCourseId] = useState<number | undefined>();
   const [filterProfessorId, setFilterProfessorId] = useState<number | undefined>();
   const [filterClassroomId, setFilterClassroomId] = useState<number | undefined>();
@@ -324,6 +354,7 @@ export default function ScheduleManagement() {
   const openCreate = (day?: DayOfWeek, slot?: string) => {
     setEditing(null);
     form.resetFields();
+    form.setFieldValue("academic_year", isAcademicYear(filterYear) ? filterYear : getCurrentAcademicYear());
     if (day) form.setFieldValue("day_of_week", day);
     if (slot) form.setFieldValue("start_time", dayjs(slot, "HH:mm"));
     if (filterCourseId) form.setFieldValue("course_id", filterCourseId);
@@ -331,7 +362,6 @@ export default function ScheduleManagement() {
     if (filterClassroomId) form.setFieldValue("classroom_id", filterClassroomId);
     if (filterGroupId) form.setFieldValue("group_ids", [filterGroupId]);
     if (filterSemester) form.setFieldValue("semester", filterSemester);
-    if (filterYear) form.setFieldValue("academic_year", filterYear);
     setModalOpen(true);
   };
 
@@ -403,6 +433,14 @@ export default function ScheduleManagement() {
     value: s,
     label: getSemesterLabel(s, t),
   }));
+  const academicYearOptions = useMemo(() => {
+    const options = buildAcademicYearOptions();
+    const editingYear = editing?.academic_year;
+    if (editingYear && !options.some((option) => option.value === editingYear)) {
+      return [{ value: editingYear, label: editingYear }, ...options];
+    }
+    return options;
+  }, [editing?.academic_year]);
   const courseOptions = useMemo(
     () => courses.map((c) => ({ value: c.id, label: `${c.code} - ${c.name}` })),
     [courses]
@@ -577,12 +615,15 @@ export default function ScheduleManagement() {
             style={{ flex: "0 1 160px", minWidth: 150 }}
             options={semesterOptions}
           />
-          <Input
+          <Select
             value={filterYear}
-            onChange={(e) => setFilterYear(e.target.value || undefined)}
+            onChange={setFilterYear}
             placeholder={t("schedulesPage.selectAcademicYear")}
             style={{ flex: "0 1 160px", minWidth: 150 }}
             allowClear
+            showSearch
+            optionFilterProp="label"
+            options={academicYearOptions}
           />
           <Button type="text" onClick={clearFilters}>
             {t("groups.clearFilters")}
@@ -708,25 +749,50 @@ export default function ScheduleManagement() {
                 options={classroomOptions}
               />
             </Form.Item>
-            <Form.Item name="semester" label={t("schedulesPage.semester")} style={{ flex: 1 }}>
+            <Form.Item
+              name="semester"
+              label={t("schedulesPage.semester")}
+              rules={[{ required: true, message: t("schedulesPage.trimesterRequired") }]}
+              style={{ flex: 1 }}
+            >
               <Select
-                allowClear
                 placeholder={t("schedulesPage.selectSemester")}
                 options={semesterOptions}
               />
             </Form.Item>
           </div>
 
-          <Form.Item name="academic_year" label={t("schedulesPage.academicYear")}>
-            <Input placeholder="2025-2026" />
+          <Form.Item
+            name="academic_year"
+            label={t("schedulesPage.academicYear")}
+            rules={[{ required: true, message: t("schedulesPage.academicYearRequired") }]}
+          >
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder={t("schedulesPage.selectAcademicYear")}
+              options={academicYearOptions}
+            />
           </Form.Item>
 
-          <Form.Item name="group_ids" label={t("schedulesPage.groups")}>
+          <Form.Item
+            name="group_ids"
+            label={t("schedulesPage.groupsAttending")}
+            tooltip={t("schedulesPage.groupsAttendingTooltip")}
+            rules={[
+              {
+                type: "array",
+                min: 1,
+                required: true,
+                message: t("schedulesPage.groupsRequired"),
+              },
+            ]}
+          >
             <Select
               mode="multiple"
               showSearch
               optionFilterProp="label"
-              placeholder={t("schedulesPage.selectGroups")}
+              placeholder={t("schedulesPage.selectAttendingGroups")}
               options={groupOptions}
             />
           </Form.Item>

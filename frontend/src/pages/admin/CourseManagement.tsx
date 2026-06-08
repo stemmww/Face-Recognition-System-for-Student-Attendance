@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -45,14 +45,54 @@ import {
 import { listGroups, listGroupStudents } from "@/api/groups";
 import { listUsers } from "@/api/users";
 import { formatDateTime, getSemesterLabel } from "@/utils/formatters";
-import { BRAND_PRIMARY } from "@/styles/theme";
+import { BRAND_PRIMARY_DARK } from "@/styles/theme";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
 
 const { Text } = Typography;
 
-const GROUP_TYPE_COLORS: Record<string, string> = { MAIN: BRAND_PRIMARY, ELECTIVE: "orange" };
 const TRIMESTER_OPTIONS = ["TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3"];
+const META_TAG_BASE: CSSProperties = {
+  borderRadius: 6,
+  fontWeight: 600,
+  lineHeight: "20px",
+  marginInlineEnd: 0,
+};
+const COURSE_CODE_STYLE: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  minHeight: 24,
+  padding: "0 8px",
+  borderRadius: 6,
+  background: "rgba(1, 123, 223, 0.08)",
+  color: BRAND_PRIMARY_DARK,
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  fontSize: 13,
+  fontWeight: 700,
+};
+const GROUP_TYPE_TAG_STYLES: Record<string, CSSProperties> = {
+  MAIN: {
+    ...META_TAG_BASE,
+    color: BRAND_PRIMARY_DARK,
+    background: "rgba(1, 123, 223, 0.1)",
+    borderColor: "rgba(1, 123, 223, 0.28)",
+  },
+  ELECTIVE: {
+    ...META_TAG_BASE,
+    color: "#047857",
+    background: "#ecfdf5",
+    borderColor: "#a7f3d0",
+  },
+};
+const TRIMESTER_TAG_STYLE: CSSProperties = {
+  ...META_TAG_BASE,
+  color: "#475569",
+  background: "#f8fafc",
+  borderColor: "#cbd5e1",
+  fontWeight: 500,
+};
+const EMPTY_VALUE_STYLE: CSSProperties = { fontSize: 12, color: "#94a3b8" };
+const ACTION_BUTTON_STYLE: CSSProperties = { paddingInline: 6 };
 
 function getApiErrorMessage(error: unknown): string | undefined {
   if (
@@ -109,6 +149,10 @@ function normalizeAcademicYearForForm(value: string) {
     return `${startYear}-${startYear + 1}`;
   }
   return trimmed;
+}
+
+function renderEmptyValue() {
+  return <span style={EMPTY_VALUE_STYLE}>-</span>;
 }
 
 export default function CourseManagement() {
@@ -383,20 +427,52 @@ export default function CourseManagement() {
   };
 
   const columns = [
-    { title: t("coursesPage.code"), dataIndex: "code", key: "code", width: 100 },
-    { title: t("common.name"), dataIndex: "name", key: "name" },
-    { title: t("coursesPage.semester"), dataIndex: "semester", key: "semester", width: 120, render: (s: string) => getSemesterLabel(s, t) },
-    { title: t("coursesPage.academicYear"), dataIndex: "academic_year", key: "academic_year", width: 140 },
+    {
+      title: t("coursesPage.code"),
+      dataIndex: "code",
+      key: "code",
+      width: 126,
+      render: (code: string) => <span style={COURSE_CODE_STYLE}>{code}</span>,
+    },
+    {
+      title: t("common.name"),
+      dataIndex: "name",
+      key: "name",
+      render: (_: string, record: Course) => (
+        <div style={{ minWidth: 220 }}>
+          <Text strong style={{ fontSize: 15 }}>{record.name}</Text>
+          {record.description && (
+            <Text type="secondary" style={{ display: "block", marginTop: 3, fontSize: 12 }}>
+              {record.description}
+            </Text>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: t("coursesPage.semester"),
+      dataIndex: "semester",
+      key: "semester",
+      width: 130,
+      render: (s: string) => <Tag style={TRIMESTER_TAG_STYLE}>{getSemesterLabel(s, t)}</Tag>,
+    },
+    {
+      title: t("coursesPage.academicYear"),
+      dataIndex: "academic_year",
+      key: "academic_year",
+      width: 150,
+      render: (year: string) => <Text style={{ whiteSpace: "nowrap" }}>{year}</Text>,
+    },
     {
       title: t("coursesPage.groups"),
       key: "groups",
       render: (_: unknown, record: Course) => {
         const tags = allCourseGroupsMap.get(record.id) ?? [];
-        if (!tags.length) return <Text type="secondary" style={{ fontSize: 12 }}>—</Text>;
+        if (!tags.length) return renderEmptyValue();
         return (
           <Space size={4} wrap>
             {tags.map((cg) => (
-              <Tag key={cg.group_subject_id} color={GROUP_TYPE_COLORS[cg.group_type] ?? "default"} style={{ fontSize: 11 }}>
+              <Tag key={cg.group_subject_id} style={GROUP_TYPE_TAG_STYLES[cg.group_type] ?? META_TAG_BASE} title={t(`groups.type_${cg.group_type}`)}>
                 {cg.group_name}
               </Tag>
             ))}
@@ -409,22 +485,22 @@ export default function CourseManagement() {
       dataIndex: "created_at",
       key: "created_at",
       width: 160,
-      render: (d: string) => formatDateTime(d),
+      render: (d: string) => <Text type="secondary">{formatDateTime(d)}</Text>,
     },
     {
       title: t("common.actions"),
       key: "actions",
-      width: 220,
+      width: 230,
       render: (_: unknown, record: Course) => (
-        <Space>
-          <Button type="link" icon={<TeamOutlined />} onClick={() => openDrawer(record)}>
+        <Space size={4} wrap>
+          <Button type="link" size="small" style={ACTION_BUTTON_STYLE} icon={<TeamOutlined />} onClick={() => openDrawer(record)}>
             {t("coursesPage.members")}
           </Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+          <Button type="link" size="small" style={ACTION_BUTTON_STYLE} icon={<EditOutlined />} onClick={() => openEdit(record)}>
             {t("common.edit")}
           </Button>
           <Popconfirm title={t("coursesPage.deleteCourse")} onConfirm={() => handleDelete(record.id)} okButtonProps={{ danger: true }}>
-            <Button type="link" danger icon={<DeleteOutlined />}>{t("common.delete")}</Button>
+            <Button type="link" danger size="small" style={ACTION_BUTTON_STYLE} icon={<DeleteOutlined />}>{t("common.delete")}</Button>
           </Popconfirm>
         </Space>
       ),
@@ -531,7 +607,12 @@ export default function CourseManagement() {
 
       {/* Members Drawer */}
       <Drawer
-        title={selectedCourse ? `${selectedCourse.code} — ${selectedCourse.name}` : ""}
+        title={selectedCourse ? (
+          <Space size={8} wrap>
+            <span style={COURSE_CODE_STYLE}>{selectedCourse.code}</span>
+            <Text strong>{selectedCourse.name}</Text>
+          </Space>
+        ) : ""}
         open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setAddProfessorIds([]); }}
         width={560}
@@ -608,10 +689,12 @@ export default function CourseManagement() {
                       { title: t("groups.group"), key: "name", render: (_: unknown, cg: CourseGroupOut) => (
                         <Space size={4}>
                           <Text strong>{cg.group_name}</Text>
-                          <Tag color={GROUP_TYPE_COLORS[cg.group_type] ?? "default"} style={{ fontSize: 11 }}>{cg.group_type}</Tag>
+                          <Tag style={GROUP_TYPE_TAG_STYLES[cg.group_type] ?? META_TAG_BASE}>
+                            {t(`groups.type_${cg.group_type}`)}
+                          </Tag>
                         </Space>
                       )},
-                      { title: t("groups.trimester"), dataIndex: "semester", key: "semester", width: 100, render: (s: string) => <Tag>{getSemesterLabel(s, t)}</Tag> },
+                      { title: t("groups.trimester"), dataIndex: "semester", key: "semester", width: 110, render: (s: string) => <Tag style={TRIMESTER_TAG_STYLE}>{getSemesterLabel(s, t)}</Tag> },
                       { title: "", key: "rm", width: 40, render: (_: unknown, cg: CourseGroupOut) => (
                         <Popconfirm title={t("common.remove")} onConfirm={() => handleRemoveGroup(cg.group_subject_id)} okButtonProps={{ danger: true }}>
                           <Button type="text" danger size="small" icon={<UserDeleteOutlined />} />

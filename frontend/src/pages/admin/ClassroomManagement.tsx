@@ -119,7 +119,7 @@ export default function ClassroomManagement() {
 
   const columns = [
     {
-      title: t("common.name"),
+      title: t("classroomsPage.classroom"),
       dataIndex: "name",
       key: "name",
       width: 150,
@@ -230,7 +230,7 @@ export default function ClassroomManagement() {
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="name"
-            label={t("common.name")}
+            label={t("classroomsPage.classroomCode")}
             rules={[{ required: true }]}
             extra={t("classroomsPage.nameHint")}
           >
@@ -282,7 +282,12 @@ export default function ClassroomManagement() {
             <InputNumber min={1} max={1000} style={{ width: 120 }} />
           </Form.Item>
           {editing && (
-            <Form.Item name="is_active" label={t("common.status")} valuePropName="checked">
+            <Form.Item
+              name="is_active"
+              label={t("common.status")}
+              valuePropName="checked"
+              extra={t("classroomsPage.statusHint")}
+            >
               <Switch
                 checkedChildren={t("common.active")}
                 unCheckedChildren={t("common.inactive")}

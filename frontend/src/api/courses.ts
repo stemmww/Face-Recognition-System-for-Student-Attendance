@@ -78,8 +78,20 @@ export interface CourseGroupOut {
   semester: string;
 }
 
+export interface CourseSetupStatus {
+  course_id: number;
+  professor_count: number;
+  group_count: number;
+  schedule_count: number;
+}
+
 export async function listAllCourseGroups(): Promise<CourseGroupOut[]> {
   const { data } = await apiClient.get<CourseGroupOut[]>("/courses/all-groups");
+  return data;
+}
+
+export async function listCourseSetupStatuses(): Promise<CourseSetupStatus[]> {
+  const { data } = await apiClient.get<CourseSetupStatus[]>("/courses/setup-status");
   return data;
 }
 

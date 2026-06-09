@@ -43,12 +43,21 @@ async def list_schedules(
     semester: str | None = None,
     academic_year: str | None = None,
     course_id: int | None = None,
+    professor_id: int | None = None,
+    classroom_id: int | None = None,
+    group_id: int | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role == Role.ADMIN:
         return await ScheduleService.list_schedules(
-            db, semester=semester, academic_year=academic_year, course_id=course_id
+            db,
+            semester=semester,
+            academic_year=academic_year,
+            course_id=course_id,
+            professor_id=professor_id,
+            classroom_id=classroom_id,
+            group_id=group_id,
         )
 
     if current_user.role == Role.STUDENT and course_id is not None:

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -29,6 +29,7 @@ import {
 import type { Course, CsvImportResult, Group, User } from "@/types";
 import {
   type CourseGroupOut,
+  type CourseSetupStatus,
   addCourseGroup,
   assignProfessors,
   createCourse,
@@ -36,6 +37,7 @@ import {
   getCourseProfessors,
   importCoursesCSV,
   listAllCourseGroups,
+  listCourseSetupStatuses,
   listCourseGroups,
   listCourses,
   removeCourseGroup,
@@ -45,14 +47,105 @@ import {
 import { listGroups, listGroupStudents } from "@/api/groups";
 import { listUsers } from "@/api/users";
 import { formatDateTime, getSemesterLabel } from "@/utils/formatters";
-import { BRAND_PRIMARY } from "@/styles/theme";
+import { BRAND_PRIMARY_DARK } from "@/styles/theme";
 import PageHeader from "@/components/dashboard/PageHeader";
 import Panel from "@/components/dashboard/Panel";
 
 const { Text } = Typography;
 
-const GROUP_TYPE_COLORS: Record<string, string> = { MAIN: BRAND_PRIMARY, ELECTIVE: "orange" };
 const TRIMESTER_OPTIONS = ["TRIMESTER_1", "TRIMESTER_2", "TRIMESTER_3"];
+const META_TAG_BASE: CSSProperties = {
+  borderRadius: 6,
+  fontWeight: 600,
+  lineHeight: "20px",
+  marginInlineEnd: 0,
+};
+const COURSE_CODE_STYLE: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  minHeight: 24,
+  padding: "0 8px",
+  borderRadius: 6,
+  background: "rgba(1, 123, 223, 0.08)",
+  color: BRAND_PRIMARY_DARK,
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  fontSize: 13,
+  fontWeight: 700,
+};
+const GROUP_TYPE_TAG_STYLES: Record<string, CSSProperties> = {
+  MAIN: {
+    ...META_TAG_BASE,
+    color: BRAND_PRIMARY_DARK,
+    background: "rgba(1, 123, 223, 0.1)",
+    borderColor: "rgba(1, 123, 223, 0.28)",
+  },
+  ELECTIVE: {
+    ...META_TAG_BASE,
+    color: "#047857",
+    background: "#ecfdf5",
+    borderColor: "#a7f3d0",
+  },
+};
+const TRIMESTER_TAG_STYLE: CSSProperties = {
+  ...META_TAG_BASE,
+  color: "#475569",
+  background: "#f8fafc",
+  borderColor: "#cbd5e1",
+  fontWeight: 500,
+};
+const EMPTY_VALUE_STYLE: CSSProperties = { fontSize: 12, color: "#94a3b8" };
+const ACTION_BUTTON_STYLE: CSSProperties = { paddingInline: 6 };
+const DRAWER_SUMMARY_GRID: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  gap: 8,
+  marginBottom: 16,
+};
+const DRAWER_SUMMARY_ITEM: CSSProperties = {
+  border: "1px solid #e2e8f0",
+  borderRadius: 8,
+  padding: "10px 12px",
+  background: "#f8fafc",
+};
+const DRAWER_SUMMARY_VALUE: CSSProperties = {
+  display: "block",
+  color: "#0f172a",
+  fontSize: 20,
+  fontWeight: 800,
+  lineHeight: 1.1,
+};
+const DRAWER_SUMMARY_LABEL: CSSProperties = {
+  display: "block",
+  color: "#64748b",
+  fontSize: 12,
+  marginTop: 4,
+};
+const SETUP_TAG_STYLES: Record<string, CSSProperties> = {
+  READY: {
+    ...META_TAG_BASE,
+    color: "#047857",
+    background: "#ecfdf5",
+    borderColor: "#a7f3d0",
+  },
+  PROFESSOR: {
+    ...META_TAG_BASE,
+    color: "#b45309",
+    background: "#fffbeb",
+    borderColor: "#fde68a",
+  },
+  GROUPS: {
+    ...META_TAG_BASE,
+    color: "#be123c",
+    background: "#fff1f2",
+    borderColor: "#fecdd3",
+  },
+  SCHEDULE: {
+    ...META_TAG_BASE,
+    color: "#6d28d9",
+    background: "#f5f3ff",
+    borderColor: "#ddd6fe",
+  },
+};
 
 function getApiErrorMessage(error: unknown): string | undefined {
   if (
@@ -111,6 +204,23 @@ function normalizeAcademicYearForForm(value: string) {
   return trimmed;
 }
 
+function renderEmptyValue() {
+  return <span style={EMPTY_VALUE_STYLE}>-</span>;
+}
+
+function getUserDisplayName(user: User) {
+  return `${user.last_name} ${user.first_name}`.trim();
+}
+
+function getSetupIssues(status?: CourseSetupStatus) {
+  if (!status) return [];
+  const issues: Array<"PROFESSOR" | "GROUPS" | "SCHEDULE"> = [];
+  if (status.professor_count === 0) issues.push("PROFESSOR");
+  if (status.group_count === 0) issues.push("GROUPS");
+  if (status.schedule_count === 0) issues.push("SCHEDULE");
+  return issues;
+}
+
 export default function CourseManagement() {
   const { t } = useTranslation();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -131,6 +241,7 @@ export default function CourseManagement() {
 
   // Batch group tags for table column
   const [allCourseGroupsMap, setAllCourseGroupsMap] = useState<Map<number, CourseGroupOut[]>>(new Map());
+  const [setupStatusMap, setSetupStatusMap] = useState<Map<number, CourseSetupStatus>>(new Map());
 
   // CSV import
   const [csvModalOpen, setCsvModalOpen] = useState(false);
@@ -172,6 +283,15 @@ export default function CourseManagement() {
     }
   }, []);
 
+  const fetchSetupStatuses = useCallback(async () => {
+    try {
+      const statuses = await listCourseSetupStatuses();
+      setSetupStatusMap(new Map(statuses.map((status) => [status.course_id, status])));
+    } catch {
+      // non-critical
+    }
+  }, []);
+
   const fetchCourses = useCallback(async () => {
     setLoading(true);
     try {
@@ -186,7 +306,8 @@ export default function CourseManagement() {
   useEffect(() => {
     fetchCourses();
     fetchAllGroupTags();
-  }, [fetchCourses, fetchAllGroupTags]);
+    fetchSetupStatuses();
+  }, [fetchCourses, fetchAllGroupTags, fetchSetupStatuses]);
 
   const openCreate = () => {
     setEditingCourse(null);
@@ -217,6 +338,7 @@ export default function CourseManagement() {
       }
       setModalOpen(false);
       fetchCourses();
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("common.operationFailed"));
     }
@@ -228,6 +350,7 @@ export default function CourseManagement() {
       message.success(t("coursesPage.courseDeleted"));
       fetchCourses();
       fetchAllGroupTags();
+      fetchSetupStatuses();
     } catch {
       message.error(t("coursesPage.deleteFailed"));
     }
@@ -304,6 +427,7 @@ export default function CourseManagement() {
       message.success(t("coursesPage.professorsAssigned"));
       setAddProfessorIds([]);
       setProfessors(await getCourseProfessors(selectedCourse.id));
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.assignFailed"));
     }
@@ -314,6 +438,7 @@ export default function CourseManagement() {
     try {
       await removeProfessor(selectedCourse.id, pid);
       setProfessors((prev) => prev.filter((p) => p.id !== pid));
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.removeGroupFailed"));
     }
@@ -329,6 +454,7 @@ export default function CourseManagement() {
       await loadCourseGroupsWithStudents(selectedCourse.id);
       setAllGroups(await listGroups({ active_only: true }));
       fetchAllGroupTags();
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.assignFailed"));
     }
@@ -340,6 +466,7 @@ export default function CourseManagement() {
       await removeCourseGroup(selectedCourse.id, gsId);
       await loadCourseGroupsWithStudents(selectedCourse.id);
       fetchAllGroupTags();
+      fetchSetupStatuses();
     } catch (error) {
       message.error(getApiErrorMessage(error) || t("coursesPage.removeProfFailed"));
     }
@@ -381,22 +508,73 @@ export default function CourseManagement() {
     setTrimesterFilter("ALL");
     setAcademicYearFilter("ALL");
   };
+  const renderSetupStatus = (courseId: number) => {
+    const status = setupStatusMap.get(courseId);
+    if (!status) return renderEmptyValue();
+
+    const issues = getSetupIssues(status);
+    if (!issues.length) {
+      return <Tag style={SETUP_TAG_STYLES.READY}>{t("coursesPage.setupReady")}</Tag>;
+    }
+
+    return (
+      <Space size={4} wrap>
+        {issues.map((issue) => (
+          <Tag key={issue} style={SETUP_TAG_STYLES[issue]}>
+            {t(`coursesPage.setupMissing${issue}`)}
+          </Tag>
+        ))}
+      </Space>
+    );
+  };
 
   const columns = [
-    { title: t("coursesPage.code"), dataIndex: "code", key: "code", width: 100 },
-    { title: t("common.name"), dataIndex: "name", key: "name" },
-    { title: t("coursesPage.semester"), dataIndex: "semester", key: "semester", width: 120, render: (s: string) => getSemesterLabel(s, t) },
-    { title: t("coursesPage.academicYear"), dataIndex: "academic_year", key: "academic_year", width: 140 },
+    {
+      title: t("coursesPage.code"),
+      dataIndex: "code",
+      key: "code",
+      width: 126,
+      render: (code: string) => <span style={COURSE_CODE_STYLE}>{code}</span>,
+    },
+    {
+      title: t("common.name"),
+      dataIndex: "name",
+      key: "name",
+      render: (_: string, record: Course) => (
+        <div style={{ minWidth: 220 }}>
+          <Text strong style={{ fontSize: 15 }}>{record.name}</Text>
+          {record.description && (
+            <Text type="secondary" style={{ display: "block", marginTop: 3, fontSize: 12 }}>
+              {record.description}
+            </Text>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: t("coursesPage.semester"),
+      dataIndex: "semester",
+      key: "semester",
+      width: 130,
+      render: (s: string) => <Tag style={TRIMESTER_TAG_STYLE}>{getSemesterLabel(s, t)}</Tag>,
+    },
+    {
+      title: t("coursesPage.academicYear"),
+      dataIndex: "academic_year",
+      key: "academic_year",
+      width: 150,
+      render: (year: string) => <Text style={{ whiteSpace: "nowrap" }}>{year}</Text>,
+    },
     {
       title: t("coursesPage.groups"),
       key: "groups",
       render: (_: unknown, record: Course) => {
         const tags = allCourseGroupsMap.get(record.id) ?? [];
-        if (!tags.length) return <Text type="secondary" style={{ fontSize: 12 }}>—</Text>;
+        if (!tags.length) return renderEmptyValue();
         return (
           <Space size={4} wrap>
             {tags.map((cg) => (
-              <Tag key={cg.group_subject_id} color={GROUP_TYPE_COLORS[cg.group_type] ?? "default"} style={{ fontSize: 11 }}>
+              <Tag key={cg.group_subject_id} style={GROUP_TYPE_TAG_STYLES[cg.group_type] ?? META_TAG_BASE} title={t(`groups.type_${cg.group_type}`)}>
                 {cg.group_name}
               </Tag>
             ))}
@@ -405,26 +583,32 @@ export default function CourseManagement() {
       },
     },
     {
+      title: t("coursesPage.setup"),
+      key: "setup",
+      width: 220,
+      render: (_: unknown, record: Course) => renderSetupStatus(record.id),
+    },
+    {
       title: t("coursesPage.created"),
       dataIndex: "created_at",
       key: "created_at",
       width: 160,
-      render: (d: string) => formatDateTime(d),
+      render: (d: string) => <Text type="secondary">{formatDateTime(d)}</Text>,
     },
     {
       title: t("common.actions"),
       key: "actions",
-      width: 220,
+      width: 230,
       render: (_: unknown, record: Course) => (
-        <Space>
-          <Button type="link" icon={<TeamOutlined />} onClick={() => openDrawer(record)}>
+        <Space size={4} wrap>
+          <Button type="link" size="small" style={ACTION_BUTTON_STYLE} icon={<TeamOutlined />} onClick={() => openDrawer(record)}>
             {t("coursesPage.members")}
           </Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+          <Button type="link" size="small" style={ACTION_BUTTON_STYLE} icon={<EditOutlined />} onClick={() => openEdit(record)}>
             {t("common.edit")}
           </Button>
           <Popconfirm title={t("coursesPage.deleteCourse")} onConfirm={() => handleDelete(record.id)} okButtonProps={{ danger: true }}>
-            <Button type="link" danger icon={<DeleteOutlined />}>{t("common.delete")}</Button>
+            <Button type="link" danger size="small" style={ACTION_BUTTON_STYLE} icon={<DeleteOutlined />}>{t("common.delete")}</Button>
           </Popconfirm>
         </Space>
       ),
@@ -531,11 +715,31 @@ export default function CourseManagement() {
 
       {/* Members Drawer */}
       <Drawer
-        title={selectedCourse ? `${selectedCourse.code} — ${selectedCourse.name}` : ""}
+        title={selectedCourse ? (
+          <Space size={8} wrap>
+            <span style={COURSE_CODE_STYLE}>{selectedCourse.code}</span>
+            <Text strong>{selectedCourse.name}</Text>
+          </Space>
+        ) : ""}
         open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setAddProfessorIds([]); }}
         width={560}
       >
+        <div style={DRAWER_SUMMARY_GRID}>
+          <div style={DRAWER_SUMMARY_ITEM}>
+            <span style={DRAWER_SUMMARY_VALUE}>{professors.length}</span>
+            <span style={DRAWER_SUMMARY_LABEL}>{t("coursesPage.professors")}</span>
+          </div>
+          <div style={DRAWER_SUMMARY_ITEM}>
+            <span style={DRAWER_SUMMARY_VALUE}>{courseGroups.length}</span>
+            <span style={DRAWER_SUMMARY_LABEL}>{t("coursesPage.groups")}</span>
+          </div>
+          <div style={DRAWER_SUMMARY_ITEM}>
+            <span style={DRAWER_SUMMARY_VALUE}>{students.length}</span>
+            <span style={DRAWER_SUMMARY_LABEL}>{t("coursesPage.studentsFromGroups")}</span>
+          </div>
+        </div>
+
         <Tabs activeKey={drawerTab} onChange={(k) => setDrawerTab(k as "professors" | "students" | "groups")}
           items={[
             {
@@ -552,8 +756,12 @@ export default function CourseManagement() {
                   <Table dataSource={professors} rowKey="id" size="small" pagination={false}
                     locale={{ emptyText: t("coursesPage.noProfessors") }}
                     columns={[
-                      { title: t("common.name"), key: "name", render: (_: unknown, u: User) => `${u.last_name} ${u.first_name}` },
-                      { title: t("common.email"), dataIndex: "email", key: "email" },
+                      {
+                        title: t("common.name"),
+                        key: "name",
+                        render: (_: unknown, u: User) => <Text strong>{getUserDisplayName(u)}</Text>,
+                      },
+                      { title: t("common.email"), dataIndex: "email", key: "email", render: (email: string) => <Text type="secondary">{email}</Text> },
                       { title: "", key: "rm", width: 40, render: (_: unknown, u: User) => (
                         <Popconfirm title={t("common.remove")} onConfirm={() => handleRemoveProfessor(u.id)} okButtonProps={{ danger: true }}>
                           <Button type="text" danger size="small" icon={<UserDeleteOutlined />} />
@@ -568,21 +776,23 @@ export default function CourseManagement() {
               label: `${t("coursesPage.studentsFromGroups")} (${students.length})`,
               children: (
                 <>
-                  <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
-                    {t("coursesPage.studentsFromGroupsHint")}
-                  </Text>
+                  <Alert type="info" showIcon message={t("coursesPage.studentsFromGroupsHint")} style={{ marginBottom: 12 }} />
                   <Table dataSource={students} rowKey="id" size="small" pagination={false}
                     locale={{ emptyText: t("coursesPage.noStudentsFromGroups") }}
                     columns={[
-                      { title: t("common.name"), key: "name", render: (_: unknown, u: User) => `${u.last_name} ${u.first_name}` },
-                      { title: t("common.email"), dataIndex: "email", key: "email" },
+                      {
+                        title: t("common.name"),
+                        key: "name",
+                        render: (_: unknown, u: User) => <Text strong>{getUserDisplayName(u)}</Text>,
+                      },
+                      { title: t("common.email"), dataIndex: "email", key: "email", render: (email: string) => <Text type="secondary">{email}</Text> },
                       {
                         title: t("coursesPage.sourceGroups"),
                         dataIndex: "group_names",
                         key: "groups",
                         render: (groupNames: string[]) => (
                           <Space size={4} wrap>
-                            {groupNames.map((name) => <Tag key={name}>{name}</Tag>)}
+                            {groupNames.map((name) => <Tag key={name} style={GROUP_TYPE_TAG_STYLES.MAIN}>{name}</Tag>)}
                           </Space>
                         ),
                       },
@@ -606,12 +816,14 @@ export default function CourseManagement() {
                     locale={{ emptyText: t("coursesPage.noGroups") }}
                     columns={[
                       { title: t("groups.group"), key: "name", render: (_: unknown, cg: CourseGroupOut) => (
-                        <Space size={4}>
-                          <Text strong>{cg.group_name}</Text>
-                          <Tag color={GROUP_TYPE_COLORS[cg.group_type] ?? "default"} style={{ fontSize: 11 }}>{cg.group_type}</Tag>
+                        <Space size={6} wrap>
+                          <span style={COURSE_CODE_STYLE}>{cg.group_name}</span>
+                          <Tag style={GROUP_TYPE_TAG_STYLES[cg.group_type] ?? META_TAG_BASE}>
+                            {t(`groups.type_${cg.group_type}`)}
+                          </Tag>
                         </Space>
                       )},
-                      { title: t("groups.trimester"), dataIndex: "semester", key: "semester", width: 100, render: (s: string) => <Tag>{getSemesterLabel(s, t)}</Tag> },
+                      { title: t("groups.trimester"), dataIndex: "semester", key: "semester", width: 110, render: (s: string) => <Tag style={TRIMESTER_TAG_STYLE}>{getSemesterLabel(s, t)}</Tag> },
                       { title: "", key: "rm", width: 40, render: (_: unknown, cg: CourseGroupOut) => (
                         <Popconfirm title={t("common.remove")} onConfirm={() => handleRemoveGroup(cg.group_subject_id)} okButtonProps={{ danger: true }}>
                           <Button type="text" danger size="small" icon={<UserDeleteOutlined />} />

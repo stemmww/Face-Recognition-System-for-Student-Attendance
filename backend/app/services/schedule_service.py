@@ -1,11 +1,14 @@
 from datetime import datetime, time, timedelta
 from typing import ClassVar
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import BadRequestError, NotFoundError
+from app.models.appeal import Appeal
+from app.models.attendance import AttendanceRecord
+from app.models.attendance_session import AttendanceSession
 from app.models.course import CourseProf
 from app.models.enrollment import Enrollment
 from app.models.schedule import Schedule, schedule_groups
@@ -148,6 +151,7 @@ class ScheduleService:
         academic_year: str | None = None,
         course_id: int | None = None,
         professor_id: int | None = None,
+        classroom_id: int | None = None,
         group_id: int | None = None,
         allowed_schedule_ids: list[int] | None = None,
     ) -> list[ScheduleOut]:
@@ -160,6 +164,8 @@ class ScheduleService:
             query = query.where(Schedule.course_id == course_id)
         if professor_id is not None:
             query = query.where(Schedule.professor_id == professor_id)
+        if classroom_id is not None:
+            query = query.where(Schedule.classroom_id == classroom_id)
         if group_id is not None:
             query = query.join(schedule_groups, Schedule.id == schedule_groups.c.schedule_id).where(
                 schedule_groups.c.group_id == group_id
@@ -216,8 +222,15 @@ class ScheduleService:
 
     @staticmethod
     async def delete_schedule(db: AsyncSession, schedule_id: int) -> None:
-        s = await ScheduleService._get_or_404(db, schedule_id)
-        await db.delete(s)
+        await ScheduleService._get_or_404(db, schedule_id)
+        session_ids = select(AttendanceSession.id).where(AttendanceSession.schedule_id == schedule_id)
+        record_ids = select(AttendanceRecord.id).where(AttendanceRecord.session_id.in_(session_ids))
+
+        await db.execute(delete(Appeal).where(Appeal.attendance_id.in_(record_ids)))
+        await db.execute(delete(AttendanceRecord).where(AttendanceRecord.session_id.in_(session_ids)))
+        await db.execute(delete(AttendanceSession).where(AttendanceSession.schedule_id == schedule_id))
+        await db.execute(delete(schedule_groups).where(schedule_groups.c.schedule_id == schedule_id))
+        await db.execute(delete(Schedule).where(Schedule.id == schedule_id))
         await db.commit()
 
     @staticmethod

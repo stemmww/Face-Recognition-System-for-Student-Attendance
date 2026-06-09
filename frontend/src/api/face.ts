@@ -2,6 +2,7 @@ import type {
   FaceCoverage,
   FaceEmbedding,
   FaceEnrollResponse,
+  FaceRegistryStudentsPage,
   FaceVerifyResponse,
   PipelineStatus,
 } from "@/types";
@@ -24,6 +25,17 @@ export async function enrollFace(userId: number, photo: File): Promise<FaceEnrol
 
 export async function getFaceCoverage(): Promise<FaceCoverage[]> {
   const { data } = await apiClient.get<FaceCoverage[]>("/face/coverage");
+  return data;
+}
+
+export async function listFaceRegistryStudents(params?: {
+  group_id?: number;
+  status?: "all" | "missing" | "needs_more" | "complete";
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<FaceRegistryStudentsPage> {
+  const { data } = await apiClient.get<FaceRegistryStudentsPage>("/face/registry-students", { params });
   return data;
 }
 

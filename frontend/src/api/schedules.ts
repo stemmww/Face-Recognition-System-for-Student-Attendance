@@ -4,6 +4,10 @@ import apiClient from "./client";
 export async function listSchedules(params?: {
   semester?: string;
   academic_year?: string;
+  course_id?: number;
+  professor_id?: number;
+  classroom_id?: number;
+  group_id?: number;
 }): Promise<Schedule[]> {
   const { data } = await apiClient.get<Schedule[]>("/schedules", { params });
   return data;

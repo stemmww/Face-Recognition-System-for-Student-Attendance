@@ -2,12 +2,11 @@ import re
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from app.models.classroom import ROOM_TYPE_LABELS
+from app.models.classroom import ROOM_TYPE_LABELS, ROOM_TYPE_VALUES
 
-# Canonical format: C1.1.101L
-# block.floor_room_type  e.g. C1.2.305P
+# Canonical format: C1.1.101L, with the room type suffix optional.
 _CLASSROOM_RE = re.compile(
-    r"^(C1\.[123])\.(\d)(\d{2})([LPK])$",
+    r"^(C\d+\.\d+)\.(\d{3,4})([A-Z])?$",
     re.IGNORECASE,
 )
 
@@ -17,11 +16,15 @@ def parse_classroom_name(name: str) -> dict | None:
     m = _CLASSROOM_RE.match(name.strip())
     if not m:
         return None
+    room_type = m.group(3).upper() if m.group(3) else None
+    if room_type and room_type not in ROOM_TYPE_VALUES:
+        return None
+    room_number = m.group(2)
     return {
         "block": m.group(1).upper(),
-        "floor": int(m.group(2)),
-        "room_number": m.group(2) + m.group(3),
-        "room_type": m.group(4).upper(),
+        "floor": int(room_number[0]),
+        "room_number": room_number,
+        "room_type": room_type,
     }
 
 
@@ -44,10 +47,15 @@ class ClassroomCreate(BaseModel):
     @model_validator(mode="after")
     def parse_name_parts(self) -> "ClassroomCreate":
         parsed = parse_classroom_name(self.name)
-        if parsed and self.block is None:
+        if not parsed:
+            return self
+        if self.block is None:
             self.block = parsed["block"]
+        if self.floor is None:
             self.floor = parsed["floor"]
+        if self.room_number is None:
             self.room_number = parsed["room_number"]
+        if self.room_type is None:
             self.room_type = parsed["room_type"]
         return self
 
@@ -65,6 +73,23 @@ class ClassroomUpdate(BaseModel):
     @classmethod
     def validate_name(cls, v: str | None) -> str | None:
         return v.strip().upper() if v else v
+
+    @model_validator(mode="after")
+    def parse_name_parts(self) -> "ClassroomUpdate":
+        if not self.name:
+            return self
+        parsed = parse_classroom_name(self.name)
+        if not parsed:
+            return self
+        if self.block is None:
+            self.block = parsed["block"]
+        if self.floor is None:
+            self.floor = parsed["floor"]
+        if self.room_number is None:
+            self.room_number = parsed["room_number"]
+        if self.room_type is None:
+            self.room_type = parsed["room_type"]
+        return self
 
 
 class ClassroomOut(BaseModel):

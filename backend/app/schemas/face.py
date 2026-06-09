@@ -18,6 +18,33 @@ class FaceCoverageOut(BaseModel):
     latest_embedding_at: datetime | None = None
 
 
+class FaceRegistryStudentOut(BaseModel):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+    photo_url: str | None = None
+    is_active: bool
+    created_at: datetime
+    embedding_count: int
+    latest_embedding_at: datetime | None = None
+
+
+class FaceRegistryCountsOut(BaseModel):
+    all: int
+    missing: int
+    needs_more: int
+    complete: int
+
+
+class FaceRegistryStudentsPage(BaseModel):
+    items: list[FaceRegistryStudentOut]
+    counts: FaceRegistryCountsOut
+    filtered_total: int
+    limit: int
+    offset: int
+
+
 class FaceEnrollResponse(BaseModel):
     id: int
     user_id: int

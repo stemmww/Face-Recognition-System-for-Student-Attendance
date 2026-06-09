@@ -19,10 +19,10 @@ from app.core.exceptions import BadRequestError, ForbiddenError
 from app.database import get_db
 from app.models.attendance import AttendanceRecord
 from app.models.attendance_session import SessionStatus
-from app.models.enrollment import Enrollment
 from app.models.user import Role, User
 from app.schemas.attendance import LivenessChallengeOut, VerifyAttendanceResponse
 from app.services.attendance_service import AttendanceRecordService, AttendanceSessionService
+from app.services.course_service import CourseService
 from app.services.face_service import FaceService
 from app.utils.geo import haversine_distance
 from app.utils.liveness import (
@@ -149,13 +149,7 @@ async def verify_attendance(
     )
     schedule = sched_result.scalar_one()
 
-    enrolled = await db.execute(
-        select(Enrollment).where(
-            Enrollment.student_id == current_user.id,
-            Enrollment.course_id == schedule.course_id,
-        )
-    )
-    if enrolled.scalar_one_or_none() is None:
+    if not await CourseService.is_student_enrolled(db, schedule.course_id, current_user.id):
         raise ForbiddenError("You are not enrolled in this course")
 
     # --- 3.5. Early duplicate check (skip expensive ops if already recorded) ---

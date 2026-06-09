@@ -6,9 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.attendance import AttendanceRecord, AttendanceStatus
 from app.models.attendance_session import AttendanceSession
 from app.models.course import Course
-from app.models.enrollment import Enrollment
 from app.models.schedule import Schedule
-from app.models.user import User
+from app.services.course_service import CourseService
 
 
 class StatisticsService:
@@ -24,15 +23,7 @@ class StatisticsService:
         )
         total_sessions = sessions_result.scalar() or 0
 
-        enrolled_result = await db.execute(
-            select(User)
-            .join(Enrollment, Enrollment.student_id == User.id)
-            .where(
-                Enrollment.course_id == course_id,
-                User.is_active.is_(True),
-            )
-        )
-        enrolled_users = enrolled_result.scalars().all()
+        enrolled_users = await CourseService.get_enrolled_students(db, course_id)
 
         students_stats = []
         for user in enrolled_users:

@@ -7,9 +7,9 @@ from app.models.attendance import AttendanceRecord
 from app.models.attendance_session import AttendanceSession
 from app.models.course import Course
 from app.models.course import CourseProf
-from app.models.enrollment import Enrollment
 from app.models.schedule import Schedule
 from app.models.user import Role, User
+from app.services.course_service import CourseService
 
 
 class AccessService:
@@ -22,10 +22,7 @@ class AccessService:
 
     @staticmethod
     async def get_student_course_ids(db: AsyncSession, student_id: int) -> list[int]:
-        result = await db.execute(
-            select(Enrollment.course_id).where(Enrollment.student_id == student_id)
-        )
-        return [row[0] for row in result.fetchall()]
+        return await CourseService.get_student_course_ids(db, student_id)
 
     @staticmethod
     async def ensure_course_access(
@@ -52,13 +49,7 @@ class AccessService:
             return
 
         if current_user.role == Role.STUDENT:
-            result = await db.execute(
-                select(Enrollment).where(
-                    Enrollment.course_id == course_id,
-                    Enrollment.student_id == current_user.id,
-                )
-            )
-            if result.scalar_one_or_none() is None:
+            if not await CourseService.is_student_enrolled(db, course_id, current_user.id):
                 raise ForbiddenError("You do not have access to this course")
             return
 

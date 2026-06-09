@@ -7,6 +7,7 @@ from app.models.attendance import AttendanceRecord
 from app.models.attendance_session import AttendanceSession
 from app.models.course import Course, CourseProf
 from app.models.enrollment import Enrollment
+from app.models.group import group_students
 from app.models.group_subject import GroupSubject
 from app.models.professor_tag import course_tag_assignments
 from app.models.schedule import Schedule, schedule_groups
@@ -88,11 +89,11 @@ class CourseService:
                 .order_by(Course.name)
             )
         else:
+            course_ids = await CourseService.get_student_course_ids(db, user.id)
+            if not course_ids:
+                return []
             result = await db.execute(
-                select(Course)
-                .join(Enrollment)
-                .where(Enrollment.student_id == user.id)
-                .order_by(Course.name)
+                select(Course).where(Course.id.in_(course_ids)).order_by(Course.name)
             )
         return result.scalars().all()
 
@@ -187,10 +188,48 @@ class CourseService:
 
     @staticmethod
     async def get_enrolled_students(db: AsyncSession, course_id: int) -> list[User]:
+        student_ids = await CourseService.get_active_enrolled_student_ids(db, course_id)
+        if not student_ids:
+            return []
         result = await db.execute(
             select(User)
-            .join(Enrollment)
-            .where(Enrollment.course_id == course_id, User.is_active.is_(True))
-            .order_by(User.last_name)
+            .where(User.id.in_(student_ids), User.is_active.is_(True))
+            .order_by(User.last_name, User.first_name)
         )
         return result.scalars().all()
+
+    @staticmethod
+    async def get_student_course_ids(db: AsyncSession, student_id: int) -> list[int]:
+        direct = await db.execute(
+            select(Enrollment.course_id).where(Enrollment.student_id == student_id)
+        )
+        group_based = await db.execute(
+            select(GroupSubject.course_id)
+            .join(group_students, group_students.c.group_id == GroupSubject.group_id)
+            .where(group_students.c.student_id == student_id)
+        )
+        return sorted({row[0] for row in direct.fetchall()} | {row[0] for row in group_based.fetchall()})
+
+    @staticmethod
+    async def is_student_enrolled(db: AsyncSession, course_id: int, student_id: int) -> bool:
+        course_ids = await CourseService.get_student_course_ids(db, student_id)
+        return course_id in course_ids
+
+    @staticmethod
+    async def get_active_enrolled_student_ids(db: AsyncSession, course_id: int) -> set[int]:
+        direct = await db.execute(
+            select(Enrollment.student_id).where(Enrollment.course_id == course_id)
+        )
+        group_based = await db.execute(
+            select(group_students.c.student_id)
+            .join(GroupSubject, GroupSubject.group_id == group_students.c.group_id)
+            .where(GroupSubject.course_id == course_id)
+        )
+        student_ids = {row[0] for row in direct.fetchall()} | {row[0] for row in group_based.fetchall()}
+        if not student_ids:
+            return set()
+
+        active = await db.execute(
+            select(User.id).where(User.id.in_(student_ids), User.is_active.is_(True))
+        )
+        return {row[0] for row in active.fetchall()}

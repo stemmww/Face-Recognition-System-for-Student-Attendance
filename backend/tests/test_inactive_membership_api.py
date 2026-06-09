@@ -8,6 +8,7 @@ from app.core.security import hash_password
 from app.models.attendance import AttendanceRecord, AttendanceStatus
 from app.models.course import Course, CourseProf
 from app.models.enrollment import Enrollment
+from app.models.group import Group, group_students
 from app.models.schedule import Schedule
 from app.models.user import Role, User
 from tests.conftest import auth_header
@@ -179,6 +180,45 @@ class TestInactiveMembershipRules:
             select(CourseProf).where(CourseProf.course_id == course.id)
         )
         assert assignments.scalars().all() == []
+
+    async def test_add_group_students_rejects_inactive_students_atomically(
+        self,
+        client: AsyncClient,
+        db: AsyncSession,
+        admin_user: User,
+    ):
+        active_student = await _create_user(
+            db,
+            email="active-group@test.com",
+            password="student123",
+            role=Role.STUDENT,
+        )
+        inactive_student = await _create_user(
+            db,
+            email="inactive-group@test.com",
+            password="student123",
+            role=Role.STUDENT,
+            is_active=False,
+        )
+        group = Group(code="SE-2401", group_type="MAIN")
+        db.add(group)
+        await db.commit()
+        await db.refresh(group)
+
+        token = await _login(client, "admin@test.com", "admin123")
+        response = await client.post(
+            f"/api/groups/{group.id}/students",
+            headers=auth_header(token),
+            json={"student_ids": [active_student.id, inactive_student.id]},
+        )
+
+        assert response.status_code == 400
+        assert "inactive students" in response.json()["detail"]
+
+        members = await db.execute(
+            select(group_students.c.student_id).where(group_students.c.group_id == group.id)
+        )
+        assert members.fetchall() == []
 
     async def test_inactive_students_are_hidden_from_rosters_stats_and_auto_absent(
         self,

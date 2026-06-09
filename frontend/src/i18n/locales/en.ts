@@ -792,6 +792,11 @@ const en = {
     importTitle: "Import Professors from CSV",
     csvRequired: "Required columns: email, first_name, last_name, password",
     csvOptional: "Optional: tags (semicolon-separated)",
+    searchPlaceholder: "Search by name or email",
+    allSubjects: "All subjects",
+    allStatuses: "All statuses",
+    clearFilters: "Clear filters",
+    filterResultCount: "{{shown}} of {{total}} professors shown",
   },
 
   // Classrooms
@@ -818,6 +823,13 @@ const en = {
     importTitle: "Import Classrooms from CSV",
     csvRequired: "Required column: name (e.g. C1.1.349K)",
     csvOptional: "Optional: capacity, is_active",
+    searchPlaceholder: "Search by classroom name",
+    allBlocks: "All blocks",
+    allFloors: "All floors",
+    allRoomTypes: "All room types",
+    allStatuses: "All statuses",
+    clearFilters: "Clear filters",
+    filterResultCount: "{{shown}} of {{total}} classrooms shown",
   },
 
   // Header

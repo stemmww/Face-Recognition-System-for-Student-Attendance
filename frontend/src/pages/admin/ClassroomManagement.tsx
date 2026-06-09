@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert, Button, Form, Input, InputNumber, Modal, Popconfirm,
-  Space, Switch, Table, Tag, Typography, Upload, message,
+  Select, Space, Switch, Table, Tag, Typography, Upload, message,
 } from "antd";
-import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined, UploadOutlined } from "@ant-design/icons";
 import type { Classroom, CsvImportResult } from "@/types";
 import {
   createClassroom, deleteClassroom, importClassroomsCSV,
@@ -42,6 +42,11 @@ export default function ClassroomManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Classroom | null>(null);
   const [form] = Form.useForm();
+  const [classroomSearch, setClassroomSearch] = useState("");
+  const [blockFilter, setBlockFilter] = useState<string>("ALL");
+  const [floorFilter, setFloorFilter] = useState<number | "ALL">("ALL");
+  const [roomTypeFilter, setRoomTypeFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const classroomName = Form.useWatch("name", form);
   const parsedClassroom = parseClassroomCode(classroomName);
 
@@ -115,6 +120,54 @@ export default function ClassroomManagement() {
     } finally {
       setCsvLoading(false);
     }
+  };
+
+  const blockOptions = useMemo(() => (
+    [...new Set(classrooms.map((classroom) => classroom.block).filter(Boolean) as string[])]
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+  ), [classrooms]);
+
+  const floorOptions = useMemo(() => (
+    [...new Set(classrooms.map((classroom) => classroom.floor).filter((floor): floor is number => floor !== null))]
+      .sort((a, b) => a - b)
+  ), [classrooms]);
+
+  const roomTypeOptions = useMemo(() => {
+    const types = new Map<string, string>();
+    classrooms.forEach((classroom) => {
+      if (classroom.room_type) {
+        types.set(classroom.room_type, classroom.room_type_label ?? ROOM_TYPE_LABEL[classroom.room_type] ?? classroom.room_type);
+      }
+    });
+    return [...types.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [classrooms]);
+
+  const filteredClassrooms = useMemo(() => {
+    const query = classroomSearch.trim().toLowerCase();
+    return classrooms.filter((classroom) => {
+      if (statusFilter === "ACTIVE" && !classroom.is_active) return false;
+      if (statusFilter === "INACTIVE" && classroom.is_active) return false;
+      if (blockFilter !== "ALL" && classroom.block !== blockFilter) return false;
+      if (floorFilter !== "ALL" && classroom.floor !== floorFilter) return false;
+      if (roomTypeFilter !== "ALL" && classroom.room_type !== roomTypeFilter) return false;
+      if (!query) return true;
+
+      return classroom.name.toLowerCase().includes(query);
+    });
+  }, [blockFilter, classroomSearch, classrooms, floorFilter, roomTypeFilter, statusFilter]);
+
+  const hasClassroomFilters = Boolean(classroomSearch.trim())
+    || blockFilter !== "ALL"
+    || floorFilter !== "ALL"
+    || roomTypeFilter !== "ALL"
+    || statusFilter !== "ALL";
+
+  const clearClassroomFilters = () => {
+    setClassroomSearch("");
+    setBlockFilter("ALL");
+    setFloorFilter("ALL");
+    setRoomTypeFilter("ALL");
+    setStatusFilter("ALL");
   };
 
   const columns = [
@@ -209,8 +262,72 @@ export default function ClassroomManagement() {
       />
 
       <Panel flush>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            padding: "16px 20px",
+            borderBottom: "1px solid #f1f5f9",
+          }}
+        >
+          <Input
+            allowClear
+            prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+            value={classroomSearch}
+            onChange={(e) => setClassroomSearch(e.target.value)}
+            placeholder={t("classroomsPage.searchPlaceholder")}
+            style={{ flex: "1 1 260px", maxWidth: 360 }}
+          />
+          <Select
+            value={blockFilter}
+            onChange={setBlockFilter}
+            style={{ width: 150 }}
+            options={[
+              { value: "ALL", label: t("classroomsPage.allBlocks") },
+              ...blockOptions.map((block) => ({ value: block, label: block })),
+            ]}
+          />
+          <Select
+            value={floorFilter}
+            onChange={setFloorFilter}
+            style={{ width: 130 }}
+            options={[
+              { value: "ALL", label: t("classroomsPage.allFloors") },
+              ...floorOptions.map((floor) => ({ value: floor, label: `${t("classroomsPage.floor")} ${floor}` })),
+            ]}
+          />
+          <Select
+            value={roomTypeFilter}
+            onChange={setRoomTypeFilter}
+            style={{ width: 190 }}
+            options={[
+              { value: "ALL", label: t("classroomsPage.allRoomTypes") },
+              ...roomTypeOptions.map(([value, label]) => ({ value, label })),
+            ]}
+          />
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: 150 }}
+            options={[
+              { value: "ALL", label: t("classroomsPage.allStatuses") },
+              { value: "ACTIVE", label: t("common.active") },
+              { value: "INACTIVE", label: t("common.inactive") },
+            ]}
+          />
+          {hasClassroomFilters && (
+            <Button type="text" onClick={clearClassroomFilters}>
+              {t("classroomsPage.clearFilters")}
+            </Button>
+          )}
+          <Text type="secondary" style={{ marginLeft: "auto", fontSize: 13 }}>
+            {t("classroomsPage.filterResultCount", { shown: filteredClassrooms.length, total: classrooms.length })}
+          </Text>
+        </div>
         <Table
-          dataSource={classrooms}
+          dataSource={filteredClassrooms}
           columns={columns}
           rowKey="id"
           loading={loading}

@@ -601,7 +601,7 @@ const ru = {
     importTitle: "Импорт студентов из CSV",
     csvFormat: "Формат CSV",
     csvRequired: "Обязательные столбцы: email, first_name, last_name, password",
-    csvOptional: "Необязательно: course_codes (через запятую или точку с запятой)",
+    csvOptional: "Необязательно: course_codes (через запятую или точку с запятой), can_self_enroll_face",
     dragCSV: "Нажмите или перетащите CSV-файл сюда",
     importing: "Импорт...",
     importComplete: "Импорт завершён",

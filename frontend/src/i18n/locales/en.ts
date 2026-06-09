@@ -612,7 +612,7 @@ const en = {
     importTitle: "Import Students from CSV",
     csvFormat: "CSV Format",
     csvRequired: "Required columns: email, first_name, last_name, password",
-    csvOptional: "Optional: course_codes (comma or semicolon separated)",
+    csvOptional: "Optional: course_codes (comma or semicolon separated), can_self_enroll_face",
     dragCSV: "Click or drag CSV file here",
     importing: "Importing...",
     importComplete: "Import Complete",

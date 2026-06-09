@@ -37,6 +37,8 @@ services:
       CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       AI_MODEL_PATH: /app/models
       UPLOAD_DIR: /app/uploads
+      QUALITY_MIN_SHARPNESS: ${QUALITY_MIN_SHARPNESS:-0.0}
+      QUALITY_SOFT_SHARPNESS: ${QUALITY_SOFT_SHARPNESS:-20.0}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@attendance.edu}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}

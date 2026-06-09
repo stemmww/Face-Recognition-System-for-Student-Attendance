@@ -28,6 +28,7 @@ class _FaceEnrollmentScreenState
   String? _resultMessage;
   int _embeddingCount = 0;
   bool _hasEmbedding = false;
+  bool? _canSelfEnrollFace;
 
   @override
   void initState() {
@@ -40,6 +41,7 @@ class _FaceEnrollmentScreenState
       final resp = await ApiClient.get('/api/face-enrollment/me');
       final data = resp.data as Map<String, dynamic>;
       setState(() {
+        _canSelfEnrollFace = data['can_self_enroll_face'] as bool? ?? false;
         _hasEmbedding = data['has_face_embedding'] as bool? ?? false;
         _embeddingCount = data['embedding_count'] as int? ?? 0;
       });
@@ -73,7 +75,7 @@ class _FaceEnrollmentScreenState
     try {
       final token = await TokenStorage.getAccessToken();
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(
+        'photo': await MultipartFile.fromFile(
           _selectedImage!.path,
           filename: 'face.jpg',
         ),
@@ -123,6 +125,7 @@ class _FaceEnrollmentScreenState
       case 'NO_FACE_DETECTED':
         return tr('face_enrollment.no_face');
       case 'MULTIPLE_FACES':
+      case 'MULTIPLE_FACES_DETECTED':
         return tr('face_enrollment.multiple_faces');
       case 'FACE_TOO_BLURRY':
         return tr('face_enrollment.too_blurry');
@@ -138,7 +141,8 @@ class _FaceEnrollmentScreenState
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
-    if (user == null || !user.canSelfEnrollFace) {
+    final canEnroll = _canSelfEnrollFace ?? user?.canSelfEnrollFace ?? false;
+    if (user == null || !canEnroll) {
       return Scaffold(
         appBar: AppBar(title: Text(tr('nav.face_enrollment'))),
         body: Center(

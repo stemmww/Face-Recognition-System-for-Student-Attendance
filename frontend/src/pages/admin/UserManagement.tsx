@@ -450,11 +450,11 @@ export default function UserManagement() {
           description={
             <div>
               <p style={{ margin: "4px 0" }}>{t("usersPage.csvRequired")}: <strong>email, first_name, last_name, password</strong></p>
-              <p style={{ margin: "4px 0" }}>{t("usersPage.csvOptional")}: <strong>role, course_codes</strong> ({t("usersPage.csvSeparated")})</p>
+              <p style={{ margin: "4px 0" }}>{t("usersPage.csvOptional")}: <strong>role, course_codes, can_self_enroll_face</strong> ({t("usersPage.csvSeparated")})</p>
               <code style={{ fontSize: 12, display: "block", marginTop: 8, padding: 8, borderRadius: 4 }}>
-                email,first_name,last_name,password,role,course_codes<br />
-                student_1@example.com,student_1,Student,admin123,student,SE2322<br />
-                professor_1@example.com,professor_1,Professor,admin123,professor,
+                email,first_name,last_name,password,role,course_codes,can_self_enroll_face<br />
+                student_1@example.com,student_1,Student,admin123,student,SE2322,true<br />
+                professor_1@example.com,professor_1,Professor,admin123,professor,,
               </code>
             </div>
           }

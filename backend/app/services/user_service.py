@@ -11,6 +11,15 @@ from app.schemas.user import UserCreate, UserUpdate
 
 class UserService:
     @staticmethod
+    def _parse_bool(raw_value: str | None, default: bool = False) -> bool:
+        if raw_value is None:
+            return default
+        normalized = raw_value.strip().lower()
+        if not normalized:
+            return default
+        return normalized in {"1", "true", "yes", "y", "on"}
+
+    @staticmethod
     def _parse_import_role(raw_role: str) -> Role | None:
         normalized = raw_role.strip().lower()
         if not normalized:
@@ -100,6 +109,7 @@ class UserService:
             password = row.get("password", "").strip()
             role_raw = row.get("role", "").strip()
             course_codes_raw = row.get("course_codes", "").strip()
+            can_self_enroll_face = UserService._parse_bool(row.get("can_self_enroll_face"))
 
             if not email or not first_name or not last_name or not password:
                 errors.append(f"Row {i}: missing required fields")
@@ -119,6 +129,8 @@ class UserService:
                 if user.role != role:
                     user.role = role
                     updated_roles += 1
+                if role == Role.STUDENT:
+                    user.can_self_enroll_face = can_self_enroll_face
             else:
                 user = User(
                     email=email,
@@ -126,6 +138,7 @@ class UserService:
                     first_name=first_name,
                     last_name=last_name,
                     role=role,
+                    can_self_enroll_face=can_self_enroll_face if role == Role.STUDENT else False,
                 )
                 db.add(user)
                 await db.flush()

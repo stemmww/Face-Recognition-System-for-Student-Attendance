@@ -139,9 +139,10 @@ async def import_students_csv(
 ):
     """Bulk import users from a CSV file.
 
-    CSV columns: email, first_name, last_name, password, role, course_codes
+    CSV columns: email, first_name, last_name, password, role, course_codes, can_self_enroll_face
     role is optional and defaults to student.
     course_codes is optional for students and can contain multiple codes separated by commas or semicolons.
+    can_self_enroll_face is optional for students and accepts true/false.
     """
     content = await file.read()
     text = content.decode("utf-8-sig")

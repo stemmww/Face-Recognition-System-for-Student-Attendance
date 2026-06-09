@@ -15,6 +15,7 @@ from app.ai.quality import (
     compute_pose_offsets,
     compute_sharpness,
 )
+from app.config import settings
 
 
 # ---------------------------------------------------------------------------
@@ -146,8 +147,9 @@ class TestAssessFaceQuality:
         assert report.passed is False
         assert any(i.code == "face_too_small" for i in report.hard_issues)
 
-    def test_blurry_face_rejected(self):
+    def test_blurry_face_rejected(self, monkeypatch):
         # Flat image → Laplacian variance ~0 → rejected as blurry
+        monkeypatch.setattr(settings, "QUALITY_MIN_SHARPNESS", 30.0)
         img = np.full((480, 640, 3), 128, dtype=np.uint8)
         det = _make_detection(bbox=(100, 100, 300, 340))
         report = assess_face_quality(img, det)

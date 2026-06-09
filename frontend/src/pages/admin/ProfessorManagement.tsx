@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert, Button, Form, Input, Modal, Popconfirm,
-  Space, Table, Tag, Typography, Upload, message,
+  Select, Space, Table, Tag, Typography, Upload, message,
 } from "antd";
-import { DeleteOutlined, EditOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined, UploadOutlined } from "@ant-design/icons";
 import type { CourseSummary, CsvImportResult, Professor } from "@/types";
 import {
   createProfessor, deleteProfessor, importProfessorsCSV,
@@ -23,6 +23,9 @@ export default function ProfessorManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Professor | null>(null);
   const [form] = Form.useForm();
+  const [professorSearch, setProfessorSearch] = useState("");
+  const [courseFilter, setCourseFilter] = useState<number | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -104,6 +107,44 @@ export default function ProfessorManagement() {
     }
   };
 
+  const courseOptions = useMemo(() => {
+    const courses = new Map<number, CourseSummary>();
+    professors.forEach((professor) => {
+      professor.courses.forEach((course) => courses.set(course.id, course));
+    });
+    return [...courses.values()].sort((a, b) => {
+      const byCode = a.code.localeCompare(b.code);
+      return byCode || a.name.localeCompare(b.name);
+    });
+  }, [professors]);
+
+  const filteredProfessors = useMemo(() => {
+    const query = professorSearch.trim().toLowerCase();
+    return professors.filter((professor) => {
+      if (statusFilter === "ACTIVE" && !professor.is_active) return false;
+      if (statusFilter === "INACTIVE" && professor.is_active) return false;
+      if (courseFilter !== "ALL" && !professor.courses.some((course) => course.id === courseFilter)) return false;
+      if (!query) return true;
+
+      const searchable = [
+        professor.first_name,
+        professor.last_name,
+        professor.email,
+        `${professor.first_name} ${professor.last_name}`,
+        ...professor.courses.flatMap((course) => [course.code, course.name]),
+      ];
+      return searchable.some((value) => value.toLowerCase().includes(query));
+    });
+  }, [courseFilter, professorSearch, professors, statusFilter]);
+
+  const hasProfessorFilters = Boolean(professorSearch.trim()) || courseFilter !== "ALL" || statusFilter !== "ALL";
+
+  const clearProfessorFilters = () => {
+    setProfessorSearch("");
+    setCourseFilter("ALL");
+    setStatusFilter("ALL");
+  };
+
   const columns = [
     {
       title: t("common.name"),
@@ -179,8 +220,59 @@ export default function ProfessorManagement() {
       />
 
       <Panel flush>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            padding: "16px 20px",
+            borderBottom: "1px solid #f1f5f9",
+          }}
+        >
+          <Input
+            allowClear
+            prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+            value={professorSearch}
+            onChange={(e) => setProfessorSearch(e.target.value)}
+            placeholder={t("professorsPage.searchPlaceholder")}
+            style={{ flex: "1 1 320px", maxWidth: 460 }}
+          />
+          <Select
+            showSearch
+            optionFilterProp="label"
+            value={courseFilter}
+            onChange={setCourseFilter}
+            style={{ width: 240 }}
+            options={[
+              { value: "ALL", label: t("professorsPage.allSubjects") },
+              ...courseOptions.map((course) => ({
+                value: course.id,
+                label: `${course.code} - ${course.name}`,
+              })),
+            ]}
+          />
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: 150 }}
+            options={[
+              { value: "ALL", label: t("professorsPage.allStatuses") },
+              { value: "ACTIVE", label: t("common.active") },
+              { value: "INACTIVE", label: t("common.inactive") },
+            ]}
+          />
+          {hasProfessorFilters && (
+            <Button type="text" onClick={clearProfessorFilters}>
+              {t("professorsPage.clearFilters")}
+            </Button>
+          )}
+          <Text type="secondary" style={{ marginLeft: "auto", fontSize: 13 }}>
+            {t("professorsPage.filterResultCount", { shown: filteredProfessors.length, total: professors.length })}
+          </Text>
+        </div>
         <Table
-          dataSource={professors}
+          dataSource={filteredProfessors}
           columns={columns}
           rowKey="id"
           loading={loading}

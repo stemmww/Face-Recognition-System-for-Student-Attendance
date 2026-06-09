@@ -781,6 +781,11 @@ const ru = {
     importTitle: "Импорт преподавателей из CSV",
     csvRequired: "Обязательные столбцы: email, first_name, last_name, password",
     csvOptional: "Необязательно: tags (через точку с запятой)",
+    searchPlaceholder: "Поиск по имени или email",
+    allSubjects: "Все предметы",
+    allStatuses: "Все статусы",
+    clearFilters: "Очистить фильтры",
+    filterResultCount: "Показано {{shown}} из {{total}} преподавателей",
   },
 
   // Classrooms
@@ -807,6 +812,13 @@ const ru = {
     importTitle: "Импорт аудиторий из CSV",
     csvRequired: "Обязательный столбец: name (напр. C1.1.349K)",
     csvOptional: "Необязательно: capacity, is_active",
+    searchPlaceholder: "Поиск по названию аудитории",
+    allBlocks: "Все блоки",
+    allFloors: "Все этажи",
+    allRoomTypes: "Все типы аудиторий",
+    allStatuses: "Все статусы",
+    clearFilters: "Очистить фильтры",
+    filterResultCount: "Показано {{shown}} из {{total}} аудиторий",
   },
 
   // Header

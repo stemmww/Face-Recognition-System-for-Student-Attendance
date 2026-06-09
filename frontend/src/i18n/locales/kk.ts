@@ -781,6 +781,11 @@ const kk = {
     importTitle: "CSV-ден оқытушыларды импорттау",
     csvRequired: "Міндетті бағандар: email, first_name, last_name, password",
     csvOptional: "Қосымша: tags (нүктелі үтір арқылы бөлінген)",
+    searchPlaceholder: "Аты немесе email бойынша іздеу",
+    allSubjects: "Барлық пәндер",
+    allStatuses: "Барлық күйлер",
+    clearFilters: "Сүзгілерді тазалау",
+    filterResultCount: "{{total}} оқытушының {{shown}} көрсетілді",
   },
 
   // Classrooms
@@ -807,6 +812,13 @@ const kk = {
     importTitle: "CSV-ден аудиторияларды импорттау",
     csvRequired: "Міндетті баған: name (мыс. C1.1.349K)",
     csvOptional: "Қосымша: capacity, is_active",
+    searchPlaceholder: "Аудитория атауы бойынша іздеу",
+    allBlocks: "Барлық блоктар",
+    allFloors: "Барлық қабаттар",
+    allRoomTypes: "Барлық аудитория түрлері",
+    allStatuses: "Барлық күйлер",
+    clearFilters: "Сүзгілерді тазалау",
+    filterResultCount: "{{total}} аудиторияның {{shown}} көрсетілді",
   },
 
   // Header

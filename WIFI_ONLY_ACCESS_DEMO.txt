@@ -113,27 +113,16 @@ New-NetFirewallRule `
   -LocalPort 8000 `
   -RemoteAddress 192.168.3.0/24
 
-New-NetFirewallRule `
-  -DisplayName "Attendance Frontend Block Other Networks" `
-  -Direction Inbound `
-  -Action Block `
-  -Protocol TCP `
-  -LocalPort 3000 `
-  -RemoteAddress Any
-
-New-NetFirewallRule `
-  -DisplayName "Attendance Backend Block Other Networks" `
-  -Direction Inbound `
-  -Action Block `
-  -Protocol TCP `
-  -LocalPort 8000 `
-  -RemoteAddress Any
-
 Пояснение:
   Allow-правила разрешают доступ из Wi-Fi подсети 192.168.3.0/24.
-  Block-правила блокируют доступ к этим портам из других сетей.
+  В Windows Firewall входящие подключения по умолчанию должны быть заблокированы.
+  Поэтому отдельное Block-правило для Any лучше не добавлять: в Windows явный Block
+  может перекрыть Allow и случайно заблокировать даже нужную Wi-Fi сеть.
   Поэтому студент через нужный Wi-Fi сможет открыть сайт.
   Студент через мобильный интернет или другой Wi-Fi не сможет открыть сайт.
+
+Если ранее были созданы широкие Allow-правила для портов 3000 или 8000, их нужно удалить
+или отключить, чтобы остались только правила с RemoteAddress 192.168.3.0/24.
 
 
 ============================================================
@@ -206,4 +195,3 @@ server {
   http://192.168.3.8:8000. Доступ ограничивается на уровне firewall:
   разрешена только подсеть Wi-Fi 192.168.3.0/24. Поэтому студенты могут пользоваться
   сайтом только находясь в нужной Wi-Fi сети учебного заведения."
-

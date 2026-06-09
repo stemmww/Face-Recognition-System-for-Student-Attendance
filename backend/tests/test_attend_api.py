@@ -52,7 +52,7 @@ async def _create_course(db: AsyncSession, *, code: str) -> Course:
         code=code,
         name=f"Course {code}",
         description="Test course",
-        semester="Fall",
+        semester="TRIMESTER_1",
         academic_year="2025-2026",
     )
     db.add(course)

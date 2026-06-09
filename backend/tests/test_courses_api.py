@@ -24,7 +24,7 @@ class TestCoursesApi:
                 "code": "CS101",
                 "name": "Intro to CS",
                 "description": "Basics",
-                "semester": "Fall",
+                "semester": "TRIMESTER_1",
                 "academic_year": "2025-2026",
             },
         )
@@ -45,7 +45,7 @@ class TestCoursesApi:
                 "code": "CS102",
                 "name": "Broken Year",
                 "description": "Invalid year",
-                "semester": "Fall",
+                "semester": "TRIMESTER_1",
                 "academic_year": "2025-2027",
             },
         )
@@ -66,7 +66,7 @@ class TestCoursesApi:
                 "code": "CS103",
                 "name": "Algorithms",
                 "description": "Core course",
-                "semester": "Spring",
+                "semester": "TRIMESTER_3",
                 "academic_year": "2025-2026",
             },
         )

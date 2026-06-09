@@ -16,6 +16,24 @@ import Panel from "@/components/dashboard/Panel";
 const { Text } = Typography;
 
 const ROOM_TYPE_COLOR: Record<string, string> = { L: "purple", P: "cyan", K: "default" };
+const ROOM_TYPE_LABEL: Record<string, string> = {
+  L: "Lecture hall",
+  P: "PC room",
+  K: "Room without PC",
+};
+
+function parseClassroomCode(value: string | undefined) {
+  const match = value?.trim().toUpperCase().match(/^(C\d+\.\d+)\.(\d{3,4})([A-Z])?$/);
+  if (!match) return null;
+  const type = match[3] ?? null;
+  if (type && !ROOM_TYPE_LABEL[type]) return null;
+  return {
+    block: match[1],
+    floor: match[2][0],
+    roomNumber: match[2],
+    roomType: type,
+  };
+}
 
 export default function ClassroomManagement() {
   const { t } = useTranslation();
@@ -24,6 +42,8 @@ export default function ClassroomManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Classroom | null>(null);
   const [form] = Form.useForm();
+  const classroomName = Form.useWatch("name", form);
+  const parsedClassroom = parseClassroomCode(classroomName);
 
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -220,6 +240,44 @@ export default function ClassroomManagement() {
               style={{ fontFamily: "monospace", textTransform: "uppercase" }}
             />
           </Form.Item>
+          {classroomName && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                gap: 8,
+                margin: "-8px 0 20px",
+              }}
+            >
+              {[
+                { label: t("classroomsPage.block"), value: parsedClassroom?.block },
+                { label: t("classroomsPage.floor"), value: parsedClassroom?.floor },
+                { label: t("classroomsPage.roomNumber"), value: parsedClassroom?.roomNumber },
+                {
+                  label: t("classroomsPage.roomType"),
+                  value: parsedClassroom?.roomType ? ROOM_TYPE_LABEL[parsedClassroom.roomType] : undefined,
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    border: "1px solid #edf0f5",
+                    borderRadius: 8,
+                    padding: "8px 10px",
+                    background: "#fafbfc",
+                    minWidth: 0,
+                  }}
+                >
+                  <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
+                    {item.label}
+                  </Text>
+                  <Text strong style={{ display: "block", fontSize: 13 }}>
+                    {item.value ?? "-"}
+                  </Text>
+                </div>
+              ))}
+            </div>
+          )}
           <Form.Item name="capacity" label={t("classroomsPage.capacity")}>
             <InputNumber min={1} max={1000} style={{ width: 120 }} />
           </Form.Item>

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/app_logo.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -38,10 +39,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.face_retouching_natural, size: 72, color: Colors.white),
+            AppLogo(size: 72, inverted: true),
             SizedBox(height: 16),
             Text(
-              'Attendance',
+              'Face Attendance',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 28,

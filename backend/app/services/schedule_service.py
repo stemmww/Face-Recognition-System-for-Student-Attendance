@@ -10,10 +10,10 @@ from app.models.appeal import Appeal
 from app.models.attendance import AttendanceRecord
 from app.models.attendance_session import AttendanceSession
 from app.models.course import CourseProf
-from app.models.enrollment import Enrollment
 from app.models.schedule import Schedule, schedule_groups
 from app.models.user import Role, User
 from app.schemas.schedule import ScheduleCreate, ScheduleOut, ScheduleUpdate
+from app.services.course_service import CourseService
 
 
 def _compute_end_time(start: time) -> time:
@@ -251,11 +251,7 @@ class ScheduleService:
             return await ScheduleService.list_schedules(db, allowed_schedule_ids=schedule_ids)
 
         if user.role == Role.STUDENT:
-            # Courses the student is enrolled in
-            enroll_result = await db.execute(
-                select(Enrollment.course_id).where(Enrollment.student_id == user.id)
-            )
-            course_ids = [r[0] for r in enroll_result]
+            course_ids = await CourseService.get_student_course_ids(db, user.id)
             if not course_ids:
                 return []
             sched_result = await db.execute(

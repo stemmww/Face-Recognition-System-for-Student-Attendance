@@ -79,6 +79,21 @@ class GroupService:
         if not students:
             raise NotFoundError("Students")
 
+        requested_ids = list(dict.fromkeys(student_ids))
+        found_ids = {student.id for student in students}
+        missing_ids = [str(student_id) for student_id in requested_ids if student_id not in found_ids]
+        inactive_students = [student for student in students if not student.is_active]
+        if missing_ids or inactive_students:
+            errors: list[str] = []
+            if missing_ids:
+                errors.append(f"Unknown student ids: {', '.join(missing_ids)}")
+            if inactive_students:
+                errors.append(
+                    "Cannot add inactive students to group: "
+                    + ", ".join(student.email for student in inactive_students)
+                )
+            raise BadRequestError("; ".join(errors))
+
         # MAIN group: student can only be in ONE active MAIN group
         if group.group_type == "MAIN":
             for student in students:

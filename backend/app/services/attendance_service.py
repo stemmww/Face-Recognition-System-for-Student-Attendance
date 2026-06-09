@@ -18,10 +18,10 @@ from app.core.exceptions import BadRequestError, NotFoundError
 from app.models.attendance import AttendanceRecord, AttendanceStatus, MarkedBy
 from app.models.attendance_session import AttendanceSession, SessionStatus
 from app.models.course import Course
-from app.models.enrollment import Enrollment
 from app.models.notification import Notification
 from app.models.schedule import Schedule
 from app.models.user import User
+from app.services.course_service import CourseService
 
 logger = logging.getLogger(__name__)
 
@@ -144,15 +144,7 @@ class AttendanceSessionService:
         )
         sched = schedule.scalar_one()
 
-        enrolled = await db.execute(
-            select(User.id)
-            .join(Enrollment, Enrollment.student_id == User.id)
-            .where(
-                Enrollment.course_id == sched.course_id,
-                User.is_active.is_(True),
-            )
-        )
-        enrolled_ids = {row[0] for row in enrolled.fetchall()}
+        enrolled_ids = await CourseService.get_active_enrolled_student_ids(db, sched.course_id)
 
         recorded = await db.execute(
             select(AttendanceRecord.student_id).where(
@@ -202,15 +194,7 @@ class AttendanceRecordService:
         )
         schedule = schedule_result.scalar_one()
 
-        enrolled = await db.execute(
-            select(User.id)
-            .join(Enrollment, Enrollment.student_id == User.id)
-            .where(
-                Enrollment.course_id == schedule.course_id,
-                User.is_active.is_(True),
-            )
-        )
-        return {row[0] for row in enrolled.fetchall()}
+        return await CourseService.get_active_enrolled_student_ids(db, schedule.course_id)
 
     @staticmethod
     async def record_recognition(
@@ -377,10 +361,7 @@ class AttendanceRecordService:
     @staticmethod
     async def get_student_summary(db: AsyncSession, student_id: int) -> list[dict]:
         """Per-course attendance summary for a student."""
-        enrolled = await db.execute(
-            select(Enrollment.course_id).where(Enrollment.student_id == student_id)
-        )
-        course_ids = [row[0] for row in enrolled.fetchall()]
+        course_ids = await CourseService.get_student_course_ids(db, student_id)
 
         summaries = []
         for cid in course_ids:

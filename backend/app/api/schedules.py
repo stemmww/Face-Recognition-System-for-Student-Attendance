@@ -11,11 +11,11 @@ from app.core.rbac import require_role
 from app.database import get_db
 from app.models.classroom import Classroom
 from app.models.course import Course
-from app.models.enrollment import Enrollment
 from app.models.group import Group, TRIMESTER_VALUES
 from app.models.schedule import DAY_OF_WEEK_VALUES
 from app.models.user import Role, User
 from app.schemas.schedule import ScheduleCreate, ScheduleOut, ScheduleUpdate
+from app.services.course_service import CourseService
 from app.services.schedule_service import ScheduleService
 
 router = APIRouter()
@@ -61,13 +61,7 @@ async def list_schedules(
         )
 
     if current_user.role == Role.STUDENT and course_id is not None:
-        enrolled = await db.execute(
-            select(Enrollment).where(
-                Enrollment.student_id == current_user.id,
-                Enrollment.course_id == course_id,
-            )
-        )
-        if enrolled.scalar_one_or_none() is None:
+        if not await CourseService.is_student_enrolled(db, course_id, current_user.id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enrolled in this course")
 
     schedules = await ScheduleService.get_my_schedules(db, current_user)
@@ -84,13 +78,7 @@ async def get_schedule(
 ):
     schedule = await ScheduleService.get_schedule(db, schedule_id)
     if current_user.role == Role.STUDENT:
-        enrolled = await db.execute(
-            select(Enrollment).where(
-                Enrollment.student_id == current_user.id,
-                Enrollment.course_id == schedule.course_id,
-            )
-        )
-        if enrolled.scalar_one_or_none() is None:
+        if not await CourseService.is_student_enrolled(db, schedule.course_id, current_user.id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enrolled in this course")
     return schedule
 

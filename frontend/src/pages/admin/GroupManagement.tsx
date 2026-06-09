@@ -182,11 +182,11 @@ export default function GroupManagement() {
     try {
       const [g, users, courses] = await Promise.all([
         listGroups({ active_only: false }),
-        listUsers(),
+        listUsers("student", true),
         listCourses(),
       ]);
       setGroups(g);
-      setAllStudents(users.filter((u) => u.role === "student"));
+      setAllStudents(users);
       setAllCourses(courses);
     } catch {
       message.error(t("groups.loadFailed"));

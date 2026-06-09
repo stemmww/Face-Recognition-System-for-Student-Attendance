@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rbac import require_role
 from app.database import get_db
-from app.models.enrollment import Enrollment
 from app.models.schedule import Schedule
 from app.models.user import Role, User
 from app.schemas.attendance import (
@@ -20,6 +19,7 @@ from app.schemas.attendance import (
 )
 from app.services.access_service import AccessService
 from app.services.attendance_service import AttendanceRecordService, AttendanceSessionService
+from app.services.course_service import CourseService
 
 router = APIRouter()
 
@@ -104,13 +104,7 @@ async def get_enrolled_students_for_session(
     sched = await db.execute(select(Schedule).where(Schedule.id == session.schedule_id))
     schedule = sched.scalar_one()
 
-    enrolled = await db.execute(
-        select(User)
-        .join(Enrollment, Enrollment.student_id == User.id)
-        .where(Enrollment.course_id == schedule.course_id, User.is_active.is_(True))
-        .order_by(User.last_name, User.first_name)
-    )
-    students = enrolled.scalars().all()
+    students = await CourseService.get_enrolled_students(db, schedule.course_id)
     return [
         {
             "id": s.id,

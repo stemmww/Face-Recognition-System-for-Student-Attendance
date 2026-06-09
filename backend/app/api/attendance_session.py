@@ -13,7 +13,6 @@ from app.core.rbac import require_role
 from app.database import get_db
 from app.models.attendance_session import AttendanceSession, SessionStatus
 from app.models.course import Course
-from app.models.enrollment import Enrollment
 from app.models.schedule import Schedule
 from app.models.user import Role, User
 from app.api.deps import get_current_user
@@ -23,6 +22,7 @@ from app.schemas.attendance import (
     SessionCreate,
     SessionOut,
 )
+from app.services.course_service import CourseService
 from app.services.access_service import AccessService
 from app.services.attendance_service import AttendanceSessionService, PRESENT_THRESHOLD_MINUTES, LATE_THRESHOLD_MINUTES
 
@@ -86,10 +86,7 @@ async def get_student_active_sessions(
     current_user: User = Depends(get_current_user),
 ):
     """Return active sessions for courses the current student is enrolled in."""
-    enrolled = await db.execute(
-        select(Enrollment.course_id).where(Enrollment.student_id == current_user.id)
-    )
-    course_ids = [row[0] for row in enrolled.fetchall()]
+    course_ids = await CourseService.get_student_course_ids(db, current_user.id)
     if not course_ids:
         return []
 

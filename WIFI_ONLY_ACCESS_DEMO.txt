@@ -1,0 +1,209 @@
+REAL CODE DEMO: сайт работает только в одной Wi-Fi сети
+
+Цель:
+  Ограничить доступ к системе посещаемости так, чтобы сайт открывался только у пользователей,
+  которые подключены к нужной Wi-Fi сети.
+
+Данные текущей Wi-Fi сети:
+  IP компьютера: 192.168.3.8
+  Маска: 255.255.255.0
+  Wi-Fi подсеть: 192.168.3.0/24
+  Роутер: 192.168.3.1
+
+Адрес для студентов в этой Wi-Fi сети:
+  http://192.168.3.8:3000
+
+Адрес backend API:
+  http://192.168.3.8:8000
+
+
+============================================================
+1. docker-compose.yml
+============================================================
+
+Описание:
+  Docker публикует frontend и backend на компьютере преподавателя/сервера.
+  Студенты смогут обращаться к этим портам по IP компьютера: 192.168.3.8.
+  Ограничение именно "только этот Wi-Fi" делается firewall'ом в следующем разделе.
+
+Код:
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ernar2005}
+      POSTGRES_DB: ${POSTGRES_DB:-attendance}
+      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-ernar2005}@db:5432/${POSTGRES_DB:-attendance}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev_secret_change_in_production}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      CORS_ORIGINS: '["http://localhost:3000","http://192.168.3.8:3000"]'
+      FRONTEND_URL: ${FRONTEND_URL:-http://192.168.3.8:3000}
+      AI_MODEL_PATH: /app/models
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  uploads_data:
+
+Пояснение:
+  "3000:80" открывает сайт на http://192.168.3.8:3000.
+  "8000:8000" открывает backend API на http://192.168.3.8:8000.
+  "127.0.0.1:5434:5432" оставляет базу данных доступной только на этом компьютере.
+  CORS_ORIGINS разрешает frontend с адреса http://192.168.3.8:3000.
+
+
+============================================================
+2. Windows Firewall: разрешить только Wi-Fi 192.168.3.0/24
+============================================================
+
+Описание:
+  Эти команды реально ограничивают доступ.
+  Их нужно запускать в PowerShell от имени администратора.
+  После этого сайт и API будут доступны только устройствам из Wi-Fi сети 192.168.3.0/24.
+
+Код:
+
+New-NetFirewallRule `
+  -DisplayName "Attendance Frontend Allow WiFi Only" `
+  -Direction Inbound `
+  -Action Allow `
+  -Protocol TCP `
+  -LocalPort 3000 `
+  -RemoteAddress 192.168.3.0/24
+
+New-NetFirewallRule `
+  -DisplayName "Attendance Backend Allow WiFi Only" `
+  -Direction Inbound `
+  -Action Allow `
+  -Protocol TCP `
+  -LocalPort 8000 `
+  -RemoteAddress 192.168.3.0/24
+
+New-NetFirewallRule `
+  -DisplayName "Attendance Frontend Block Other Networks" `
+  -Direction Inbound `
+  -Action Block `
+  -Protocol TCP `
+  -LocalPort 3000 `
+  -RemoteAddress Any
+
+New-NetFirewallRule `
+  -DisplayName "Attendance Backend Block Other Networks" `
+  -Direction Inbound `
+  -Action Block `
+  -Protocol TCP `
+  -LocalPort 8000 `
+  -RemoteAddress Any
+
+Пояснение:
+  Allow-правила разрешают доступ из Wi-Fi подсети 192.168.3.0/24.
+  Block-правила блокируют доступ к этим портам из других сетей.
+  Поэтому студент через нужный Wi-Fi сможет открыть сайт.
+  Студент через мобильный интернет или другой Wi-Fi не сможет открыть сайт.
+
+
+============================================================
+3. Проверка
+============================================================
+
+Описание:
+  После запуска Docker и firewall-правил можно проверить работу.
+
+Код:
+
+docker compose up --build
+
+Проверка на компьютере-сервере:
+  http://localhost:3000
+  http://localhost:8000
+
+Проверка на телефоне/ноутбуке студента в этой же Wi-Fi сети:
+  http://192.168.3.8:3000
+
+Ожидаемый результат:
+  Если устройство подключено к Wi-Fi 192.168.3.x, сайт открывается.
+  Если устройство подключено к другой сети, сайт не открывается.
+
+
+============================================================
+4. Альтернативный вариант через nginx
+============================================================
+
+Описание:
+  Если проект будет запускаться через nginx, доступ можно ограничить прямо в nginx.
+  Этот вариант удобен для сервера Linux или VPS.
+
+Код:
+
+server {
+    listen 80;
+    server_name 192.168.3.8;
+
+    allow 192.168.3.0/24;
+    deny all;
+
+    location / {
+        proxy_pass http://frontend:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /api/ {
+        proxy_pass http://backend:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+
+Пояснение:
+  allow 192.168.3.0/24 разрешает только текущую Wi-Fi сеть.
+  deny all блокирует всех остальных.
+
+
+============================================================
+5. Что сказать комиссии
+============================================================
+
+Текст:
+  "Система не публикуется в интернет. Она запускается на локальном сервере в Docker.
+  Frontend доступен по адресу http://192.168.3.8:3000, backend по адресу
+  http://192.168.3.8:8000. Доступ ограничивается на уровне firewall:
+  разрешена только подсеть Wi-Fi 192.168.3.0/24. Поэтому студенты могут пользоваться
+  сайтом только находясь в нужной Wi-Fi сети учебного заведения."
+

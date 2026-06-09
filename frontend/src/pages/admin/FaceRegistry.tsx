@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   Col,
-  Divider,
   Empty,
   Image,
   Input,
@@ -442,7 +441,7 @@ export default function FaceRegistry() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(124px, 1fr))",
+                    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
                     gap: 8,
                   }}
                 >
@@ -456,8 +455,9 @@ export default function FaceRegistry() {
                         aria-pressed={active}
                         onClick={() => setCoverageFilter(option.value)}
                         style={{
-                          minHeight: 58,
-                          padding: "9px 11px",
+                          minHeight: 54,
+                          minWidth: 0,
+                          padding: "8px 9px",
                           borderRadius: 8,
                           border: `1px solid ${active ? color : token.colorBorderSecondary}`,
                           background: active ? token.colorFillSecondary : token.colorBgContainer,
@@ -473,16 +473,13 @@ export default function FaceRegistry() {
                           </span>
                           <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flex: "0 0 auto" }} />
                         </span>
-                        <span style={{ display: "block", marginTop: 4, color: token.colorText, fontSize: 20, fontWeight: 750, lineHeight: 1 }}>
+                        <span style={{ display: "block", marginTop: 4, color: token.colorText, fontSize: 18, fontWeight: 750, lineHeight: 1 }}>
                           {option.count}
                         </span>
                       </button>
                     );
                   })}
                 </div>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  {t("faces.filterResultCount", { shown: filteredStudents.length, total: studentTotal })}
-                </Text>
               </div>
               <Input
                 prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
@@ -685,31 +682,6 @@ export default function FaceRegistry() {
                 </div>
               )}
 
-              <Divider />
-
-              <Dragger
-                accept="image/jpeg,image/png,image/webp"
-                showUploadList={false}
-                disabled={!selectedStudent || enrolling}
-                beforeUpload={(file) => {
-                  handleEnroll(file);
-                  return false;
-                }}
-              >
-                <p className="ant-upload-drag-icon">
-                  <CameraOutlined style={{ fontSize: 40, color: "#1677ff" }} />
-                </p>
-                <p className="ant-upload-text">
-                  {enrolling ? t("faces.processing") : t("faces.uploadHint")}
-                </p>
-                <p className="ant-upload-hint">
-                  {t("faces.uploadFormat")}
-                </p>
-              </Dragger>
-
-              <Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
-                {t("faces.uploadTip")}
-              </Paragraph>
             </Space>
           </Panel>
         </Col>
@@ -730,35 +702,62 @@ export default function FaceRegistry() {
               <Empty description={t("faces.selectStudentView")} />
             ) : loading ? (
               <div style={{ textAlign: "center", padding: 32 }}><Progress type="circle" percent={-1} /></div>
-            ) : embeddings.length === 0 ? (
-              <Empty description={t("faces.noEmbeddings")} />
             ) : (
-              <List
-                grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3 }}
-                dataSource={embeddings}
-                renderItem={(emb) => (
-                  <List.Item>
-                    <Card
-                      size="small"
-                      cover={
-                        <Image
-                          src={`/uploads/${emb.photo_path}`}
-                          alt="Face"
-                          style={{ height: 150, objectFit: "cover" }}
-                          fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNjY2MiIGZvbnQtc2l6ZT0iMTQiPk5vIGltYWdlPC90ZXh0Pjwvc3ZnPg=="
-                        />
-                      }
-                      actions={[
-                        <Popconfirm key="del" title={`${t("common.delete")}?`} onConfirm={() => handleDeleteEmbedding(emb.id)}>
-                          <Button type="text" danger size="small" icon={<DeleteOutlined />} />
-                        </Popconfirm>,
-                      ]}
-                    >
-                      <Card.Meta description={formatDateTime(emb.created_at)} />
-                    </Card>
-                  </List.Item>
+              <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                <Dragger
+                  accept="image/jpeg,image/png,image/webp"
+                  showUploadList={false}
+                  disabled={enrolling}
+                  beforeUpload={(file) => {
+                    handleEnroll(file);
+                    return false;
+                  }}
+                >
+                  <p className="ant-upload-drag-icon">
+                    <CameraOutlined style={{ fontSize: 32, color: "#1677ff" }} />
+                  </p>
+                  <p className="ant-upload-text">
+                    {enrolling ? t("faces.processing") : t("faces.uploadHint")}
+                  </p>
+                  <p className="ant-upload-hint">
+                    {t("faces.uploadFormat")}
+                  </p>
+                </Dragger>
+                <Paragraph type="secondary" style={{ margin: 0, fontSize: 12 }}>
+                  {t("faces.uploadTip")}
+                </Paragraph>
+
+                {embeddings.length === 0 ? (
+                  <Empty description={t("faces.noEmbeddings")} />
+                ) : (
+                  <List
+                    grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3 }}
+                    dataSource={embeddings}
+                    renderItem={(emb) => (
+                      <List.Item>
+                        <Card
+                          size="small"
+                          cover={
+                            <Image
+                              src={`/uploads/${emb.photo_path}`}
+                              alt="Face"
+                              style={{ height: 150, objectFit: "cover" }}
+                              fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNjY2MiIGZvbnQtc2l6ZT0iMTQiPk5vIGltYWdlPC90ZXh0Pjwvc3ZnPg=="
+                            />
+                          }
+                          actions={[
+                            <Popconfirm key="del" title={`${t("common.delete")}?`} onConfirm={() => handleDeleteEmbedding(emb.id)}>
+                              <Button type="text" danger size="small" icon={<DeleteOutlined />} />
+                            </Popconfirm>,
+                          ]}
+                        >
+                          <Card.Meta description={formatDateTime(emb.created_at)} />
+                        </Card>
+                      </List.Item>
+                    )}
+                  />
                 )}
-              />
+              </Space>
             )}
           </Panel>
         </Col>

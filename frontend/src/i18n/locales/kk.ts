@@ -601,7 +601,7 @@ const kk = {
     importTitle: "CSV-ден студенттерді импорттау",
     csvFormat: "CSV форматы",
     csvRequired: "Міндетті бағандар: email, first_name, last_name, password",
-    csvOptional: "Қосымша: course_codes (үтір немесе нүктелі үтір арқылы бөлінген)",
+    csvOptional: "Қосымша: course_codes (үтір немесе нүктелі үтір арқылы бөлінген), can_self_enroll_face",
     dragCSV: "CSV файлды осында жүктеңіз немесе сүйреңіз",
     importing: "Импорттауда...",
     importComplete: "Импорт аяқталды",

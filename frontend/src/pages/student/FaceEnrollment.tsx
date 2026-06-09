@@ -66,7 +66,7 @@ export default function FaceEnrollment() {
   const [deletingAll, setDeletingAll] = useState(false);
 
   const previewBlobRef = useRef<string | null>(null);
-  const hasPermission = user?.can_self_enroll_face === true;
+  const hasPermission = statusData?.can_self_enroll_face ?? user?.can_self_enroll_face === true;
 
   const maxPhotos = statusData?.max_photos ?? 5;
   const count = statusData?.embedding_count ?? 0;

@@ -57,7 +57,12 @@ class VoteResult:
 
 
 class FaceService:
-    ENROLLMENT_ALLOWED_SOFT_ISSUES = frozenset({"soft_yaw", "low_contrast"})
+    ENROLLMENT_ALLOWED_SOFT_ISSUES = frozenset({
+        "face_smallish",
+        "slightly_blurry",
+        "soft_yaw",
+        "low_contrast",
+    })
 
     @staticmethod
     def _ensure_upload_dir() -> Path:
@@ -318,6 +323,12 @@ class FaceService:
             strict_allowed_soft_codes=strict_allowed_soft_codes,
         )
         if not report.passed:
+            logger.warning(
+                "Enrollment quality rejected: metrics=%s hard=%s soft=%s",
+                report.metrics,
+                [(i.code, i.value, i.threshold) for i in report.hard_issues],
+                [(i.code, i.value, i.threshold) for i in report.soft_issues],
+            )
             raise BadRequestError("Photo quality too low: " + report.hard_messages[0])
 
         aligned = align_face(image, det.landmarks)

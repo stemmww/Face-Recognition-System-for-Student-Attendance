@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     RECOGNITION_THRESHOLD: float = 0.5
     # Tuned via ROC calibration on LFW (n=500 subjects, 2476 embeddings):
     # AUC=0.988, EER=2.1%. τ=0.22 yields FAR ≤ 0.1% at TAR ≈ 97.9%.
-    SELF_RECOGNITION_THRESHOLD: float = 0.22
+    SELF_RECOGNITION_THRESHOLD: float = 0.38
 
     # Multi-frame majority voting: a frame "votes yes" when its similarity
     # exceeds SELF_RECOGNITION_THRESHOLD; verification passes when at least
@@ -56,8 +56,8 @@ class Settings(BaseSettings):
     # Tuned for a typical 720p webcam at ~50 cm distance.
     QUALITY_MIN_FACE_PX: int = 80          # hard: face shorter side in pixels
     QUALITY_SOFT_FACE_PX: int = 120        # soft: ideal minimum size
-    QUALITY_MIN_SHARPNESS: float = 30.0    # hard: Laplacian variance below = blurry
-    QUALITY_SOFT_SHARPNESS: float = 80.0   # soft: below = mild blur
+    QUALITY_MIN_SHARPNESS: float = 0.0     # hard blur gate disabled for demo/selfie uploads
+    QUALITY_SOFT_SHARPNESS: float = 20.0   # soft: phone selfie smoothing / mild blur
     QUALITY_MIN_BRIGHTNESS: float = 40.0   # hard: too dark
     QUALITY_MAX_BRIGHTNESS: float = 220.0  # hard: overexposed
     QUALITY_MIN_CONTRAST: float = 20.0     # soft: standard deviation of pixels

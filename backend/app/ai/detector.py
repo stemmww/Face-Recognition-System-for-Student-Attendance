@@ -88,8 +88,13 @@ class FaceDetector:
             if path is None or not Path(path).exists():
                 logger.warning("SCRFD model not found at %s — detector disabled", path)
                 return False
+            options = ort.SessionOptions()
+            options.intra_op_num_threads = 1
+            options.inter_op_num_threads = 1
             self._session = ort.InferenceSession(
-                path, providers=["CPUExecutionProvider"]
+                path,
+                sess_options=options,
+                providers=["CPUExecutionProvider"],
             )
             logger.info("SCRFD model loaded from %s", path)
             return True

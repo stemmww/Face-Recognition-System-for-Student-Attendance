@@ -123,8 +123,13 @@ class _SingleModel:
                     "Anti-spoof model not found at %s — model disabled", path,
                 )
                 return False
+            options = ort.SessionOptions()
+            options.intra_op_num_threads = 1
+            options.inter_op_num_threads = 1
             self._session = ort.InferenceSession(
-                path, providers=["CPUExecutionProvider"],
+                path,
+                sess_options=options,
+                providers=["CPUExecutionProvider"],
             )
             logger.info("Anti-spoof model loaded from %s", path)
             return True

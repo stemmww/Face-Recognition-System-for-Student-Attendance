@@ -61,8 +61,16 @@ class FaceRecognizer:
             if path is None or not Path(path).exists():
                 logger.warning("ArcFace model not found at %s — recognizer disabled", path)
                 return False
+            options = ort.SessionOptions()
+            options.intra_op_num_threads = 1
+            options.inter_op_num_threads = 1
+            options.enable_cpu_mem_arena = False
+            options.enable_mem_pattern = False
+            options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
             self._session = ort.InferenceSession(
-                path, providers=["CPUExecutionProvider"]
+                path,
+                sess_options=options,
+                providers=["CPUExecutionProvider"],
             )
             logger.info("ArcFace model loaded from %s", path)
             return True

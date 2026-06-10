@@ -331,6 +331,9 @@ class FaceService:
             )
             raise BadRequestError("Photo quality too low: " + report.hard_messages[0])
 
+        if hasattr(pipeline.detector, "unload"):
+            pipeline.detector.unload()
+
         aligned = align_face(image, det.landmarks)
         embedding = pipeline.recognizer.get_embedding(aligned)
         if embedding is None:

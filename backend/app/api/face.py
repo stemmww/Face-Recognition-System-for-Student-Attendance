@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 5 * 1024 * 1024  # Render Free has tight memory; keep uploads modest.
+MAX_IMAGE_SIDE = 1280
 
 
 async def _read_image(photo: UploadFile) -> np.ndarray:
@@ -35,11 +36,21 @@ async def _read_image(photo: UploadFile) -> np.ndarray:
         raise BadRequestError(f"Unsupported image type: {photo.content_type}")
     data = await photo.read()
     if len(data) > MAX_FILE_SIZE:
-        raise BadRequestError("File too large (max 10 MB)")
+        raise BadRequestError("File too large (max 5 MB)")
     arr = np.frombuffer(data, dtype=np.uint8)
     image = cv2.imdecode(arr, cv2.IMREAD_COLOR)
     if image is None:
         raise BadRequestError("Cannot decode image")
+
+    h, w = image.shape[:2]
+    longest = max(h, w)
+    if longest > MAX_IMAGE_SIDE:
+        scale = MAX_IMAGE_SIDE / longest
+        image = cv2.resize(
+            image,
+            (int(w * scale), int(h * scale)),
+            interpolation=cv2.INTER_AREA,
+        )
     return image
 
 
@@ -64,6 +75,12 @@ async def enroll_face(
 ):
     """Upload a student photo, detect face, extract embedding, and store it."""
     image = await _read_image(photo)
+    logger.info(
+        "Face enrollment upload: user_id=%s filename=%s shape=%s",
+        user_id,
+        photo.filename,
+        image.shape,
+    )
     pipe = get_pipeline()
 
     # Strict gate so admins never seed bad reference photos

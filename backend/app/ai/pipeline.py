@@ -51,6 +51,8 @@ class FacePipeline:
     def process_image(self, image: np.ndarray) -> list[FaceResult]:
         """Detect all faces, align them, and extract embeddings."""
         detections = self.detector.detect(image)
+        if hasattr(self.detector, "unload"):
+            self.detector.unload()
         results: list[FaceResult] = []
 
         for det in detections:
